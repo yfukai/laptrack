@@ -1,3 +1,4 @@
+"""Main module for tracking"""
 from typing import List
 from typing import Optional
 from typing import Sequence
@@ -34,7 +35,8 @@ def track_points(
     Parameters
     ----------
     coords : Sequence[FloatArray]
-        The list of coordinates of point for each frame. The array index means (sample, dimension).
+        The list of coordinates of point for each frame. 
+        The array index means (sample, dimension).
     props : Optional[Sequence[FloatArray]], optional
         The properties (such as intensity) of the points (optional), by default None
     track_distance_cutoff : Float, optional
@@ -44,15 +46,18 @@ def track_points(
     track_end_cost : Float, optional
         The cost for ending the track (d in Jaqaman et al 2008 NMeth), by default 30
     gap_closing_cutoff : Union[Float,Literal[False]] = 15,
-        The distance cutoff for gap closing, by default 15. if false, no splitting is allowed.
+        The distance cutoff for gap closing, by default 15. 
+        If False, no splitting is allowed.
     gap_closing_max_frame_count : Int = 2,
         The maximum frame gaps, by default 2.
     splitting_cutoff : Union[Float,Literal[False]], optional
-        The distance cutoff for the splitting points, by default 15. if false, no splitting is allowed.
+        The distance cutoff for the splitting points, by default 15. 
+        If False, no splitting is allowed.
     no_splitting_cost : Float, optional
         The cost to reject splitting, by default 30.
     merging_cutoff : Union[Float,Literal[False]], optional
-        The distance cutoff for the merging points, by default 15. If False, no merging is allowed.
+        The distance cutoff for the merging points, by default 15. 
+        If False, no merging is allowed.
     no_merging_cost : Float, optional
         The cost to reject merging, by default 30.
 
@@ -61,7 +66,6 @@ def track_points(
     tracks networkx.Graph:
         The graph for the tracks, whose nodes are (frame, index).
     """
-
     if any(list(map(lambda coord: coord.ndim != 2, coords))):
         raise ValueError("the elements in coords must be 2-dim.")
     coord_dim = coords[0][0].shape[1]
