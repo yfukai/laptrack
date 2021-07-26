@@ -4,17 +4,22 @@ import lap
 from scipy.sparse import lil_matrix
 from scipy.sparse.csr import csr_matrix
 
-from ._typing_utils import Int,IntArray,FloatArray
+from ._typing_utils import FloatArray
+from ._typing_utils import Int
+from ._typing_utils import IntArray
 
-def __to_lap_sparse(cost_matrix : lil_matrix) -> Tuple[Int,FloatArray,IntArray,IntArray]:
+
+def __to_lap_sparse(
+    cost_matrix: lil_matrix,
+) -> Tuple[Int, FloatArray, IntArray, IntArray]:
     """convert data for lap.lapmod"""
-    n=cost_matrix.shape[0]
-    cost_matrix2=csr_matrix(cost_matrix)
+    n = cost_matrix.shape[0]
+    cost_matrix2 = csr_matrix(cost_matrix)
     assert cost_matrix2.has_sorted_indices
-    return n,cost_matrix2.data,cost_matrix2.indptr,cost_matrix2.indices
+    return n, cost_matrix2.data, cost_matrix2.indptr, cost_matrix2.indices
 
 
-def lap_optimization(cost_matrix : lil_matrix) -> Tuple[float,IntArray,IntArray]:
+def lap_optimization(cost_matrix: lil_matrix) -> Tuple[float, IntArray, IntArray]:
     """Solves the linear assignment problem of sparse matrix.
 
     Parameters
