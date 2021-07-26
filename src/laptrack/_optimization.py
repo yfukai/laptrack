@@ -12,7 +12,7 @@ from ._typing_utils import IntArray
 def __to_lap_sparse(
     cost_matrix: lil_matrix,
 ) -> Tuple[Int, FloatArray, IntArray, IntArray]:
-    """convert data for lap.lapmod"""
+    """Convert data for lap.lapmod."""
     n = cost_matrix.shape[0]
     cost_matrix2 = csr_matrix(cost_matrix)
     assert cost_matrix2.has_sorted_indices
