@@ -1,0 +1,12 @@
+{
+  "_template": "gh:cjolowicz/cookiecutter-hypermodern-python",
+  "author": "Yohsuke T. Fukai",
+  "development_status": "Development Status :: 1 - Planning",
+  "email": "ysk@yfukai.net",
+  "friendly_name": "LapTrack",
+  "github_user": "yfukai",
+  "license": "MIT",
+  "package_name": "laptrack",
+  "project_name": "laptrack",
+  "version": "0.0.0"
+}
