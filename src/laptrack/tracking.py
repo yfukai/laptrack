@@ -51,7 +51,7 @@ def track_points(coords : Sequence[FloatArray],
 
     Returns
     -------
-    tracks nx.Graph: 
+    tracks networkx.Graph: 
         The graph for the tracks, whose nodes are (frame, index).
     """
 
