@@ -20,7 +20,7 @@ def __to_lap_sparse(
 
 
 def lap_optimization(cost_matrix: lil_matrix) -> Tuple[float, IntArray, IntArray]:
-    """Solves the linear assignment problem of sparse matrix.
+    """Solves the linear assignment problem for a sparse matrix.
 
     Parameters
     ----------
