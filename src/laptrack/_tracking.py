@@ -106,8 +106,8 @@ def track_points(
         count1 = dist_matrix.shape[0]
         count2 = dist_matrix.shape[1]
         connections = [(i, xs[i]) for i in range(count1) if xs[i] < count2]
-        #        track_start=[i for i in range(count1) if xs[i]>count2]
-        #        track_end=[i for i in range(count2) if ys[i]>count1]
+        #track_start=[i for i in range(count1) if xs[i]>count2]
+        #track_end=[i for i in range(count2) if ys[i]>count1]
         for connection in connections:
             track_tree.add_edge((frame, connection[0]), (frame + 1, connection[1]))
 
