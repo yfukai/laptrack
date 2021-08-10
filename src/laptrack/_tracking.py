@@ -17,7 +17,7 @@ from ._typing_utils import FloatArray
 from ._typing_utils import Int
 
 
-def track_points(
+def track(
     coords: Sequence[FloatArray],
     props: Optional[Sequence[FloatArray]] = None,
     track_distance_cutoff: Float = 15,
@@ -111,7 +111,8 @@ def track_points(
         for connection in connections:
             track_tree.add_edge((frame, connection[0]), (frame + 1, connection[1]))
 
-    # linking between tracks
-    segments = nx.connected_components(track_tree)
+    if gap_closing_cutoff or splitting_cutoff or merging_cutoff:
+        # linking between tracks
+        segments = nx.connected_components(track_tree)
 
     return track_tree
