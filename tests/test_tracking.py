@@ -48,4 +48,14 @@ def test_tracking(shared_datadir: str) -> None:
         filename=path.join(shared_datadir,
                             f"trackmate_tracks_{filename_suffix}")
         spots_df = pd.read_csv(filename+"_spots.csv")
+        frame_max = spots_df["frame"].max()
+        coords=[]
+        for i in range(frame_max):
+            df=spots_df[spots_df["frame"]==i]
+            coords.append(
+                df[["position_x","position_y"]].values
+            )
+        tracking_res=track(coords,**params)
+
         edges_df = pd.read_csv(filename+"_edges.csv")
+

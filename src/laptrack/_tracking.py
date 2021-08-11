@@ -3,12 +3,15 @@ from typing import List
 from typing import Optional
 from typing import Sequence
 from typing import Union
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
 
 import networkx as nx
 import numpy as np
 from numpy import typing as npt
 from scipy.spatial import distance_matrix
-from typing_extensions import Literal
 
 from ._cost_matrix import build_frame_cost_matrix
 from ._optimization import lap_optimization
@@ -68,7 +71,7 @@ def track(
     """
     if any(list(map(lambda coord: coord.ndim != 2, coords))):
         raise ValueError("the elements in coords must be 2-dim.")
-    coord_dim = coords[0][0].shape[1]
+    coord_dim = coords[0].shape[1]
     if any(list(map(lambda coord: coord.shape[1] != coord_dim, coords))):
         raise ValueError("the second dimension in coords must have the same size")
     if props:
