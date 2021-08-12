@@ -1,11 +1,7 @@
 """Test cases for the tracking."""
 from os import path
-from typing import Tuple
 
-import numpy as np
-import numpy.typing as npt
 import pandas as pd
-import pytest
 
 from laptrack import track
 

@@ -1,5 +1,4 @@
-"""Main module for tracking"""
-from typing import List
+"""Main module for tracking."""
 from typing import Optional
 from typing import Sequence
 from typing import Union
@@ -10,8 +9,6 @@ except ImportError:
     from typing_extensions import Literal
 
 import networkx as nx
-import numpy as np
-from numpy import typing as npt
 from scipy.spatial import distance_matrix
 
 from ._cost_matrix import build_frame_cost_matrix
@@ -115,8 +112,8 @@ def track(
         for connection in connections:
             track_tree.add_edge((frame, connection[0]), (frame + 1, connection[1]))
 
-    if gap_closing_cutoff or splitting_cutoff or merging_cutoff:
-        # linking between tracks
-        segments = nx.connected_components(track_tree)
+    #    if gap_closing_cutoff or splitting_cutoff or merging_cutoff:
+    #        # linking between tracks
+    #        segments = nx.connected_components(track_tree)
 
     return track_tree
