@@ -28,19 +28,19 @@ FILENAME_SUFFIX_PARAMS=[
         "splitting_cutoff":False,
         "merging_cutoff":False,
         }),
-    ("with_gap_closing",{
-       **DEFAULT_PARAMS,
-       "splitting_cutoff":False,
-       "merging_cutoff":False,
-       }),
-    ("with_splitting",{
-       **DEFAULT_PARAMS,
-       "merging_cutoff":False,
-       }),
-    ("with_merging",{
-        **DEFAULT_PARAMS,
-        "splitting_cutoff":False,
-        }),
+#    ("with_gap_closing",{
+#       **DEFAULT_PARAMS,
+#       "splitting_cutoff":False,
+#       "merging_cutoff":False,
+#       }),
+#    ("with_splitting",{
+#       **DEFAULT_PARAMS,
+#       "merging_cutoff":False,
+#       }),
+#    ("with_merging",{
+#        **DEFAULT_PARAMS,
+#        "splitting_cutoff":False,
+#        }),
 ]
 
 def test_tracking(shared_datadir: str) -> None:
@@ -50,12 +50,16 @@ def test_tracking(shared_datadir: str) -> None:
         spots_df = pd.read_csv(filename+"_spots.csv")
         frame_max = spots_df["frame"].max()
         coords=[]
+        spot_ids=[]
         for i in range(frame_max):
             df=spots_df[spots_df["frame"]==i]
             coords.append(
                 df[["position_x","position_y"]].values
             )
-        tracking_res=track(coords,**params)
-
+            spot_ids.append(
+                df["id"].values
+            )
+        track_tree=track(coords,**params)
         edges_df = pd.read_csv(filename+"_edges.csv")
+
 
