@@ -3,6 +3,7 @@ from typing import List
 from typing import Optional
 from typing import Sequence
 from typing import Union
+
 try:
     from typing import Literal
 except ImportError:
@@ -38,7 +39,7 @@ def track(
     Parameters
     ----------
     coords : Sequence[FloatArray]
-        The list of coordinates of point for each frame. 
+        The list of coordinates of point for each frame.
         The array index means (sample, dimension).
     props : Optional[Sequence[FloatArray]], optional
         The properties (such as intensity) of the points (optional), by default None
@@ -49,17 +50,17 @@ def track(
     track_end_cost : Float, optional
         The cost for ending the track (d in Jaqaman et al 2008 NMeth), by default 30
     gap_closing_cutoff : Union[Float,Literal[False]] = 15,
-        The distance cutoff for gap closing, by default 15. 
+        The distance cutoff for gap closing, by default 15.
         If False, no splitting is allowed.
     gap_closing_max_frame_count : Int = 2,
         The maximum frame gaps, by default 2.
     splitting_cutoff : Union[Float,Literal[False]], optional
-        The distance cutoff for the splitting points, by default 15. 
+        The distance cutoff for the splitting points, by default 15.
         If False, no splitting is allowed.
     no_splitting_cost : Float, optional
         The cost to reject splitting, by default 30.
     merging_cutoff : Union[Float,Literal[False]], optional
-        The distance cutoff for the merging points, by default 15. 
+        The distance cutoff for the merging points, by default 15.
         If False, no merging is allowed.
     no_merging_cost : Float, optional
         The cost to reject merging, by default 30.
@@ -109,8 +110,8 @@ def track(
         count1 = dist_matrix.shape[0]
         count2 = dist_matrix.shape[1]
         connections = [(i, xs[i]) for i in range(count1) if xs[i] < count2]
-        #track_start=[i for i in range(count1) if xs[i]>count2]
-        #track_end=[i for i in range(count2) if ys[i]>count1]
+        # track_start=[i for i in range(count1) if xs[i]>count2]
+        # track_end=[i for i in range(count2) if ys[i]>count1]
         for connection in connections:
             track_tree.add_edge((frame, connection[0]), (frame + 1, connection[1]))
 
