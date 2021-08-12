@@ -60,6 +60,17 @@ def test_tracking(shared_datadir: str) -> None:
                 df["id"].values
             )
         track_tree=track(coords,**params)
-        edges_df = pd.read_csv(filename+"_edges.csv")
-
-
+        
+        spot_id_to_coord_id={}
+        for i, spot_ids_frame in enumerate(spot_ids):
+            for j, spot_id in enumerate(spot_ids_frame):
+                assert not spot_id in spot_id_to_coord_id
+                spot_id_to_coord_id[spot_id]=(i,j)
+        
+        edges_df = pd.read_csv(filename+"_edges.csv",index_col=0)
+        edges_df["coord_source_id"]=edges_df["spot_source_id"].map(spot_id_to_coord_id)
+        edges_df["coord_target_id"]=edges_df["spot_target_id"].map(spot_id_to_coord_id)
+        valid_edges_df=edges_df[~pd.isna(edges_df["coord_target_id"])]
+        edges_arr=valid_edges_df[["coord_source_id","coord_target_id"]].values
+        
+        assert set(list(map(tuple,(edges_arr)))) == set(track_tree.edges)
