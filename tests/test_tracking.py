@@ -27,11 +27,14 @@ FILENAME_SUFFIX_PARAMS = [
             "merging_cutoff": False,
         },
     ),
-    #    ("with_gap_closing",{
-    #       **DEFAULT_PARAMS,
-    #       "splitting_cutoff":False,
-    #       "merging_cutoff":False,
-    #       }),
+    #    (
+    #        "with_gap_closing",
+    #        {
+    #            **DEFAULT_PARAMS,
+    #            "splitting_cutoff": False,
+    #            "merging_cutoff": False,
+    #        },
+    #    ),
     #    ("with_splitting",{
     #       **DEFAULT_PARAMS,
     #       "merging_cutoff":False,

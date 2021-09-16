@@ -9,6 +9,7 @@ except ImportError:
     from typing_extensions import Literal
 
 import networkx as nx
+import pandas as pd
 from scipy.spatial import distance_matrix
 
 from ._cost_matrix import build_frame_cost_matrix
@@ -112,8 +113,23 @@ def track(
         for connection in connections:
             track_tree.add_edge((frame, connection[0]), (frame + 1, connection[1]))
 
-    #    if gap_closing_cutoff or splitting_cutoff or merging_cutoff:
-    #        # linking between tracks
-    #        segments = nx.connected_components(track_tree)
+    if gap_closing_cutoff or splitting_cutoff or merging_cutoff:
+        # linking between tracks
+        segments = list(nx.connected_components(track_tree))
+        first_nodes = map(
+            lambda segment: min(segment, key=lambda node: node[0]), segments
+        )
+        last_nodes = map(
+            lambda segment: max(segment, key=lambda node: node[0]), segments
+        )
+        first_frames = list(map(lambda x: x[0], first_nodes))
+        last_frames = list(map(lambda x: x[0], last_nodes))
+        segments_df = pd.DataFrame(
+            {
+                "segment": segments,
+                "first_frame": first_frames,
+                "last_frame": last_frames,
+            }
+        )
 
     return track_tree
