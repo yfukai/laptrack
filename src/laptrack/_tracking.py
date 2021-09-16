@@ -1,5 +1,4 @@
 """Main module for tracking."""
-from typing import Optional
 from typing import Sequence
 from typing import Union
 
@@ -21,7 +20,6 @@ from ._typing_utils import Int
 
 def track(
     coords: Sequence[FloatArray],
-    props: Optional[Sequence[FloatArray]] = None,
     track_distance_cutoff: Float = 15,
     track_start_cost: Float = 30,  # b in Jaqaman et al 2008 NMeth.
     track_end_cost: Float = 30,  # d in Jaqaman et al 2008 NMeth.
@@ -39,8 +37,6 @@ def track(
     coords : Sequence[FloatArray]
         The list of coordinates of point for each frame.
         The array index means (sample, dimension).
-    props : Optional[Sequence[FloatArray]], optional
-        The properties (such as intensity) of the points (optional), by default None
     track_distance_cutoff : Float, optional
         The distance cutoff for the connected points in the track, by default 15
     track_start_cost : Float, optional
@@ -73,20 +69,6 @@ def track(
     coord_dim = coords[0].shape[1]
     if any(list(map(lambda coord: coord.shape[1] != coord_dim, coords))):
         raise ValueError("the second dimension in coords must have the same size")
-    if props:
-        if len(coords) != len(props):
-            raise ValueError("the coords and props must have the same length.")
-        if any(
-            list(
-                map(
-                    lambda coord_prop: coord_prop[0].shape[0] != coord_prop[1].shape[0],
-                    zip(coords, props),
-                )
-            )
-        ):
-            raise ValueError(
-                "the number of coords and props must be the same for each frame."
-            )
 
     # initialize tree
     track_tree = nx.Graph()
@@ -122,14 +104,34 @@ def track(
         last_nodes = map(
             lambda segment: max(segment, key=lambda node: node[0]), segments
         )
-        first_frames = list(map(lambda x: x[0], first_nodes))
-        last_frames = list(map(lambda x: x[0], last_nodes))
         segments_df = pd.DataFrame(
             {
                 "segment": segments,
-                "first_frame": first_frames,
-                "last_frame": last_frames,
+                "first_frame": list(map(lambda x: x[0], first_nodes)),
+                "first_index": list(map(lambda x: x[1], first_nodes)),
+                "last_frame": list(map(lambda x: x[0], last_nodes)),
+                "last_index": list(map(lambda x: x[1], last_nodes)),
             }
         )
+
+        for prefix in ["first", "last"]:
+            segments_df[f"{prefix}_frame_coords"] = segments_df.apply(
+                lambda row: coords[row[f"{prefix}_frame"]][row[f"{prefix}_index"]]
+            )
+
+        for prefix, cutoff in zip(
+            ["first", "last"], [splitting_cutoff, merging_cutoff]
+        ):
+            for frame, grp in segments_df.groupby(f"{prefix}_frame"):
+                target_coord = grp[f"{prefix}_frame_coords"]
+                target_dist_matrix = distance_matrix(target_coord, coords[frame])
+                is_candidate = target_dist_matrix < cutoff
+
+    #        def get_candidates(frame,index,cutoff):
+    #            coord=coords[frame][index]
+    #        segments_df["split_candidates"] = seg#ments_df.apply(
+    #            lambda row : row, axis=1         #
+    #        )
+    #        first_dist_matrix = distance_matrix(coord1, coord2)
 
     return track_tree
