@@ -6,14 +6,14 @@ import pandas as pd
 from laptrack import track
 
 DEFAULT_PARAMS = dict(
-    track_distance_cutoff=15,
+    track_cost_cutoff=15 ** 2,
     track_start_cost=30,
     track_end_cost=30,
-    gap_closing_cutoff=15,
+    gap_closing_cost_cutoff=15 ** 2,
     gap_closing_max_frame_count=2,
-    splitting_cutoff=False,
+    splitting_cost_cutoff=15 ** 2,
     no_splitting_cost=30,
-    merging_cutoff=False,
+    merging_cost_cutoff=15 ** 2,
     no_merging_cost=30,
 )
 
@@ -22,23 +22,23 @@ FILENAME_SUFFIX_PARAMS = [
         "without_gap_closing",
         {
             **DEFAULT_PARAMS,
-            "gap_closing_cutoff": False,
-            "splitting_cutoff": False,
-            "merging_cutoff": False,
+            "gap_closing_cost_cutoff": False,
+            "splitting_cost_cutoff": False,
+            "merging_cost_cutoff": False,
         },
     ),
-    #    (
-    #        "with_gap_closing",
-    #        {
-    #            **DEFAULT_PARAMS,
-    #            "splitting_cutoff": False,
-    #            "merging_cutoff": False,
-    #        },
-    #    ),
-    #    ("with_splitting",{
-    #       **DEFAULT_PARAMS,
-    #       "merging_cutoff":False,
-    #       }),
+    #        (
+    #            "with_gap_closing",
+    #            {
+    #                **DEFAULT_PARAMS,
+    #                "splitting_cutoff": False,
+    #                "merging_cutoff": False,
+    #            },
+    #        ),
+    #        ("with_splitting",{
+    #           **DEFAULT_PARAMS,
+    #           "merging_cutoff":False,
+    #           }),
     #    ("with_merging",{
     #        **DEFAULT_PARAMS,
     #        "splitting_cutoff":False,
