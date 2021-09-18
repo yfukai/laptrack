@@ -12,15 +12,16 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 from scipy.spatial.distance import cdist
+from scipy.sparse import lil_matrix
 
-from ._cost_matrix import build_frame_cost_matrix
+from ._cost_matrix import build_frame_cost_matrix, build_segment_cost_matrix
 from ._optimization import lap_optimization
 from ._typing_utils import Float
 from ._typing_utils import FloatArray
 from ._typing_utils import Int
 
 
-def track(
+def laptrack(
     coords: Sequence[FloatArray],
     track_cost_cutoff: Float = 15 ** 2,
     track_start_cost: Float = 30,  # b in Jaqaman et al 2008 NMeth.
@@ -117,6 +118,7 @@ def track(
     if gap_closing_cost_cutoff or splitting_cost_cutoff or merging_cost_cutoff:
         # linking between tracks
         segments = list(nx.connected_components(track_tree))
+        N_segments = len(segments)
         first_nodes = np.array(
             list(map(lambda segment: min(segment, key=lambda node: node[0]), segments))
         )
@@ -131,7 +133,7 @@ def track(
                 "last_frame": first_nodes[:, 0],
                 "last_index": first_nodes[:, 1],
             }
-        )
+        ).reset_index()
 
         for prefix in ["first", "last"]:
             segments_df[f"{prefix}_frame_coords"] = segments_df.apply(
@@ -139,22 +141,112 @@ def track(
                 axis=1,
             )
 
-        for prefix, _cutoff in zip(
+        # compute candidate for gap closing
+        if gap_closing_cost_cutoff:
+
+            def to_gap_closing_candidates(row):
+                target_coord = row["last_frame_coords"]
+                indices = (
+                    np.abs(segments_df["first_frame"] - row["last_frame"])
+                    < gap_closing_max_frame_count
+                )
+                df = segments_df[indices]
+                # note: can use KDTree if metric is distance,
+                # but might not be appropriate for general metrics
+                # https://stackoverflow.com/questions/35459306/find-points-within-cutoff-distance-of-other-points-with-scipy # noqa
+                target_dist_matrix = cdist(
+                    [target_coord],
+                    np.stack(df["first_frame_coords"].values),
+                    metric=dist_metric,
+                )
+                assert target_dist_matrix.shape[0] == 1
+                indices2 = np.where(target_dist_matrix[0] < gap_closing_cost_cutoff)[0]
+                return indices[indices2], target_dist_matrix[0][indices2]
+
+            segments_df["gap_closing_candidates"] = segments_df.apply(
+                to_gap_closing_candidates, axis=1
+            )
+        else:
+            segments_df["gap_closing_candidates"] = [[]] * len(segments_df)
+
+        gap_closing_dist_matrix = lil_matrix((N_segments, N_segments), dtype=np.float32)
+        for ind, row in segments_df.iterrows():
+            candidate_inds = row["gap_closing_candidates"][0]
+            candidate_costs = row["gap_closing_candidates"][1]
+            # row ... track end, col ... track start
+            gap_closing_dist_matrix[(ind, candidate_inds)] = candidate_costs
+
+        all_candidates = {}
+        dist_matrices = {}
+
+        # compute candidate for splitting and merging
+        for prefix, cutoff in zip(
             ["first", "last"], [splitting_cost_cutoff, merging_cost_cutoff]
         ):
+            if cutoff:
 
-            def to_candidates(row):
-                target_coord = row[f"{prefix}_frame_coords"].values
-                frame = row[f"{prefix}_frame"]
-                target_dist_matrix = cdist(
-                    target_coord, coords[frame], metric=dist_metric
+                def to_candidates(row):
+                    target_coord = row[f"{prefix}_frame_coords"]
+                    frame = row[f"{prefix}_frame"]
+                    # note: can use KDTree if metric is distance,
+                    # but might not be appropriate for general metrics
+                    # https://stackoverflow.com/questions/35459306/find-points-within-cutoff-distance-of-other-points-with-scipy # noqa
+                    target_dist_matrix = cdist(
+                        [target_coord], coords[frame], metric=dist_metric
+                    )
+                    assert target_dist_matrix.shape[0] == 1
+                    indices = np.where(target_dist_matrix[0] < cutoff)[0]
+                    return [(frame, index) for index in indices], target_dist_matrix[0][
+                        indices
+                    ]
+
+                segments_df[f"{prefix}_candidates"] = segments_df.apply(
+                    to_candidates, axis=1
                 )
+            else:
+                segments_df[f"{prefix}_candidates"] = [([], [])] * len(segments_df)
 
-            # TODO rewrite by KDTree
-            # https://stackoverflow.com/questions/35459306/find-points-within-cutoff-distance-of-other-points-with-scipy # noqa
-            segments_df[f"{prefix}_candidates"] = segments_df.apply(
-                to_candidates, axis=1
+            all_candidates[prefix] = np.unique(
+                np.concatenate(
+                    segments_df[f"{prefix}_candidates"].apply(lambda x: x[0])
+                ),
+                axis=0,
             )
+
+            N_middle = len(all_candidates[prefix])
+            dist_matrices[prefix] = lil_matrix((N_segments, N_middle), dtype=np.float32)
+
+            all_candidates_dict = {
+                tuple(val): i for i, val in enumerate(all_candidates[prefix])
+            }
+            for ind, row in segments_df.iterrows():
+                candidate_frame_indices = row[f"{prefix}_candidates"][0]
+                candidate_inds = [
+                    all_candidates_dict[tuple(fi)] for fi in candidate_frame_indices
+                ]
+                candidate_costs = row[f"{prefix}_candidates"][1]
+                dist_matrices[prefix][(ind, candidate_inds)] = candidate_costs
+
+        splitting_dist_matrix = dist_matrices["first"]
+        merging_dist_matrix = dist_matrices["last"]
+        splitting_all_candidates = all_candidates["first"]
+        merging_all_candidates = all_candidates["first"]
+        cost_matrix = build_segment_cost_matrix(
+            gap_closing_dist_matrix,
+            splitting_dist_matrix,
+            merging_dist_matrix,
+            no_splitting_cost,
+            no_merging_cost,
+        )
+    #    _, xs, _ = lap_optimization(cost_matrix)
+
+    #        count1 = dist_matrix.shape[0]
+    #        count2 = dist_matrix.shape[1]
+    #        connections = [(i, xs[i]) for i in range(count1) if xs[i] < count2]
+    #        # track_start=[i for i in range(count1) if xs[i]>count2]
+    #        # track_end=[i for i in range(count2) if ys[i]>count1]
+    #        for connection in connections:
+    #            track_tree.add_edge((frame, connection[0]), (frame + 1, connection[1]))
 
     return track_tree
 

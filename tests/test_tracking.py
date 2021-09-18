@@ -3,7 +3,7 @@ from os import path
 
 import pandas as pd
 
-from laptrack import track
+from laptrack import laptrack
 
 DEFAULT_PARAMS = dict(
     track_cost_cutoff=15 ** 2,
@@ -35,10 +35,13 @@ FILENAME_SUFFIX_PARAMS = [
     #                "merging_cutoff": False,
     #            },
     #        ),
-    #        ("with_splitting",{
-    #           **DEFAULT_PARAMS,
-    #           "merging_cutoff":False,
-    #           }),
+    (
+        "with_splitting",
+        {
+            **DEFAULT_PARAMS,
+            "merging_cost_cutoff": False,
+        },
+    ),
     #    ("with_merging",{
     #        **DEFAULT_PARAMS,
     #        "splitting_cutoff":False,
@@ -57,7 +60,7 @@ def test_tracking(shared_datadir: str) -> None:
             df = spots_df[spots_df["frame"] == i]
             coords.append(df[["position_x", "position_y"]].values)
             spot_ids.append(df["id"].values)
-        track_tree = track(coords, **params)
+        track_tree = laptrack(coords, **params)
 
         spot_id_to_coord_id = {}
         for i, spot_ids_frame in enumerate(spot_ids):

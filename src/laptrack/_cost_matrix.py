@@ -41,3 +41,32 @@ def build_frame_cost_matrix(
     C[(*ind2,)] = np.min(dist_matrix)
 
     return C
+
+
+def build_segment_cost_matrix(
+    gap_closing_dist_matrix: FloatArray,
+    splitting_dist_matrix: FloatArray,
+    merging_dist_matrix: FloatArray,
+    no_splitting_cost: Float,
+    no_merging_cost: Float,
+) -> lil_matrix:
+    """Build sparce array for segment-linking cost matrix.
+
+    Parameters
+    ----------
+    gap_closing_dist_matrix : FloatArray
+        The distance matrix for closing gaps between segment i and j.
+    splitting_dist_matrix : FloatArray
+        The distance matrix for splitting between segment i and time/index j
+    merging_dist_matrix : FloatArray
+        The distance matrix for merging between segment i and time/index j
+    no_splitting_cost : Float, optional
+        The cost to reject splitting, by default 30.
+    no_merging_cost : Float, optional
+        The cost to reject merging, by default 30.
+
+    Returns
+    -------
+    cost_matrix : FloatArray
+        the cost matrix for frame linking
+    """

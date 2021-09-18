@@ -3,6 +3,6 @@
 __author__ = """Yohsuke T. Fukai"""
 __email__ = "ysk@yfukai.net"
 
-from ._tracking import track
+from ._tracking import laptrack
 
-__all__ = ["track"]
+__all__ = ["laptrack"]
