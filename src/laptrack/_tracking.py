@@ -1,5 +1,6 @@
 """Main module for tracking."""
 from typing import Callable
+from typing import Optional
 from typing import Sequence
 from typing import Union
 
@@ -24,14 +25,14 @@ from ._typing_utils import Int
 def laptrack(
     coords: Sequence[FloatArray],
     track_cost_cutoff: Float = 15 ** 2,
-    track_start_cost: Float = 30,  # b in Jaqaman et al 2008 NMeth.
-    track_end_cost: Float = 30,  # d in Jaqaman et al 2008 NMeth.
+    track_start_cost: Optional[Float] = None,  # b in Jaqaman et al 2008 NMeth.
+    track_end_cost: Optional[Float] = None,  # d in Jaqaman et al 2008 NMeth.
     gap_closing_cost_cutoff: Union[Float, Literal[False]] = 15 ** 2,
     gap_closing_max_frame_count: Int = 2,
     splitting_cost_cutoff: Union[Float, Literal[False]] = False,
-    no_splitting_cost: Float = 30,  # d' in Jaqaman et al 2008 NMeth.
+    no_splitting_cost: Optional[Float] = None,  # d' in Jaqaman et al 2008 NMeth.
     merging_cost_cutoff: Union[Float, Literal[False]] = False,
-    no_merging_cost: Float = 30,  # b' in Jaqaman et al 2008 NMeth.
+    no_merging_cost: Optional[Float] = None,  # b' in Jaqaman et al 2008 NMeth.
     dist_metric: Union[str, Callable] = "sqeuclidean",
 ) -> nx.Graph:
     """Track points by solving linear assignment problem.
@@ -65,7 +66,7 @@ def laptrack(
         If False, no splitting is allowed.
         By default False.
     no_splitting_cost : Float, optional
-        The cost to reject splitting, by default 30.
+        The cost to reject splitting, by default None (automatically computed).
     merging_cost_cutoff : Union[Float,Literal[False]], optional
         The cost cutoff for the merging points.
         For default cases with `dist_metric="sqeuclidean"`,
@@ -130,8 +131,8 @@ def laptrack(
                 "segment": segments,
                 "first_frame": first_nodes[:, 0],
                 "first_index": first_nodes[:, 1],
-                "last_frame": first_nodes[:, 0],
-                "last_index": first_nodes[:, 1],
+                "last_frame": last_nodes[:, 0],
+                "last_index": last_nodes[:, 1],
             }
         ).reset_index()
 
@@ -146,22 +147,28 @@ def laptrack(
 
             def to_gap_closing_candidates(row):
                 target_coord = row["last_frame_coords"]
-                indices = (
-                    np.abs(segments_df["first_frame"] - row["last_frame"])
-                    < gap_closing_max_frame_count
+                frame_diff = np.abs(segments_df["first_frame"] - row["last_frame"])
+                # https://github.com/fiji/TrackMate/blob/5a97426586b3c592c986c57aa1a09bab9d21419c/src/main/java/fiji/plugin/trackmate/tracking/sparselap/costmatrix/JaqamanSegmentCostMatrixCreator.java#L242 # noqa :
+                indices = (1 <= frame_diff) & (
+                    frame_diff <= gap_closing_max_frame_count
                 )
                 df = segments_df[indices]
                 # note: can use KDTree if metric is distance,
                 # but might not be appropriate for general metrics
                 # https://stackoverflow.com/questions/35459306/find-points-within-cutoff-distance-of-other-points-with-scipy # noqa
-                target_dist_matrix = cdist(
-                    [target_coord],
-                    np.stack(df["first_frame_coords"].values),
-                    metric=dist_metric,
-                )
-                assert target_dist_matrix.shape[0] == 1
-                indices2 = np.where(target_dist_matrix[0] < gap_closing_cost_cutoff)[0]
-                return indices[indices2], target_dist_matrix[0][indices2]
+                if len(df) > 0:
+                    target_dist_matrix = cdist(
+                        [target_coord],
+                        np.stack(df["first_frame_coords"].values),
+                        metric=dist_metric,
+                    )
+                    assert target_dist_matrix.shape[0] == 1
+                    indices2 = np.where(
+                        target_dist_matrix[0] < gap_closing_cost_cutoff
+                    )[0]
+                    return df.index[indices2], target_dist_matrix[0][indices2]
+                else:
+                    return [], []
 
             segments_df["gap_closing_candidates"] = segments_df.apply(
                 to_gap_closing_candidates, axis=1
@@ -187,10 +194,12 @@ def laptrack(
 
                 def to_candidates(row):
                     target_coord = row[f"{prefix}_frame_coords"]
-                    frame = row[f"{prefix}_frame"]
+                    frame = row[f"{prefix}_frame"] + (-1 if prefix == "first" else 1)
                     # note: can use KDTree if metric is distance,
                     # but might not be appropriate for general metrics
                     # https://stackoverflow.com/questions/35459306/find-points-within-cutoff-distance-of-other-points-with-scipy # noqa
+                    if frame < 0 or len(coords) <= frame:
+                        return [], []
                     target_dist_matrix = cdist(
                         [target_coord], coords[frame], metric=dist_metric
                     )
@@ -207,8 +216,8 @@ def laptrack(
                 segments_df[f"{prefix}_candidates"] = [([], [])] * len(segments_df)
 
             all_candidates[prefix] = np.unique(
-                np.concatenate(
-                    segments_df[f"{prefix}_candidates"].apply(lambda x: x[0])
+                sum(
+                    segments_df[f"{prefix}_candidates"].apply(lambda x: list(x[0])), []
                 ),
                 axis=0,
             )
@@ -230,23 +239,43 @@ def laptrack(
         splitting_dist_matrix = dist_matrices["first"]
         merging_dist_matrix = dist_matrices["last"]
         splitting_all_candidates = all_candidates["first"]
-        merging_all_candidates = all_candidates["first"]
+        merging_all_candidates = all_candidates["last"]
         cost_matrix = build_segment_cost_matrix(
             gap_closing_dist_matrix,
             splitting_dist_matrix,
             merging_dist_matrix,
+            track_start_cost,
+            track_end_cost,
             no_splitting_cost,
             no_merging_cost,
         )
-    #    _, xs, _ = lap_optimization(cost_matrix)
 
-    #        count1 = dist_matrix.shape[0]
-    #        count2 = dist_matrix.shape[1]
-    #        connections = [(i, xs[i]) for i in range(count1) if xs[i] < count2]
-    #        # track_start=[i for i in range(count1) if xs[i]>count2]
-    #        # track_end=[i for i in range(count2) if ys[i]>count1]
-    #        for connection in connections:
-    #            track_tree.add_edge((frame, connection[0]), (frame + 1, connection[1]))
+        if not cost_matrix is None:
+            _, xs, ys = lap_optimization(cost_matrix)
+
+            M = gap_closing_dist_matrix.shape[0]
+            N1 = splitting_dist_matrix.shape[1]
+            N2 = merging_dist_matrix.shape[1]
+
+            for ind, row in segments_df.iterrows():
+                col_ind = xs[ind]
+                first_frame_index = (row["first_frame"], row["first_index"])
+                last_frame_index = (row["last_frame"], row["last_index"])
+                if col_ind < M:
+                    target_frame_index = tuple(
+                        segments_df.loc[col_ind, ["first_frame", "first_index"]]
+                    )
+                    track_tree.add_edge(last_frame_index, target_frame_index)
+                elif col_ind < M + N2:
+                    track_tree.add_edge(
+                        last_frame_index, tuple(merging_all_candidates[col_ind - M])
+                    )
+
+                row_ind = ys[ind]
+                if M <= row_ind and row_ind < M + N1:
+                    track_tree.add_edge(
+                        first_frame_index, tuple(splitting_all_candidates[row_ind - M])
+                    )
 
     return track_tree
 

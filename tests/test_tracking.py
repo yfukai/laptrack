@@ -7,14 +7,14 @@ from laptrack import laptrack
 
 DEFAULT_PARAMS = dict(
     track_cost_cutoff=15 ** 2,
-    track_start_cost=30,
-    track_end_cost=30,
+    track_start_cost=None,
+    track_end_cost=None,
     gap_closing_cost_cutoff=15 ** 2,
     gap_closing_max_frame_count=2,
     splitting_cost_cutoff=15 ** 2,
-    no_splitting_cost=30,
+    no_splitting_cost=None,
     merging_cost_cutoff=15 ** 2,
-    no_merging_cost=30,
+    no_merging_cost=None,
 )
 
 FILENAME_SUFFIX_PARAMS = [
@@ -27,14 +27,14 @@ FILENAME_SUFFIX_PARAMS = [
             "merging_cost_cutoff": False,
         },
     ),
-    #        (
-    #            "with_gap_closing",
-    #            {
-    #                **DEFAULT_PARAMS,
-    #                "splitting_cutoff": False,
-    #                "merging_cutoff": False,
-    #            },
-    #        ),
+    (
+        "with_gap_closing",
+        {
+            **DEFAULT_PARAMS,
+            "splitting_cost_cutoff": False,
+            "merging_cost_cutoff": False,
+        },
+    ),
     (
         "with_splitting",
         {
@@ -42,10 +42,13 @@ FILENAME_SUFFIX_PARAMS = [
             "merging_cost_cutoff": False,
         },
     ),
-    #    ("with_merging",{
-    #        **DEFAULT_PARAMS,
-    #        "splitting_cutoff":False,
-    #        }),
+    (
+        "with_merging",
+        {
+            **DEFAULT_PARAMS,
+            "splitting_cost_cutoff": False,
+        },
+    ),
 ]
 
 
