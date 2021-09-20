@@ -9,8 +9,7 @@ homepage = "https://github.com/yfukai/laptrack"
 repository = "https://github.com/yfukai/laptrack"
 documentation = "https://laptrack.readthedocs.io"
 classifiers = [
-    "Development Status :: 1 - Planning",
-#    "Programming Language :: Python :: 3.7",
+    "Development Status :: 2 - Pre-Alpha",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
 ]

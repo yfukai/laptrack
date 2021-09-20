@@ -1,4 +1,5 @@
 from typing import Optional
+from typing import Union
 
 import numpy as np
 from scipy.sparse import lil_matrix
@@ -51,9 +52,9 @@ def build_frame_cost_matrix(
 
 
 def build_segment_cost_matrix(
-    gap_closing_dist_matrix: FloatArray,
-    splitting_dist_matrix: FloatArray,
-    merging_dist_matrix: FloatArray,
+    gap_closing_dist_matrix: Union[lil_matrix, FloatArray],
+    splitting_dist_matrix: Union[lil_matrix, FloatArray],
+    merging_dist_matrix: Union[lil_matrix, FloatArray],
     track_start_cost: Optional[Float],
     track_end_cost: Optional[Float],
     no_splitting_cost: Optional[Float],
@@ -66,11 +67,11 @@ def build_segment_cost_matrix(
 
     Parameters
     ----------
-    gap_closing_dist_matrix : FloatArray
+    gap_closing_dist_matrix : lil_matrix or FloatArray
         The distance matrix for closing gaps between segment i and j.
-    splitting_dist_matrix : FloatArray
+    splitting_dist_matrix : lil_matrix or FloatArray
         The distance matrix for splitting between segment i and time/index j
-    merging_dist_matrix : FloatArray
+    merging_dist_matrix : lil_matrix or FloatArray
         The distance matrix for merging between segment i and time/index j
     track_start_cost : Float, optional
         The cost for starting the track (b in Jaqaman et al 2008 NMeth)

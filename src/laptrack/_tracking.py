@@ -2,12 +2,17 @@
 from typing import Callable
 from typing import Optional
 from typing import Sequence
+from typing import TYPE_CHECKING
 from typing import Union
 
-try:
+# https://stackoverflow.com/questions/59037244/mypy-incompatible-import-error-for-conditional-imports # noqa :
+if TYPE_CHECKING:
     from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
+else:
+    try:
+        from typing import Literal
+    except ImportError:
+        from typing_extensions import Literal
 
 import networkx as nx
 import numpy as np
@@ -24,6 +29,9 @@ from ._typing_utils import Int
 
 def laptrack(
     coords: Sequence[FloatArray],
+    track_dist_metric: Union[str, Callable] = "sqeuclidean",
+    splitting_dist_metric: Union[str, Callable] = "sqeuclidean",
+    merging_dist_metric: Union[str, Callable] = "sqeuclidean",
     track_cost_cutoff: Float = 15 ** 2,
     track_start_cost: Optional[Float] = None,  # b in Jaqaman et al 2008 NMeth.
     track_end_cost: Optional[Float] = None,  # d in Jaqaman et al 2008 NMeth.
@@ -33,7 +41,6 @@ def laptrack(
     no_splitting_cost: Optional[Float] = None,  # d' in Jaqaman et al 2008 NMeth.
     merging_cost_cutoff: Union[Float, Literal[False]] = False,
     no_merging_cost: Optional[Float] = None,  # b' in Jaqaman et al 2008 NMeth.
-    dist_metric: Union[str, Callable] = "sqeuclidean",
 ) -> nx.Graph:
     """Track points by solving linear assignment problem.
 
@@ -42,43 +49,63 @@ def laptrack(
     coords : Sequence[FloatArray]
         The list of coordinates of point for each frame.
         The array index means (sample, dimension).
+    track_dist_metric : str or Callable, optional
+        The metric for calculating cost,
+        by default 'sqeuclidean' (squared euclidean distance).
+        See documentation for `scipy.spatial.distance.cdist` for accepted values.
+    splitting_dist_metric : str or Callable, optional
+        The metric for calculating cost,
+        by default 'sqeuclidean' (squared euclidean distance).
+        See documentation for `scipy.spatial.distance.cdist` for accepted values.
+    merging_dist_metric : str or Callable, optional
+        The metric for calculating cost,
+        by default 'sqeuclidean' (squared euclidean distance).
+        See documentation for `scipy.spatial.distance.cdist` for accepted values.
+    alternative_cost_factor: Float, optional
+        The factor to calculate the alternative costs
+        (b,d,b',d' in Jaqaman et al 2008 NMeth), by default 1.05.
+    alternative_cost_percentile: Float, optional
+        The percentile to calculate the alternative costs
+        (b,d,b',d' in Jaqaman et al 2008 NMeth), by default 90.
+    alternative_cost_percentile_interpolation: str, optional
+        The percentile interpolation to calculate the alternative costs
+        (b,d,b',d' in Jaqaman et al 2008 NMeth), by default "lower".
+        See `numpy.percentile` for accepted values.
     track_cost_cutoff : Float, optional
         The cost cutoff for the connected points in the track.
         For default cases with `dist_metric="sqeuclidean"`,
         this value should be squared maximum distance.
         By default 15**2.
-    track_start_cost : Float, optional
-        The cost for starting the track (b in Jaqaman et al 2008 NMeth), by default 30
-    track_end_cost : Float, optional
-        The cost for ending the track (d in Jaqaman et al 2008 NMeth), by default 30
-    gap_closing_cost_cutoff : Union[Float,Literal[False]] = 15,
+    track_start_cost : Float or None, optional
+        The cost for starting the track (b in Jaqaman et al 2008 NMeth),
+        by default None (automatically estimated).
+    track_end_cost : Float or None, optional
+        The cost for ending the track (d in Jaqaman et al 2008 NMeth),
+        by default None (automatically estimated).
+    gap_closing_cost_cutoff : Float or False, optional
         The cost cutoff for gap closing.
         For default cases with `dist_metric="sqeuclidean"`,
         this value should be squared maximum distance.
         If False, no splitting is allowed.
         By default 15**2.
-    gap_closing_max_frame_count : Int = 2,
+    gap_closing_max_frame_count : Int
         The maximum frame gaps, by default 2.
-    splitting_cost_cutoff : Union[Float,Literal[False]], optional
+    splitting_cost_cutoff : Float or False, optional
         The cost cutoff for the splitting points.
         For default cases with `dist_metric="sqeuclidean"`,
         this value should be squared maximum distance.
         If False, no splitting is allowed.
         By default False.
-    no_splitting_cost : Float, optional
-        The cost to reject splitting, by default None (automatically computed).
-    merging_cost_cutoff : Union[Float,Literal[False]], optional
+    no_splitting_cost : Float or None, optional
+        The cost to reject splitting, by default None (automatically estimated).
+    merging_cost_cutoff : Float or False, optional
         The cost cutoff for the merging points.
         For default cases with `dist_metric="sqeuclidean"`,
         this value should be squared maximum distance.
         If False, no merging is allowed.
         By default False.
-    no_merging_cost : Float, optional
-        The cost to reject merging, by default 30.
-    dist_metric : Union[str, Callable], optional
-        The metric for calculating cost,
-        by default 'sqeuclidean' (squared euclidean distance).
-        See documentation for `scipy.spatial.distance.cdist` for accepted values.
+    no_merging_cost : Float or None, optional
+        The cost to reject meging, by default None (automatically estimated).
 
     Returns
     -------
@@ -99,7 +126,7 @@ def laptrack(
 
     # linking between frames
     for frame, (coord1, coord2) in enumerate(zip(coords[:-1], coords[1:])):
-        dist_matrix = cdist(coord1, coord2, metric=dist_metric)
+        dist_matrix = cdist(coord1, coord2, metric=track_dist_metric)
         cost_matrix = build_frame_cost_matrix(
             dist_matrix,
             track_cost_cutoff=track_cost_cutoff,
@@ -160,7 +187,7 @@ def laptrack(
                     target_dist_matrix = cdist(
                         [target_coord],
                         np.stack(df["first_frame_coords"].values),
-                        metric=dist_metric,
+                        metric=track_dist_metric,
                     )
                     assert target_dist_matrix.shape[0] == 1
                     indices2 = np.where(
@@ -187,8 +214,10 @@ def laptrack(
         dist_matrices = {}
 
         # compute candidate for splitting and merging
-        for prefix, cutoff in zip(
-            ["first", "last"], [splitting_cost_cutoff, merging_cost_cutoff]
+        for prefix, cutoff, dist_metric in zip(
+            ["first", "last"],
+            [splitting_cost_cutoff, merging_cost_cutoff],
+            [splitting_dist_metric, merging_dist_metric],
         ):
             if cutoff:
 
@@ -278,6 +307,3 @@ def laptrack(
                     )
 
     return track_tree
-
-
-# %%

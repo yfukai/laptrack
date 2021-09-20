@@ -6,6 +6,7 @@ import pandas as pd
 from laptrack import laptrack
 
 DEFAULT_PARAMS = dict(
+    dist_metric="sqeuclidean",
     track_cost_cutoff=15 ** 2,
     track_start_cost=None,
     track_end_cost=None,
@@ -21,7 +22,7 @@ FILENAME_SUFFIX_PARAMS = [
     (
         "without_gap_closing",
         {
-            **DEFAULT_PARAMS,
+            **DEFAULT_PARAMS,  # type: ignore
             "gap_closing_cost_cutoff": False,
             "splitting_cost_cutoff": False,
             "merging_cost_cutoff": False,
@@ -30,7 +31,7 @@ FILENAME_SUFFIX_PARAMS = [
     (
         "with_gap_closing",
         {
-            **DEFAULT_PARAMS,
+            **DEFAULT_PARAMS,  # type: ignore
             "splitting_cost_cutoff": False,
             "merging_cost_cutoff": False,
         },
@@ -38,18 +39,18 @@ FILENAME_SUFFIX_PARAMS = [
     (
         "with_splitting",
         {
-            **DEFAULT_PARAMS,
+            **DEFAULT_PARAMS,  # type: ignore
             "merging_cost_cutoff": False,
         },
     ),
     (
         "with_merging",
         {
-            **DEFAULT_PARAMS,
+            **DEFAULT_PARAMS,  # type: ignore
             "splitting_cost_cutoff": False,
         },
     ),
-]
+]  # type: ignore
 
 
 def test_tracking(shared_datadir: str) -> None:
@@ -63,7 +64,7 @@ def test_tracking(shared_datadir: str) -> None:
             df = spots_df[spots_df["frame"] == i]
             coords.append(df[["position_x", "position_y"]].values)
             spot_ids.append(df["id"].values)
-        track_tree = laptrack(coords, **params)
+        track_tree = laptrack(coords, **params)  # type: ignore
 
         spot_id_to_coord_id = {}
         for i, spot_ids_frame in enumerate(spot_ids):
