@@ -17,7 +17,7 @@ LapTrack
    :target: https://pypi.org/project/laptrack
    :alt: Python Version
 .. |License| image:: https://img.shields.io/pypi/l/laptrack
-   :target: https://opensource.org/licenses/MIT
+   :target: https://opensource.org/licenses/GPL-3.0
    :alt: License
 .. |Read the Docs| image:: https://img.shields.io/readthedocs/laptrack/latest.svg?label=Read%20the%20Docs
    :target: https://laptrack.readthedocs.io/
