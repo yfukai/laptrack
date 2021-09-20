@@ -6,8 +6,8 @@ Reference
     :backlinks: none
 
 
-laptrack.laptrack
+laptrack
 -----------------
 
-.. automodule:: laptrack.laptrack
+.. automodule:: laptrack
    :members:

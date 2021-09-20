@@ -51,70 +51,76 @@ def laptrack(
         The array index means (sample, dimension).
 
     track_dist_metric : str or Callable, optional
-        The metric for calculating cost,
+        The metric for calculating track linking cost,
         by default 'sqeuclidean' (squared euclidean distance).
         See documentation for `scipy.spatial.distance.cdist` for accepted values.
 
     splitting_dist_metric : str or Callable, optional
-        The metric for calculating cost,
-        by default 'sqeuclidean' (squared euclidean distance).
-        See documentation for `scipy.spatial.distance.cdist` for accepted values.
+        The metric for calculating splitting cost. See `track_dist_metric`.
 
     merging_dist_metric : str or Callable, optional
-        The metric for calculating cost,
-        by default 'sqeuclidean' (squared euclidean distance).
-        See documentation for `scipy.spatial.distance.cdist` for accepted values.
+        The metric for calculating merging cost. See `track_dist_metric`.
 
-    alternative_cost_factor: Float, optional
+    alternative_cost_factor : Float, optional
         The factor to calculate the alternative costs
         (b,d,b',d' in Jaqaman et al 2008 NMeth), by default 1.05.
-    alternative_cost_percentile: Float, optional
+
+    alternative_cost_percentile : Float, optional
         The percentile to calculate the alternative costs
         (b,d,b',d' in Jaqaman et al 2008 NMeth), by default 90.
-    alternative_cost_percentile_interpolation: str, optional
+
+    alternative_cost_percentile_interpolation : str, optional
         The percentile interpolation to calculate the alternative costs
         (b,d,b',d' in Jaqaman et al 2008 NMeth), by default "lower".
         See `numpy.percentile` for accepted values.
+
     track_cost_cutoff : Float, optional
         The cost cutoff for the connected points in the track.
         For default cases with `dist_metric="sqeuclidean"`,
         this value should be squared maximum distance.
         By default 15**2.
+
     track_start_cost : Float or None, optional
         The cost for starting the track (b in Jaqaman et al 2008 NMeth),
         by default None (automatically estimated).
+
     track_end_cost : Float or None, optional
         The cost for ending the track (d in Jaqaman et al 2008 NMeth),
         by default None (automatically estimated).
+
     gap_closing_cost_cutoff : Float or False, optional
         The cost cutoff for gap closing.
         For default cases with `dist_metric="sqeuclidean"`,
         this value should be squared maximum distance.
         If False, no splitting is allowed.
         By default 15**2.
+
     gap_closing_max_frame_count : Int
         The maximum frame gaps, by default 2.
+
     splitting_cost_cutoff : Float or False, optional
         The cost cutoff for the splitting points.
-        For default cases with `dist_metric="sqeuclidean"`,
-        this value should be squared maximum distance.
+        See `gap_closing_cost_cutoff`.
         If False, no splitting is allowed.
         By default False.
+
     no_splitting_cost : Float or None, optional
         The cost to reject splitting, by default None (automatically estimated).
+
     merging_cost_cutoff : Float or False, optional
         The cost cutoff for the merging points.
-        For default cases with `dist_metric="sqeuclidean"`,
-        this value should be squared maximum distance.
+        See `gap_closing_cost_cutoff`.
         If False, no merging is allowed.
         By default False.
+
     no_merging_cost : Float or None, optional
         The cost to reject meging, by default None (automatically estimated).
 
     Returns
     -------
-    tracks networkx.Graph:
+    tracks : networkx.Graph
         The graph for the tracks, whose nodes are (frame, index).
+
     """
     if any(list(map(lambda coord: coord.ndim != 2, coords))):
         raise ValueError("the elements in coords must be 2-dim.")

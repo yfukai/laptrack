@@ -31,7 +31,7 @@ nox.options.sessions = (
     "xdoctest",
     "docs-build",
 )
-nox.options.reuse_existing_virtualenvs = True
+# nox.options.reuse_existing_virtualenvs = True
 
 
 def activate_virtualenv_in_precommit_hooks(session: Session) -> None:
