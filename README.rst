@@ -66,7 +66,7 @@ To learn more, see the `Contributor Guide`_.
 License
 -------
 
-Distributed under the terms of the `MIT license`_,
+Distributed under the terms of the `GNU General Public License version 3`_,
 *LapTrack* is free and open source software.
 
 
@@ -82,15 +82,19 @@ Credits
 
 - This program implements a modified version of the algorithm in the `K. Jaqaman et al. (2008)`_.
 
-- TrackMate_ is a great ancestor of this package.
+- Inspired by TrackMate_ a lot. See documentation_ for its detailed algorithm, the `2016 paper`_, and the `2021 paper`_.
 
 - This project was generated from `@cjolowicz`_'s `Hypermodern Python Cookiecutter`_ template.
 
 .. _K. Jaqaman et al. (2008): https://www.nature.com/articles/nmeth.1237
 .. _TrackMate: https://imagej.net/plugins/trackmate/
+.. _documentation: https://imagej.net/plugins/trackmate/algorithms
+.. _2016 paper: https://doi.org/10.1016/j.ymeth.2016.09.016
+.. _2021 paper: https://doi.org/10.1101/2021.09.03.458852
+
 .. _@cjolowicz: https://github.com/cjolowicz
 .. _Cookiecutter: https://github.com/audreyr/cookiecutter
-.. _MIT license: https://opensource.org/licenses/MIT
+.. _GNU General Public License version 3: https://opensource.org/licenses/GPL-3.0
 .. _PyPI: https://pypi.org/
 .. _Hypermodern Python Cookiecutter: https://github.com/cjolowicz/cookiecutter-hypermodern-python
 .. _file an issue: https://github.com/yfukai/laptrack/issues
