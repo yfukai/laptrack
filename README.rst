@@ -39,14 +39,7 @@ LapTrack
 Features
 --------
 
-* TODO
-
-
-Requirements
-------------
-
-* TODO
-
+Provides a robust particle tracking algorithm using the Linear Assignment Problem, with various cost functions for linking.
 
 Installation
 ------------
@@ -61,8 +54,7 @@ You can install *LapTrack* via pip_ from PyPI_:
 Usage
 -----
 
-Please see the `Command-line Reference <Usage_>`_ for details.
-
+Please see the Usage_ for details.
 
 Contributing
 ------------
@@ -88,8 +80,14 @@ please `file an issue`_ along with a detailed description.
 Credits
 -------
 
-This project was generated from `@cjolowicz`_'s `Hypermodern Python Cookiecutter`_ template.
+- This program implements a modified version of the algorithm in the `K. Jaqaman et al. (2008)`_.
 
+- TrackMate_ is a great ancestor of this package.
+
+- This project was generated from `@cjolowicz`_'s `Hypermodern Python Cookiecutter`_ template.
+
+.. _K. Jaqaman et al. (2008): https://www.nature.com/articles/nmeth.1237
+.. _TrackMate: https://imagej.net/plugins/trackmate/
 .. _@cjolowicz: https://github.com/cjolowicz
 .. _Cookiecutter: https://github.com/audreyr/cookiecutter
 .. _MIT license: https://opensource.org/licenses/MIT
