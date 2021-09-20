@@ -5,7 +5,7 @@
   "email": "ysk@yfukai.net",
   "friendly_name": "LapTrack",
   "github_user": "yfukai",
-  "license": "MIT",
+  "license": "GPL-3.0-only",
   "package_name": "laptrack",
   "project_name": "laptrack",
   "version": "0.0.0"
