@@ -6,7 +6,9 @@ import pandas as pd
 from laptrack import laptrack
 
 DEFAULT_PARAMS = dict(
-    dist_metric="sqeuclidean",
+    track_dist_metric="sqeuclidean",
+    splitting_dist_metric="sqeuclidean",
+    merging_dist_metric="sqeuclidean",
     track_cost_cutoff=15 ** 2,
     track_start_cost=None,
     track_end_cost=None,

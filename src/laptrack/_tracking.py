@@ -49,18 +49,22 @@ def laptrack(
     coords : Sequence[FloatArray]
         The list of coordinates of point for each frame.
         The array index means (sample, dimension).
+
     track_dist_metric : str or Callable, optional
         The metric for calculating cost,
         by default 'sqeuclidean' (squared euclidean distance).
         See documentation for `scipy.spatial.distance.cdist` for accepted values.
+
     splitting_dist_metric : str or Callable, optional
         The metric for calculating cost,
         by default 'sqeuclidean' (squared euclidean distance).
         See documentation for `scipy.spatial.distance.cdist` for accepted values.
+
     merging_dist_metric : str or Callable, optional
         The metric for calculating cost,
         by default 'sqeuclidean' (squared euclidean distance).
         See documentation for `scipy.spatial.distance.cdist` for accepted values.
+
     alternative_cost_factor: Float, optional
         The factor to calculate the alternative costs
         (b,d,b',d' in Jaqaman et al 2008 NMeth), by default 1.05.

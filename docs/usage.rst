@@ -1,6 +1,7 @@
 Usage
 =====
 
-.. click:: laptrack.__main__:main
-   :prog: laptrack
-   :nested: full
+Example usage: reading images and stitching.
+
+.. literalinclude:: ../examples/lap_tracking_example.py
+   :language: python
