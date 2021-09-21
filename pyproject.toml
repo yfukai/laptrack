@@ -3,7 +3,7 @@ name = "laptrack"
 version = "0.1.1"
 description = "LapTrack"
 authors = ["Yohsuke Fukai <ysk@yfukai.net>"]
-license = "GPL-3.0-only"
+license = "BSD-3-Clause"
 readme = "README.rst"
 homepage = "https://github.com/yfukai/laptrack"
 repository = "https://github.com/yfukai/laptrack"
@@ -16,7 +16,7 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
-    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "License :: OSI Approved :: BSD License",
 ]
 
 [tool.poetry.urls]

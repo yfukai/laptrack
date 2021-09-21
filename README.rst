@@ -17,7 +17,7 @@ LapTrack
    :target: https://pypi.org/project/laptrack
    :alt: Python Version
 .. |License| image:: https://img.shields.io/pypi/l/laptrack
-   :target: https://opensource.org/licenses/GPL-3.0
+   :target: https://opensource.org/licenses/BSD-3-Clause
    :alt: License
 .. |Read the Docs| image:: https://img.shields.io/readthedocs/laptrack/latest.svg?label=Read%20the%20Docs
    :target: https://laptrack.readthedocs.io/
@@ -66,7 +66,7 @@ To learn more, see the `Contributor Guide`_.
 License
 -------
 
-Distributed under the terms of the `GNU General Public License version 3`_,
+Distributed under the terms of the `The 3-Clause BSD License`_,
 *LapTrack* is free and open source software.
 
 
@@ -94,7 +94,7 @@ Credits
 
 .. _@cjolowicz: https://github.com/cjolowicz
 .. _Cookiecutter: https://github.com/audreyr/cookiecutter
-.. _GNU General Public License version 3: https://opensource.org/licenses/GPL-3.0
+.. _The 3-Clause BSD License: https://opensource.org/licenses/BSD-3-Clause
 .. _PyPI: https://pypi.org/
 .. _Hypermodern Python Cookiecutter: https://github.com/cjolowicz/cookiecutter-hypermodern-python
 .. _file an issue: https://github.com/yfukai/laptrack/issues
