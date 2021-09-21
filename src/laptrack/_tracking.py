@@ -185,7 +185,6 @@ def laptrack(
             def to_gap_closing_candidates(row):
                 target_coord = row["last_frame_coords"]
                 frame_diff = np.abs(segments_df["first_frame"] - row["last_frame"])
-                # https://github.com/fiji/TrackMate/blob/5a97426586b3c592c986c57aa1a09bab9d21419c/src/main/java/fiji/plugin/trackmate/tracking/sparselap/costmatrix/JaqamanSegmentCostMatrixCreator.java#L242 # noqa :
                 indices = (1 <= frame_diff) & (
                     frame_diff <= gap_closing_max_frame_count
                 )
@@ -193,6 +192,7 @@ def laptrack(
                 # note: can use KDTree if metric is distance,
                 # but might not be appropriate for general metrics
                 # https://stackoverflow.com/questions/35459306/find-points-within-cutoff-distance-of-other-points-with-scipy # noqa
+                # TrackMate also uses this (trivial) implementation.
                 if len(df) > 0:
                     target_dist_matrix = cdist(
                         [target_coord],

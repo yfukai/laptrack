@@ -2,7 +2,7 @@ Contributor Guide
 =================
 
 Thank you for your interest in improving this project.
-This project is open-source under the `GNU General Public License version 3`_ and
+This project is open-source under the `The 3-Clause BSD License`_ and
 welcomes contributions in the form of bug reports, feature requests, and pull requests.
 
 Here is a list of important resources for contributors:
@@ -12,7 +12,7 @@ Here is a list of important resources for contributors:
 - `Issue Tracker`_
 - `Code of Conduct`_
 
-.. _GNU General Public License version 3: https://opensource.org/licenses/GPL-3.0
+.. _The 3-Clause BSD License: https://opensource.org/licenses/BSD-3-Clause
 .. _Source Code: https://github.com/yfukai/laptrack
 .. _Documentation: https://laptrack.readthedocs.io/
 .. _Issue Tracker: https://github.com/yfukai/laptrack/issues
@@ -43,7 +43,7 @@ Request features on the `Issue Tracker`_.
 How to set up your development environment
 ------------------------------------------
 
-You need Python 3.6+ and the following tools:
+You need Python 3.8+ and the following tools:
 
 - Poetry_
 - Nox_
