@@ -192,7 +192,7 @@ def laptrack(
                 # note: can use KDTree if metric is distance,
                 # but might not be appropriate for general metrics
                 # https://stackoverflow.com/questions/35459306/find-points-within-cutoff-distance-of-other-points-with-scipy # noqa
-                # TrackMate also uses this (almost trivial) implementation.
+                # TrackMate also uses this (trivial) implementation.
                 if len(df) > 0:
                     target_dist_matrix = cdist(
                         [target_coord],
