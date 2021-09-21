@@ -5,7 +5,7 @@ LapTrack
 
 |Read the Docs| |Tests| |Codecov|
 
-|pre-commit| |Black|
+|pre-commit| |Black| |Zenodo|
 
 .. |PyPI| image:: https://img.shields.io/pypi/v/laptrack.svg
    :target: https://pypi.org/project/laptrack/
@@ -34,7 +34,9 @@ LapTrack
 .. |Black| image:: https://img.shields.io/badge/code%20style-black-000000.svg
    :target: https://github.com/psf/black
    :alt: Black
-
+.. |Zenodo| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.5519538.svg
+   :target: https://doi.org/10.5281/zenodo.5519538
+   :alt: Zenodo
 
 Features
 --------
