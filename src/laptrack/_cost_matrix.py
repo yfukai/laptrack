@@ -114,16 +114,16 @@ def build_segment_cost_matrix(
     if len(all_data) == 0:
         return None
 
-    # License notice:
-    # The algorithm to assign track_start_cost, track_end_cost, no_splitting_cost, no_merging_cost # noqa :
-    # and min_val is taken from TrackMate (link1, link2), and relicensed to BSD-3-clause
-    # with permission from Jean-Yves Tinevez (link3).
+    # Note:
+    # Though the way of assigning track_start_cost, track_end_cost, no_splitting_cost, no_merging_cost # noqa :
+    # and min_val is similar to that of TrackMate (link1, link2), GPL3 of TrackMate does not apply. (See link3 for license discussion.) # noqa :
     #   link1 https://github.com/fiji/TrackMate/blob/5a97426586b3c592c986c57aa1a09bab9d21419c/src/main/java/fiji/plugin/trackmate/tracking/sparselap/costmatrix/DefaultCostMatrixCreator.java#L186 # noqa :
     #         https://github.com/fiji/TrackMate/blob/5a97426586b3c592c986c57aa1a09bab9d21419c/src/main/java/fiji/plugin/trackmate/tracking/sparselap/costmatrix/JaqamanSegmentCostMatrixCreator.java # noqa:
     #         https://github.com/fiji/TrackMate/blob/5a97426586b3c592c986c57aa1a09bab9d21419c/src/main/java/fiji/plugin/trackmate/tracking/sparselap/SparseLAPSegmentTracker.java#L148 # noqa:
     #   link2 (default parameters for alternative_cost_percentile, alternative_cost_factor) # noqa :
     #         https://github.com/fiji/TrackMate/blob/5a97426586b3c592c986c57aa1a09bab9d21419c/src/main/java/fiji/plugin/trackmate/tracking/TrackerKeys.java # noqa :
     #   link3 https://forum.image.sc/t/linear-assignment-problem-based-tracking-package-in-python/57793 # noqa :
+    #         https://web.archive.org/web/20210921134401/https://forum.image.sc/t/linear-assignment-problem-based-tracking-package-in-python/57793 # noqa :
 
     if (
         track_start_cost is None
@@ -158,7 +158,5 @@ def build_segment_cost_matrix(
         [track_start_cost, track_end_cost, no_splitting_cost, no_merging_cost]
     )
     C[inds[1] + M + N1, inds[0] + M + N2] = min_val
-
-    # End of the relicensed code
 
     return C
