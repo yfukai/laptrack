@@ -94,7 +94,7 @@ Citation
 
 If you use this program for your research, please cite this software and helps us making more.
 
-.. code-block:: bibtex
+.. code-block::
    @misc{laptrack,
       author = {Yohsuke T. Fukai},
       title = {laptrack},
