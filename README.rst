@@ -88,6 +88,21 @@ Credits
 
 - This project was generated from `@cjolowicz`_'s `Hypermodern Python Cookiecutter`_ template.
 
+
+Citation
+--------
+
+If you use this program for your research, please cite this software and helps us making more.
+
+```
+@misc{laptrack,
+  author = {Yohsuke T. Fukai},
+  title = {laptrack},
+  year  = {2021},
+  url   = {https://doi.org/10.5281/zenodo.5519537},
+}
+```
+
 .. _K. Jaqaman et al. (2008): https://www.nature.com/articles/nmeth.1237
 .. _TrackMate: https://imagej.net/plugins/trackmate/
 .. _documentation: https://imagej.net/plugins/trackmate/algorithms
