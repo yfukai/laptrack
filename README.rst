@@ -5,7 +5,7 @@ LapTrack
 
 |Read the Docs| |Tests| |Codecov|
 
-|pre-commit| |Black|
+|pre-commit| |Black| |Zenodo|
 
 .. |PyPI| image:: https://img.shields.io/pypi/v/laptrack.svg
    :target: https://pypi.org/project/laptrack/
@@ -34,7 +34,9 @@ LapTrack
 .. |Black| image:: https://img.shields.io/badge/code%20style-black-000000.svg
    :target: https://github.com/psf/black
    :alt: Black
-
+.. |Zenodo| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.5519538.svg
+   :target: https://doi.org/10.5281/zenodo.5519538
+   :alt: Zenodo
 
 Features
 --------
@@ -85,6 +87,22 @@ Credits
 - Inspired by TrackMate_ a lot. See documentation_ for its detailed algorithm, the `2016 paper`_, and the `2021 paper`_.
 
 - This project was generated from `@cjolowicz`_'s `Hypermodern Python Cookiecutter`_ template.
+
+
+Citation
+--------
+
+If you use this program for your research, please cite it and help us build more.
+
+.. code-block:: bib
+
+   @misc{laptrack,
+      author = {Yohsuke T. Fukai},
+      title = {laptrack},
+      year  = {2021},
+      url   = {https://doi.org/10.5281/zenodo.5519537},
+   }
+
 
 .. _K. Jaqaman et al. (2008): https://www.nature.com/articles/nmeth.1237
 .. _TrackMate: https://imagej.net/plugins/trackmate/
