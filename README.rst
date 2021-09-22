@@ -92,9 +92,10 @@ Credits
 Citation
 --------
 
-If you use this program for your research, please cite this software and helps us making more.
+If you use this program for your research, please cite it and help us build more.
 
-.. code-block::
+.. code-block:: bib
+
    @misc{laptrack,
       author = {Yohsuke T. Fukai},
       title = {laptrack},
