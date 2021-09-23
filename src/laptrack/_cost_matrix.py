@@ -2,11 +2,9 @@ from typing import Optional
 from typing import Union
 
 import numpy as np
-from scipy.sparse import lil_matrix
 from scipy.sparse.coo import coo_matrix
 
 from ._typing_utils import Float
-from ._typing_utils import FloatArray
 from ._typing_utils import Matrix
 from ._utils import coo_matrix_builder
 
@@ -36,11 +34,8 @@ def build_frame_cost_matrix(
     M = dist_matrix.shape[0]
     N = dist_matrix.shape[1]
 
-    C = coo_matrix_builder(M + N, N + M, dtype=np.float32)
-    if isinstance(dist_matrix, coo_matrix_builder):
-        C.append_builder(dist_matrix)
-    else:
-        C.append_from_array(dist_matrix)
+    C = coo_matrix_builder((M + N, N + M), dtype=np.float32)
+    C.append_matrix(dist_matrix)
 
     if track_start_cost is None:
         track_start_cost = np.max(C.data) * 1.05
@@ -57,9 +52,9 @@ def build_frame_cost_matrix(
 
 
 def build_segment_cost_matrix(
-    gap_closing_dist_matrix: Union[coo_matrix, FloatArray],
-    splitting_dist_matrix: Union[coo_matrix, FloatArray],
-    merging_dist_matrix: Union[coo_matrix, FloatArray],
+    gap_closing_dist_matrix: Union[coo_matrix_builder, Matrix],
+    splitting_dist_matrix: Union[coo_matrix_builder, Matrix],
+    merging_dist_matrix: Union[coo_matrix_builder, Matrix],
     track_start_cost: Optional[Float],
     track_end_cost: Optional[Float],
     no_splitting_cost: Optional[Float],
@@ -67,16 +62,16 @@ def build_segment_cost_matrix(
     alternative_cost_factor: Float = 1.05,
     alternative_cost_percentile: Float = 90,
     alternative_cost_percentile_interpolation: str = "lower",
-) -> lil_matrix:
+) -> coo_matrix:
     """Build sparce array for segment-linking cost matrix.
 
     Parameters
     ----------
-    gap_closing_dist_matrix : coo_matrix or FloatArray
+    gap_closing_dist_matrix : coo_matrix_builder or Matrix
         The distance matrix for closing gaps between segment i and j.
-    splitting_dist_matrix : coo_matrix or FloatArray
+    splitting_dist_matrix : coo_matrix_builder or Matrix
         The distance matrix for splitting between segment i and time/index j
-    merging_dist_matrix : coo_matrix or FloatArray
+    merging_dist_matrix : coo_matrix_builder or Matrix
         The distance matrix for merging between segment i and time/index j
     track_start_cost : Float, optional
         The cost for starting the track (b in Jaqaman et al 2008 NMeth)
@@ -97,7 +92,7 @@ def build_segment_cost_matrix(
 
     Returns
     -------
-    cost_matrix : Optional[FloatArray]
+    cost_matrix : Optional[coo_matrix]
         the cost matrix for frame linking, None if not appropriate
     """
     M = gap_closing_dist_matrix.shape[0]
@@ -109,14 +104,14 @@ def build_segment_cost_matrix(
 
     S = 2 * M + N1 + N2
 
-    C = coo_matrix((S, S), dtype=np.float32)
+    C = coo_matrix_builder((S, S), dtype=np.float32)
 
-    C[:M, :M] = gap_closing_dist_matrix
-    C[M : M + N1, :M] = splitting_dist_matrix.T
-    C[:M, M : M + N2] = merging_dist_matrix
+    C.append_matrix(gap_closing_dist_matrix)
+    C.append_matrix(splitting_dist_matrix.T, shift=(M, 0))
+    C.append_matrix(merging_dist_matrix, shift=(0, M))
 
-    all_data = np.concatenate(C.data)
-    if len(all_data) == 0:
+    upper_left_size = C.size()
+    if upper_left_size == 0:
         return None
 
     # Note:
@@ -138,7 +133,7 @@ def build_segment_cost_matrix(
     ):
         alternative_cost = (
             np.percentile(
-                all_data,
+                C.data,
                 alternative_cost_percentile,
                 interpolation=alternative_cost_percentile_interpolation,
             )
@@ -157,11 +152,12 @@ def build_segment_cost_matrix(
     C[np.arange(2 * M + N1, S), np.arange(M, M + N2)] = np.ones(N2) * no_merging_cost
     C[np.arange(M), np.arange(M + N2, 2 * M + N2)] = np.ones(M) * track_end_cost
     C[np.arange(M, M + N1), np.arange(2 * M + N2, S)] = np.ones(N1) * no_splitting_cost
-    subC = C[: M + N1, : M + N2]
-    inds = subC.nonzero()
     min_val = np.min(
         [track_start_cost, track_end_cost, no_splitting_cost, no_merging_cost]
     )
-    C[inds[1] + M + N1, inds[0] + M + N2] = min_val
 
-    return C
+    upper_left_rows = C.row[:upper_left_size]
+    upper_left_cols = C.col[:upper_left_size]
+    C[upper_left_cols + M + N1, upper_left_rows + M + N2] = min_val
+
+    return C.to_coo_matrix()

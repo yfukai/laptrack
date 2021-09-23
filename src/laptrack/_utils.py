@@ -24,11 +24,11 @@ class coo_matrix_builder:  # noqa: N801
 
     def __init__(
         self,
-        n_row: Int,
-        n_col: Int,
+        shape: Tuple[Int, Int],
         row: Optional[Sequence[Int]] = None,
         col: Optional[Sequence[Int]] = None,
         data: Optional[Sequence[Union[Int, Float]]] = None,
+        *,
         dtype: npt.DTypeLike = np.float64,
         index_dtype: npt.DTypeLike = np.int64,
     ) -> None:
@@ -51,14 +51,15 @@ class coo_matrix_builder:  # noqa: N801
         index_dtype : npt.DTypeLike, optional
             The dtype for the index, by default np.int64
         """
+        assert len(shape) == 2
         if row is None:
             row = []
         if col is None:
             col = []
         if data is None:
             data = []
-        self.n_row = n_row
-        self.n_col = n_col
+        self.n_row = shape[0]
+        self.n_col = shape[1]
         assert isinstance(row, Iterable)
         assert isinstance(col, Iterable)
         assert isinstance(data, Iterable)
@@ -95,11 +96,11 @@ class coo_matrix_builder:  # noqa: N801
                 if isinstance(col, Iterable):
                     assert len(col) == count
                 else:
-                    col = np.ones(count, dtype=self.dtype) * col
+                    col = np.ones(count, dtype=self.index_dtype) * col
             else:
                 assert isinstance(col, Iterable)
                 count = len(col)
-                row = np.ones(count, dtype=self.dtype) * row
+                row = np.ones(count, dtype=self.index_dtype) * row
 
             if isinstance(data, Iterable):
                 assert len(data) == count
@@ -110,6 +111,8 @@ class coo_matrix_builder:  # noqa: N801
             col = [col]
             data = [data]
             count = 1
+        if count == 0:
+            return
         assert len(row) == count
         assert len(col) == count
         assert len(data) == count
@@ -117,26 +120,22 @@ class coo_matrix_builder:  # noqa: N801
         self.col = np.concatenate([self.col, col], dtype=self.index_dtype)
         self.data = np.concatenate([self.data, data], dtype=self.dtype)
 
-    def append_builder(self, builder: coo_matrix_builder) -> None:
+    def append_matrix(
+        self, matrix: Union[coo_matrix_builder, Matrix], shift: Tuple[Int, Int] = (0, 0)
+    ) -> None:
         """Append data from another coo_matrix_builder.
 
         Parameters
         ----------
-        builder : coo_matrix_builder
-            the builder to append
+        matrix : coo_matrix_builder or Matrix
+            the matrix to append
+        shift : Tuple[Int,Int]
+            the shift for row and column
         """
-        self.append(builder.row, builder.col, builder.data)
-
-    def append_array(self, array: Matrix) -> None:
-        """Append data from another array.
-
-        Parameters
-        ----------
-        array : Matrix
-            the array to append
-        """
-        array = coo_matrix(array)
-        self.append(array.row, array.col, array.data)
+        assert len(shift)
+        if not isinstance(matrix, coo_matrix_builder):
+            matrix = coo_matrix(matrix)
+        self.append(matrix.row + shift[0], matrix.col + shift[1], matrix.data)
 
     def to_coo_matrix(self) -> coo_matrix:
         """Generate `coo_matrix`.
@@ -162,3 +161,26 @@ class coo_matrix_builder:  # noqa: N801
         """
         assert len(index) == 2
         self.append(*index, value)
+
+    @property
+    def T(self) -> coo_matrix_builder:  # noqa : N802
+        """Transpose matrix.
+
+        Returns
+        -------
+        builder : coo_matrix_builder
+            the transposed builder
+        """
+        return coo_matrix_builder(self.shape[::-1], self.col, self.row, self.data)
+
+    def size(self):
+        """Get current array size.
+
+        Returns
+        -------
+        size : int
+            the array size for data
+        """
+        assert len(self.row) == len(self.col)
+        assert len(self.row) == len(self.data)
+        return len(self.data)

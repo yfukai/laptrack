@@ -18,7 +18,6 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 from scipy.spatial.distance import cdist
-from scipy.sparse import lil_matrix
 
 from ._cost_matrix import build_frame_cost_matrix, build_segment_cost_matrix
 from ._optimization import lap_optimization
@@ -140,7 +139,7 @@ def laptrack(
         dist_matrix = cdist(coord1, coord2, metric=track_dist_metric)
         ind = np.where(dist_matrix < track_cost_cutoff)
         dist_matrix = coo_matrix_builder(
-            *dist_matrix.shape,
+            dist_matrix.shape,
             row=ind[0],
             col=ind[1],
             data=dist_matrix[(*ind,)],
@@ -221,7 +220,9 @@ def laptrack(
         else:
             segments_df["gap_closing_candidates"] = [[]] * len(segments_df)
 
-        gap_closing_dist_matrix = lil_matrix((N_segments, N_segments), dtype=np.float32)
+        gap_closing_dist_matrix = coo_matrix_builder(
+            (N_segments, N_segments), dtype=np.float32
+        )
         for ind, row in segments_df.iterrows():
             candidate_inds = row["gap_closing_candidates"][0]
             candidate_costs = row["gap_closing_candidates"][1]
@@ -270,7 +271,9 @@ def laptrack(
             )
 
             N_middle = len(all_candidates[prefix])
-            dist_matrices[prefix] = lil_matrix((N_segments, N_middle), dtype=np.float32)
+            dist_matrices[prefix] = coo_matrix_builder(
+                (N_segments, N_middle), dtype=np.float32
+            )
 
             all_candidates_dict = {
                 tuple(val): i for i, val in enumerate(all_candidates[prefix])
