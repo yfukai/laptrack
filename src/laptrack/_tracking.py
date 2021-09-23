@@ -25,6 +25,7 @@ from ._optimization import lap_optimization
 from ._typing_utils import Float
 from ._typing_utils import FloatArray
 from ._typing_utils import Int
+from ._utils import coo_matrix_builder
 
 
 def laptrack(
@@ -137,9 +138,16 @@ def laptrack(
     # linking between frames
     for frame, (coord1, coord2) in enumerate(zip(coords[:-1], coords[1:])):
         dist_matrix = cdist(coord1, coord2, metric=track_dist_metric)
+        ind = np.where(dist_matrix < track_cost_cutoff)
+        dist_matrix = coo_matrix_builder(
+            *dist_matrix.shape,
+            row=ind[0],
+            col=ind[1],
+            data=dist_matrix[(*ind,)],
+            dtype=dist_matrix.dtype,
+        )
         cost_matrix = build_frame_cost_matrix(
             dist_matrix,
-            track_cost_cutoff=track_cost_cutoff,
             track_start_cost=track_start_cost,
             track_end_cost=track_end_cost,
         )

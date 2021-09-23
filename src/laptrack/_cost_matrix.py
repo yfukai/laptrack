@@ -3,25 +3,26 @@ from typing import Union
 
 import numpy as np
 from scipy.sparse import lil_matrix
+from scipy.sparse.coo import coo_matrix
 
 from ._typing_utils import Float
 from ._typing_utils import FloatArray
+from ._typing_utils import Matrix
+from ._utils import coo_matrix_builder
 
 
 def build_frame_cost_matrix(
-    dist_matrix: FloatArray,
-    track_cost_cutoff: Float,
+    dist_matrix: Union[coo_matrix_builder, Matrix],
+    *,
     track_start_cost: Optional[Float],
     track_end_cost: Optional[Float],
-) -> lil_matrix:
+) -> coo_matrix:
     """Build sparce array for frame-linking cost matrix.
 
     Parameters
     ----------
-    dist_matrix : FloatArray
+    dist_matrix : Matrix or `_utils.coo_matrix_builder`
         The distance matrix for points at time t and t+1.
-    track_cost_cutoff : Float, optional
-        The distance cutoff for the connected points in the track
     track_start_cost : Float, optional
         The cost for starting the track (b in Jaqaman et al 2008 NMeth)
     track_end_cost : Float, optional
@@ -35,26 +36,30 @@ def build_frame_cost_matrix(
     M = dist_matrix.shape[0]
     N = dist_matrix.shape[1]
 
-    C = lil_matrix((M + N, N + M), dtype=np.float32)
-    ind = np.where(dist_matrix < track_cost_cutoff)
-    C[(*ind,)] = dist_matrix[(*ind,)]
+    C = coo_matrix_builder(M + N, N + M, dtype=np.float32)
+    if isinstance(dist_matrix, coo_matrix_builder):
+        C.append_builder(dist_matrix)
+    else:
+        C.append_from_array(dist_matrix)
+
     if track_start_cost is None:
-        track_start_cost = np.concatenate(C.data).max() * 1.05
+        track_start_cost = np.max(C.data) * 1.05
     if track_end_cost is None:
-        track_end_cost = np.concatenate(C.data).max() * 1.05
+        track_end_cost = np.max(C.data) * 1.05
+
     C[np.arange(M, M + N), np.arange(N)] = np.ones(N) * track_end_cost
     C[np.arange(M), np.arange(N, N + M)] = np.ones(M) * track_start_cost
-    ind2 = [ind[1] + M, ind[0] + N]
-    min_val = np.concatenate(C.data).min() if len(C.data) > 0 else 0
+    ind2 = [dist_matrix.col + M, dist_matrix.row + N]
+    min_val = np.min(C.data) if len(C.data) > 0 else 0
     C[(*ind2,)] = min_val
 
-    return C
+    return C.to_coo_matrix()
 
 
 def build_segment_cost_matrix(
-    gap_closing_dist_matrix: Union[lil_matrix, FloatArray],
-    splitting_dist_matrix: Union[lil_matrix, FloatArray],
-    merging_dist_matrix: Union[lil_matrix, FloatArray],
+    gap_closing_dist_matrix: Union[coo_matrix, FloatArray],
+    splitting_dist_matrix: Union[coo_matrix, FloatArray],
+    merging_dist_matrix: Union[coo_matrix, FloatArray],
     track_start_cost: Optional[Float],
     track_end_cost: Optional[Float],
     no_splitting_cost: Optional[Float],
@@ -67,11 +72,11 @@ def build_segment_cost_matrix(
 
     Parameters
     ----------
-    gap_closing_dist_matrix : lil_matrix or FloatArray
+    gap_closing_dist_matrix : coo_matrix or FloatArray
         The distance matrix for closing gaps between segment i and j.
-    splitting_dist_matrix : lil_matrix or FloatArray
+    splitting_dist_matrix : coo_matrix or FloatArray
         The distance matrix for splitting between segment i and time/index j
-    merging_dist_matrix : lil_matrix or FloatArray
+    merging_dist_matrix : coo_matrix or FloatArray
         The distance matrix for merging between segment i and time/index j
     track_start_cost : Float, optional
         The cost for starting the track (b in Jaqaman et al 2008 NMeth)
@@ -104,7 +109,7 @@ def build_segment_cost_matrix(
 
     S = 2 * M + N1 + N2
 
-    C = lil_matrix((S, S), dtype=np.float32)
+    C = coo_matrix((S, S), dtype=np.float32)
 
     C[:M, :M] = gap_closing_dist_matrix
     C[M : M + N1, :M] = splitting_dist_matrix.T
