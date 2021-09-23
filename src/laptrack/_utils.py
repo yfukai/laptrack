@@ -14,8 +14,7 @@ from ._typing_utils import Matrix
 from ._typing_utils import NumArray
 
 
-class coo_matrix_builder:  # noqa: N801 as scipy uses the same convention
-    """store data to build scipy.sparce.coo_matrix."""
+class coo_matrix_builder:  # noqa: N801,D101 as scipy uses the same convention
 
     ...
 
@@ -89,9 +88,19 @@ class coo_matrix_builder:  # noqa: N801
         data : Union[NumArray, Int, Float]
             The data values.
         """
-        if isinstance(row, Iterable):
-            count = len(row)
-            assert len(col) == count
+        if any([isinstance(val, Iterable) for val in [row, col, data]]):
+            count = None
+            if isinstance(row, Iterable):
+                count = len(row)
+                if isinstance(col, Iterable):
+                    assert len(col) == count
+                else:
+                    col = np.ones(count, dtype=self.dtype) * col
+            else:
+                assert isinstance(col, Iterable)
+                count = len(col)
+                row = np.ones(count, dtype=self.dtype) * row
+
             if isinstance(data, Iterable):
                 assert len(data) == count
             else:
@@ -100,6 +109,10 @@ class coo_matrix_builder:  # noqa: N801
             row = [row]
             col = [col]
             data = [data]
+            count = 1
+        assert len(row) == count
+        assert len(col) == count
+        assert len(data) == count
         self.row = np.concatenate([self.row, row], dtype=self.index_dtype)
         self.col = np.concatenate([self.col, col], dtype=self.index_dtype)
         self.data = np.concatenate([self.data, data], dtype=self.dtype)
