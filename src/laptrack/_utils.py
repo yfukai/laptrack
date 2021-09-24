@@ -1,4 +1,5 @@
-from collections.abc import Iterable
+from collections.abc import Sized
+from typing import cast
 from typing import Optional
 from typing import Sequence
 from typing import Tuple
@@ -10,13 +11,13 @@ from scipy.sparse import coo_matrix
 
 from ._typing_utils import Float
 from ._typing_utils import Int
+from ._typing_utils import IntArray
 from ._typing_utils import Matrix
 from ._typing_utils import NumArray
 
 
-class coo_matrix_builder:  # noqa: N801,D101 as scipy uses the same convention
-
-    ...
+IndexType = Union[Sequence[Int], IntArray]
+DataType = Union[Sequence[Union[Int, Float]], NumArray]
 
 
 class coo_matrix_builder:  # noqa: N801
@@ -25,9 +26,9 @@ class coo_matrix_builder:  # noqa: N801
     def __init__(
         self,
         shape: Tuple[Int, Int],
-        row: Optional[Sequence[Int]] = None,
-        col: Optional[Sequence[Int]] = None,
-        data: Optional[Sequence[Union[Int, Float]]] = None,
+        row: Optional[IndexType] = None,
+        col: Optional[IndexType] = None,
+        data: Optional[DataType] = None,
         *,
         dtype: npt.DTypeLike = np.float64,
         index_dtype: npt.DTypeLike = np.int64,
@@ -60,9 +61,6 @@ class coo_matrix_builder:  # noqa: N801
             data = []
         self.n_row = shape[0]
         self.n_col = shape[1]
-        assert isinstance(row, Iterable)
-        assert isinstance(col, Iterable)
-        assert isinstance(data, Iterable)
         assert len(row) == len(col)
         assert len(row) == len(data)
         self.row = np.array(row, dtype=index_dtype)
@@ -74,54 +72,71 @@ class coo_matrix_builder:  # noqa: N801
 
     def append(
         self,
-        row: Union[Int, Sequence[Int]],
-        col: Union[Int, Sequence[Int]],
-        data: Union[NumArray, Int, Float],
+        row: Union[Int, IndexType],
+        col: Union[Int, IndexType],
+        data: Union[Int, Float, DataType],
     ) -> None:
         """Append data from row, column index and data values.
 
         Parameters
         ----------
-        row : Union[Int, Sequence[Int]]
+        row : Union[Int, IndexType]
             The row values.
-        col : Union[Int, Sequence[Int]]
+        col : Union[Int, IndexType]
             The column values.
-        data : Union[NumArray, Int, Float]
+        data : Union[Int, Float, DataType]
             The data values.
         """
-        if any([isinstance(val, Iterable) for val in [row, col, data]]):
+        if isinstance(row, Sized) or isinstance(col, Sized) or isinstance(data, Sized):
             count = None
-            if isinstance(row, Iterable):
+            if isinstance(row, Sized):
+                # dirty hack but will be solved in Python 3.10
+                # https://stackoverflow.com/questions/65912706/pattern-matching-over-nested-union-types-in-python # noqa :
+                row = cast(IndexType, row)
                 count = len(row)
-                if isinstance(col, Iterable):
+                row2 = row
+                if isinstance(col, Sized):
+                    col = cast(IndexType, col)
                     assert len(col) == count
+                    col2 = col
                 else:
-                    col = np.ones(count, dtype=self.index_dtype) * col
+                    col2 = np.ones(count, dtype=self.index_dtype) * col
             else:
-                assert isinstance(col, Iterable)
+                assert isinstance(col, Sized)
+                col = cast(IndexType, col)
                 count = len(col)
-                row = np.ones(count, dtype=self.index_dtype) * row
+                col2 = col
 
-            if isinstance(data, Iterable):
+                row2 = np.ones(count, dtype=self.index_dtype) * row
+
+            if isinstance(data, Sized):
+                data = cast(DataType, data)
                 assert len(data) == count
+                data2 = data
             else:
-                data = np.ones(count, dtype=self.dtype) * data
+                data2 = np.ones(count, dtype=self.dtype) * data
         else:
-            row = [row]
-            col = [col]
-            data = [data]
+            row = cast(Union[Int], row)
+            col = cast(Union[Int], col)
+            data = cast(Union[Int, Float], data)
+            row2 = [row]
+            col2 = [col]
+            data2 = [data]
             count = 1
+
         if count == 0:
             return
-        assert len(row) == count
-        assert len(col) == count
-        assert len(data) == count
-        self.row = np.concatenate([self.row, row], dtype=self.index_dtype)
-        self.col = np.concatenate([self.col, col], dtype=self.index_dtype)
-        self.data = np.concatenate([self.data, data], dtype=self.dtype)
+        assert len(row2) == count
+        assert len(col2) == count
+        assert len(data2) == count
+        self.row = np.concatenate([self.row, row2], dtype=self.index_dtype)
+        self.col = np.concatenate([self.col, col2], dtype=self.index_dtype)
+        self.data = np.concatenate([self.data, data2], dtype=self.dtype)
 
     def append_matrix(
-        self, matrix: Union[coo_matrix_builder, Matrix], shift: Tuple[Int, Int] = (0, 0)
+        self,
+        matrix: Union["coo_matrix_builder", Matrix],
+        shift: Tuple[Int, Int] = (0, 0),
     ) -> None:
         """Append data from another coo_matrix_builder.
 
@@ -134,8 +149,10 @@ class coo_matrix_builder:  # noqa: N801
         """
         assert len(shift)
         if not isinstance(matrix, coo_matrix_builder):
-            matrix = coo_matrix(matrix)
-        self.append(matrix.row + shift[0], matrix.col + shift[1], matrix.data)
+            matrix2 = coo_matrix(matrix)
+        else:
+            matrix2 = matrix
+        self.append(matrix2.row + shift[0], matrix2.col + shift[1], matrix2.data)
 
     def to_coo_matrix(self) -> coo_matrix:
         """Generate `coo_matrix`.
@@ -149,7 +166,9 @@ class coo_matrix_builder:  # noqa: N801
             (self.data, (self.row, self.col)), shape=(self.n_row, self.n_col)
         )
 
-    def __setitem__(self, index: Union[Tuple[Int], Tuple[Sequence[Int]]], value):
+    def __setitem__(
+        self, index: Tuple[Union[Int, IndexType], Union[Int, IndexType]], value
+    ):
         """Syntax sugar for append.
 
         Parameters
@@ -160,10 +179,10 @@ class coo_matrix_builder:  # noqa: N801
             The data values to append.
         """
         assert len(index) == 2
-        self.append(*index, value)
+        self.append(index[0], index[1], value)
 
     @property
-    def T(self) -> coo_matrix_builder:  # noqa : N802
+    def T(self) -> "coo_matrix_builder":  # noqa : N802
         """Transpose matrix.
 
         Returns

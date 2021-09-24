@@ -10,7 +10,7 @@ from ._utils import coo_matrix_builder
 
 
 def build_frame_cost_matrix(
-    dist_matrix: Union[coo_matrix_builder, Matrix],
+    dist_matrix: coo_matrix_builder,
     *,
     track_start_cost: Optional[Float],
     track_end_cost: Optional[Float],
@@ -44,9 +44,8 @@ def build_frame_cost_matrix(
 
     C[np.arange(M, M + N), np.arange(N)] = np.ones(N) * track_end_cost
     C[np.arange(M), np.arange(N, N + M)] = np.ones(M) * track_start_cost
-    ind2 = [dist_matrix.col + M, dist_matrix.row + N]
     min_val = np.min(C.data) if len(C.data) > 0 else 0
-    C[(*ind2,)] = min_val
+    C[dist_matrix.col + M, dist_matrix.row + N] = min_val
 
     return C.to_coo_matrix()
 
