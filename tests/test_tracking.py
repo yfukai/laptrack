@@ -1,6 +1,7 @@
 """Test cases for the tracking."""
 from os import path
 
+import numpy as np
 import pandas as pd
 
 from laptrack import laptrack
@@ -55,7 +56,7 @@ FILENAME_SUFFIX_PARAMS = [
 ]  # type: ignore
 
 
-def test_tracking(shared_datadir: str) -> None:
+def test_reproducing_trackmate(shared_datadir: str) -> None:
     for filename_suffix, params in FILENAME_SUFFIX_PARAMS:
         filename = path.join(shared_datadir, f"trackmate_tracks_{filename_suffix}")
         spots_df = pd.read_csv(filename + "_spots.csv")
@@ -85,3 +86,15 @@ def test_tracking(shared_datadir: str) -> None:
         edges_arr = valid_edges_df[["coord_source_id", "coord_target_id"]].values
 
         assert set(list(map(tuple, (edges_arr)))) == set(track_tree.edges)
+
+
+def test_tracking_zero_distance() -> None:
+    coords = [np.array([[10, 10], [12, 11]]), np.array([[10, 10], [13, 11]])]
+    track_tree = laptrack(
+        coords,
+        gap_closing_cost_cutoff=False,
+        splitting_cost_cutoff=False,
+        merging_cost_cutoff=False,
+    )  # type: ignore
+    edges = track_tree.edges()
+    assert set(edges) == set([((0, 0), (1, 0)), ((0, 1), (1, 1))])

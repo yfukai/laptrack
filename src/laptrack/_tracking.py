@@ -18,13 +18,13 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 from scipy.spatial.distance import cdist
-from scipy.sparse import lil_matrix
 
 from ._cost_matrix import build_frame_cost_matrix, build_segment_cost_matrix
 from ._optimization import lap_optimization
 from ._typing_utils import Float
 from ._typing_utils import FloatArray
 from ._typing_utils import Int
+from ._utils import coo_matrix_builder
 
 
 def laptrack(
@@ -137,9 +137,16 @@ def laptrack(
     # linking between frames
     for frame, (coord1, coord2) in enumerate(zip(coords[:-1], coords[1:])):
         dist_matrix = cdist(coord1, coord2, metric=track_dist_metric)
+        ind = np.where(dist_matrix < track_cost_cutoff)
+        dist_matrix = coo_matrix_builder(
+            dist_matrix.shape,
+            row=ind[0],
+            col=ind[1],
+            data=dist_matrix[(*ind,)],
+            dtype=dist_matrix.dtype,
+        )
         cost_matrix = build_frame_cost_matrix(
             dist_matrix,
-            track_cost_cutoff=track_cost_cutoff,
             track_start_cost=track_start_cost,
             track_end_cost=track_end_cost,
         )
@@ -203,7 +210,7 @@ def laptrack(
                     indices2 = np.where(
                         target_dist_matrix[0] < gap_closing_cost_cutoff
                     )[0]
-                    return df.index[indices2], target_dist_matrix[0][indices2]
+                    return df.index[indices2].values, target_dist_matrix[0][indices2]
                 else:
                     return [], []
 
@@ -213,12 +220,14 @@ def laptrack(
         else:
             segments_df["gap_closing_candidates"] = [[]] * len(segments_df)
 
-        gap_closing_dist_matrix = lil_matrix((N_segments, N_segments), dtype=np.float32)
+        gap_closing_dist_matrix = coo_matrix_builder(
+            (N_segments, N_segments), dtype=np.float32
+        )
         for ind, row in segments_df.iterrows():
             candidate_inds = row["gap_closing_candidates"][0]
             candidate_costs = row["gap_closing_candidates"][1]
             # row ... track end, col ... track start
-            gap_closing_dist_matrix[(ind, candidate_inds)] = candidate_costs
+            gap_closing_dist_matrix[(int(ind), candidate_inds)] = candidate_costs
 
         all_candidates = {}
         dist_matrices = {}
@@ -262,7 +271,9 @@ def laptrack(
             )
 
             N_middle = len(all_candidates[prefix])
-            dist_matrices[prefix] = lil_matrix((N_segments, N_middle), dtype=np.float32)
+            dist_matrices[prefix] = coo_matrix_builder(
+                (N_segments, N_middle), dtype=np.float32
+            )
 
             all_candidates_dict = {
                 tuple(val): i for i, val in enumerate(all_candidates[prefix])
@@ -273,7 +284,7 @@ def laptrack(
                     all_candidates_dict[tuple(fi)] for fi in candidate_frame_indices
                 ]
                 candidate_costs = row[f"{prefix}_candidates"][1]
-                dist_matrices[prefix][(ind, candidate_inds)] = candidate_costs
+                dist_matrices[prefix][(int(ind), candidate_inds)] = candidate_costs
 
         splitting_dist_matrix = dist_matrices["first"]
         merging_dist_matrix = dist_matrices["last"]
