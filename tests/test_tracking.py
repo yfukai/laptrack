@@ -98,3 +98,16 @@ def test_tracking_zero_distance() -> None:
     )  # type: ignore
     edges = track_tree.edges()
     assert set(edges) == set([((0, 0), (1, 0)), ((0, 1), (1, 1))])
+
+
+def test_tracking_not_connected() -> None:
+    coords = [np.array([[10, 10], [12, 11]]), np.array([[50, 50], [53, 51]])]
+    track_tree = laptrack(
+        coords,
+        track_cost_cutoff=15 ** 2,
+        gap_closing_cost_cutoff=False,
+        splitting_cost_cutoff=False,
+        merging_cost_cutoff=False,
+    )  # type: ignore
+    edges = track_tree.edges()
+    assert set(edges) == set()

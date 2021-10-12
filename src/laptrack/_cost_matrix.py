@@ -46,7 +46,7 @@ def build_frame_cost_matrix(
         if len(C.data) > 0:
             track_end_cost = np.max(C.data) * 1.05
         else:
-            track_start_cost = 1.05
+            track_end_cost = 1.05
 
     C[np.arange(M, M + N), np.arange(N)] = np.ones(N) * track_end_cost
     C[np.arange(M), np.arange(N, N + M)] = np.ones(M) * track_start_cost
