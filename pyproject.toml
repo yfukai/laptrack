@@ -43,7 +43,7 @@ xdoctest = {extras = ["colors"], version = "^0.15.10"}
 sphinx = "^4.0.3"
 sphinx-autobuild = "^2021.3.14"
 pre-commit = "^2.13.0"
-flake8 = "^3.9.2"
+flake8 = "^4.0.1"
 black = "^21.10b0"
 flake8-bandit = "^2.1.2"
 flake8-bugbear = "^21.9.2"
