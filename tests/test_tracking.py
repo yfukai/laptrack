@@ -3,6 +3,7 @@ from os import path
 
 import numpy as np
 import pandas as pd
+import networkx as nx
 
 from laptrack import laptrack
 
@@ -113,13 +114,14 @@ def test_tracking_not_connected() -> None:
     assert set(edges) == set()
 
 
-def test_gap_closeing(shared_datadir: str) -> None:
-    coords = list(np.load(path.join(shared_datadir,"grouped_poss_molecule_tracking.npy")))
+def test_gap_closing(shared_datadir: str) -> None:
+    coords = list(np.load(path.join(shared_datadir,"grouped_poss_molecule_tracking.npy"),allow_pickle=True))
     track_tree = laptrack(
         coords,
         track_cost_cutoff=15 ** 2,
         splitting_cost_cutoff=False,
         merging_cost_cutoff=False,
     )  # type: ignore
-    edges = track_tree.edges()
-    assert set(edges) == set()
+    for track in nx.connected_components(track_tree):
+        frames, _ = zip(*track)
+        assert len(set(frames)) == len(frames)
