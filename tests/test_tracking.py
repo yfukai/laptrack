@@ -111,3 +111,15 @@ def test_tracking_not_connected() -> None:
     )  # type: ignore
     edges = track_tree.edges()
     assert set(edges) == set()
+
+
+def test_gap_closeing(shared_datadir: str) -> None:
+    coords = list(np.load(path.join(shared_datadir,"grouped_poss_molecule_tracking.npy")))
+    track_tree = laptrack(
+        coords,
+        track_cost_cutoff=15 ** 2,
+        splitting_cost_cutoff=False,
+        merging_cost_cutoff=False,
+    )  # type: ignore
+    edges = track_tree.edges()
+    assert set(edges) == set()
