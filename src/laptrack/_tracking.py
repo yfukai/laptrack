@@ -191,7 +191,7 @@ def laptrack(
 
             def to_gap_closing_candidates(row):
                 target_coord = row["last_frame_coords"]
-                frame_diff = np.abs(segments_df["first_frame"] - row["last_frame"])
+                frame_diff = segments_df["first_frame"] - row["last_frame"]
                 indices = (1 <= frame_diff) & (
                     frame_diff <= gap_closing_max_frame_count
                 )
