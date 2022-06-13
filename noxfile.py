@@ -20,7 +20,7 @@ except ImportError:
 
 
 package = "laptrack"
-python_versions = ["3.10","3.9", "3.8"]
+python_versions = ["3.10", "3.9", "3.8"]
 nox.needs_version = ">= 2021.6.6"
 nox.options.sessions = (
     "pre-commit",
@@ -38,20 +38,8 @@ nox.options.sessions = (
 def precommit(session: Session) -> None:
     """Lint using pre-commit."""
     args = session.posargs or ["run", "--all-files", "--show-diff-on-failure"]
-    session.install(
-        "black",
-        "darglint",
-        "flake8",
-        "flake8-bandit",
-        "flake8-bugbear",
-        "flake8-docstrings",
-        "flake8-rst-docstrings",
-        "pep8-naming",
-        "pre-commit",
-        "pre-commit-hooks",
-        "reorder-python-imports",
-    )
     session.run("pre-commit", *args)
+
 
 @session(python="3.9")
 def safety(session: Session) -> None:
