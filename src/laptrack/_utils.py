@@ -116,8 +116,8 @@ class coo_matrix_builder:  # noqa: N801
             else:
                 data2 = np.ones(count, dtype=self.dtype) * data
         else:
-            row = cast(Union[Int], row)
-            col = cast(Union[Int], col)
+            row = cast(Int, row)
+            col = cast(Int, col)
             data = cast(Union[Int, Float], data)
             row2 = [row]
             col2 = [col]

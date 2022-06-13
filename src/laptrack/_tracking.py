@@ -32,10 +32,10 @@ def laptrack(
     track_dist_metric: Union[str, Callable] = "sqeuclidean",
     splitting_dist_metric: Union[str, Callable] = "sqeuclidean",
     merging_dist_metric: Union[str, Callable] = "sqeuclidean",
-    track_cost_cutoff: Float = 15 ** 2,
+    track_cost_cutoff: Float = 15**2,
     track_start_cost: Optional[Float] = None,  # b in Jaqaman et al 2008 NMeth.
     track_end_cost: Optional[Float] = None,  # d in Jaqaman et al 2008 NMeth.
-    gap_closing_cost_cutoff: Union[Float, Literal[False]] = 15 ** 2,
+    gap_closing_cost_cutoff: Union[Float, Literal[False]] = 15**2,
     gap_closing_max_frame_count: Int = 2,
     splitting_cost_cutoff: Union[Float, Literal[False]] = False,
     no_splitting_cost: Optional[Float] = None,  # d' in Jaqaman et al 2008 NMeth.
