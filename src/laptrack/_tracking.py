@@ -1,5 +1,6 @@
 """Main module for tracking."""
 from typing import Callable
+from typing import Dict
 from typing import Optional
 from typing import Sequence
 from typing import TYPE_CHECKING
@@ -229,8 +230,8 @@ def laptrack(
             # row ... track end, col ... track start
             gap_closing_dist_matrix[(int(ind), candidate_inds)] = candidate_costs
 
-        all_candidates = {}
-        dist_matrices = {}
+        all_candidates: Dict = {}
+        dist_matrices: Dict = {}
 
         # compute candidate for splitting and merging
         for prefix, cutoff, dist_metric in zip(
