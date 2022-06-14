@@ -1,5 +1,6 @@
 """Main module for tracking."""
 from typing import Callable
+from typing import cast
 from typing import Dict
 from typing import Optional
 from typing import Sequence
@@ -228,7 +229,9 @@ def laptrack(
             candidate_inds = row["gap_closing_candidates"][0]
             candidate_costs = row["gap_closing_candidates"][1]
             # row ... track end, col ... track start
-            gap_closing_dist_matrix[(int(ind), candidate_inds)] = candidate_costs
+            gap_closing_dist_matrix[
+                (int(cast(Int, ind)), candidate_inds)
+            ] = candidate_costs
 
         all_candidates: Dict = {}
         dist_matrices: Dict = {}
@@ -285,7 +288,9 @@ def laptrack(
                     all_candidates_dict[tuple(fi)] for fi in candidate_frame_indices
                 ]
                 candidate_costs = row[f"{prefix}_candidates"][1]
-                dist_matrices[prefix][(int(ind), candidate_inds)] = candidate_costs
+                dist_matrices[prefix][
+                    (int(cast(Int, ind)), candidate_inds)
+                ] = candidate_costs
 
         splitting_dist_matrix = dist_matrices["first"]
         merging_dist_matrix = dist_matrices["last"]
