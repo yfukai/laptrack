@@ -34,6 +34,9 @@ def laptrack(
     track_dist_metric: Union[str, Callable] = "sqeuclidean",
     splitting_dist_metric: Union[str, Callable] = "sqeuclidean",
     merging_dist_metric: Union[str, Callable] = "sqeuclidean",
+    alternative_cost_factor: Float = 1.05,
+    alternative_cost_percentile: Float = 90,
+    alternative_cost_percentile_interpolation: str = "lower",
     track_cost_cutoff: Float = 15**2,
     track_start_cost: Optional[Float] = None,  # b in Jaqaman et al 2008 NMeth.
     track_end_cost: Optional[Float] = None,  # d in Jaqaman et al 2008 NMeth.
@@ -304,6 +307,9 @@ def laptrack(
             track_end_cost,
             no_splitting_cost,
             no_merging_cost,
+            alternative_cost_factor,
+            alternative_cost_percentile,
+            alternative_cost_percentile_interpolation,
         )
 
         if not cost_matrix is None:
