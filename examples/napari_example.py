@@ -49,7 +49,7 @@ for i in range(track_length):
     for pos in brownian_poss[:, i]:
         pos2 = pos / pixel_size
         images[i] += np.exp(
-            -((xx - pos2[0]) ** 2 + (yy - pos2[1]) ** 2) / 2 / diameter ** 2
+            -((xx - pos2[0]) ** 2 + (yy - pos2[1]) ** 2) / 2 / diameter**2
         )
 # %%
 

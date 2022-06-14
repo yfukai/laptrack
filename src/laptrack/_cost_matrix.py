@@ -138,7 +138,8 @@ def build_segment_cost_matrix(
     ):
         alternative_cost = (
             np.percentile(
-                C.data,
+                # XXX seems numpy / mypy is over-strict here. Will fix later.
+                C.data,  # type: ignore
                 alternative_cost_percentile,
                 interpolation=alternative_cost_percentile_interpolation,
             )
@@ -158,7 +159,7 @@ def build_segment_cost_matrix(
     C[np.arange(M), np.arange(M + N2, 2 * M + N2)] = np.ones(M) * track_end_cost
     C[np.arange(M, M + N1), np.arange(2 * M + N2, S)] = np.ones(N1) * no_splitting_cost
     min_val = np.min(
-        [track_start_cost, track_end_cost, no_splitting_cost, no_merging_cost]
+        np.array([track_start_cost, track_end_cost, no_splitting_cost, no_merging_cost])
     )
 
     upper_left_rows = C.row[:upper_left_size]

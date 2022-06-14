@@ -12,7 +12,3 @@ updates:
     directory: "/docs"
     schedule:
       interval: monthly
-  - package-ecosystem: pip
-    directory: "/"
-    schedule:
-      interval: monthly

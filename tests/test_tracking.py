@@ -1,6 +1,7 @@
 """Test cases for the tracking."""
 from os import path
 
+import networkx as nx
 import numpy as np
 import pandas as pd
 
@@ -10,14 +11,14 @@ DEFAULT_PARAMS = dict(
     track_dist_metric="sqeuclidean",
     splitting_dist_metric="sqeuclidean",
     merging_dist_metric="sqeuclidean",
-    track_cost_cutoff=15 ** 2,
+    track_cost_cutoff=15**2,
     track_start_cost=None,
     track_end_cost=None,
-    gap_closing_cost_cutoff=15 ** 2,
+    gap_closing_cost_cutoff=15**2,
     gap_closing_max_frame_count=2,
-    splitting_cost_cutoff=15 ** 2,
+    splitting_cost_cutoff=15**2,
     no_splitting_cost=None,
-    merging_cost_cutoff=15 ** 2,
+    merging_cost_cutoff=15**2,
     no_merging_cost=None,
 )
 
@@ -104,7 +105,7 @@ def test_tracking_not_connected() -> None:
     coords = [np.array([[10, 10], [12, 11]]), np.array([[50, 50], [53, 51]])]
     track_tree = laptrack(
         coords,
-        track_cost_cutoff=15 ** 2,
+        track_cost_cutoff=15**2,
         gap_closing_cost_cutoff=False,
         splitting_cost_cutoff=False,
         merging_cost_cutoff=False,
@@ -113,13 +114,19 @@ def test_tracking_not_connected() -> None:
     assert set(edges) == set()
 
 
-def test_gap_closeing(shared_datadir: str) -> None:
-    coords = list(np.load(path.join(shared_datadir,"grouped_poss_molecule_tracking.npy")))
+def test_gap_closing(shared_datadir: str) -> None:
+    coords = list(
+        np.load(
+            path.join(shared_datadir, "grouped_poss_molecule_tracking.npy"),
+            allow_pickle=True,
+        )
+    )
     track_tree = laptrack(
         coords,
-        track_cost_cutoff=15 ** 2,
+        track_cost_cutoff=15**2,
         splitting_cost_cutoff=False,
         merging_cost_cutoff=False,
     )  # type: ignore
-    edges = track_tree.edges()
-    assert set(edges) == set()
+    for track in nx.connected_components(track_tree):
+        frames, _ = zip(*track)
+        assert len(set(frames)) == len(frames)

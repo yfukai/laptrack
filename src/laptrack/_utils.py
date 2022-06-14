@@ -92,36 +92,28 @@ class coo_matrix_builder:  # noqa: N801
             if isinstance(row, Sized):
                 # dirty hack but will be solved in Python 3.10
                 # https://stackoverflow.com/questions/65912706/pattern-matching-over-nested-union-types-in-python # noqa :
-                row = cast(IndexType, row)
-                count = len(row)
-                row2 = row
+                row2 = np.array(cast(IndexType, row))
+                count = len(row2)
                 if isinstance(col, Sized):
-                    col = cast(IndexType, col)
-                    assert len(col) == count
-                    col2 = col
+                    col2 = np.array(cast(IndexType, col))
+                    assert len(col2) == count
                 else:
                     col2 = np.ones(count, dtype=self.index_dtype) * col
             else:
                 assert isinstance(col, Sized)
-                col = cast(IndexType, col)
-                count = len(col)
-                col2 = col
-
+                col2 = np.array(cast(IndexType, col))
+                count = len(col2)
                 row2 = np.ones(count, dtype=self.index_dtype) * row
 
             if isinstance(data, Sized):
-                data = cast(DataType, data)
-                assert len(data) == count
-                data2 = data
+                data2 = np.array(cast(DataType, data))
+                assert len(data2) == count
             else:
                 data2 = np.ones(count, dtype=self.dtype) * data
         else:
-            row = cast(Union[Int], row)
-            col = cast(Union[Int], col)
-            data = cast(Union[Int, Float], data)
-            row2 = [row]
-            col2 = [col]
-            data2 = [data]
+            row2 = np.array([cast(Int, row)])
+            col2 = np.array([cast(Int, col)])
+            data2 = np.array([cast(Union[Int, Float], data)])
             count = 1
 
         if count == 0:

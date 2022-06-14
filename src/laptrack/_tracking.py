@@ -1,5 +1,7 @@
 """Main module for tracking."""
 from typing import Callable
+from typing import cast
+from typing import Dict
 from typing import Optional
 from typing import Sequence
 from typing import TYPE_CHECKING
@@ -32,10 +34,10 @@ def laptrack(
     track_dist_metric: Union[str, Callable] = "sqeuclidean",
     splitting_dist_metric: Union[str, Callable] = "sqeuclidean",
     merging_dist_metric: Union[str, Callable] = "sqeuclidean",
-    track_cost_cutoff: Float = 15 ** 2,
+    track_cost_cutoff: Float = 15**2,
     track_start_cost: Optional[Float] = None,  # b in Jaqaman et al 2008 NMeth.
     track_end_cost: Optional[Float] = None,  # d in Jaqaman et al 2008 NMeth.
-    gap_closing_cost_cutoff: Union[Float, Literal[False]] = 15 ** 2,
+    gap_closing_cost_cutoff: Union[Float, Literal[False]] = 15**2,
     gap_closing_max_frame_count: Int = 2,
     splitting_cost_cutoff: Union[Float, Literal[False]] = False,
     no_splitting_cost: Optional[Float] = None,  # d' in Jaqaman et al 2008 NMeth.
@@ -191,7 +193,7 @@ def laptrack(
 
             def to_gap_closing_candidates(row):
                 target_coord = row["last_frame_coords"]
-                frame_diff = np.abs(segments_df["first_frame"] - row["last_frame"])
+                frame_diff = segments_df["first_frame"] - row["last_frame"]
                 indices = (1 <= frame_diff) & (
                     frame_diff <= gap_closing_max_frame_count
                 )
@@ -227,10 +229,12 @@ def laptrack(
             candidate_inds = row["gap_closing_candidates"][0]
             candidate_costs = row["gap_closing_candidates"][1]
             # row ... track end, col ... track start
-            gap_closing_dist_matrix[(int(ind), candidate_inds)] = candidate_costs
+            gap_closing_dist_matrix[
+                (int(cast(Int, ind)), candidate_inds)
+            ] = candidate_costs
 
-        all_candidates = {}
-        dist_matrices = {}
+        all_candidates: Dict = {}
+        dist_matrices: Dict = {}
 
         # compute candidate for splitting and merging
         for prefix, cutoff, dist_metric in zip(
@@ -284,7 +288,9 @@ def laptrack(
                     all_candidates_dict[tuple(fi)] for fi in candidate_frame_indices
                 ]
                 candidate_costs = row[f"{prefix}_candidates"][1]
-                dist_matrices[prefix][(int(ind), candidate_inds)] = candidate_costs
+                dist_matrices[prefix][
+                    (int(cast(Int, ind)), candidate_inds)
+                ] = candidate_costs
 
         splitting_dist_matrix = dist_matrices["first"]
         merging_dist_matrix = dist_matrices["last"]

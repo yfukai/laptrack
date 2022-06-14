@@ -30,8 +30,8 @@ track_tree = laptrack(
     coords,
     track_dist_metric="sqeuclidean",
     splitting_dist_metric="sqeuclidean",
-    track_cost_cutoff=max_distance ** 2,
-    splitting_cost_cutoff=max_distance ** 2,
+    track_cost_cutoff=max_distance**2,
+    splitting_cost_cutoff=max_distance**2,
 )
 
 for edge in track_tree.edges():
