@@ -30,6 +30,33 @@ from ._typing_utils import Int
 from ._utils import coo_matrix_builder
 
 
+def _get_segment_df(coords, track_tree):
+    # linking between tracks
+    segments = list(nx.connected_components(track_tree))
+    first_nodes = np.array(
+        list(map(lambda segment: min(segment, key=lambda node: node[0]), segments))
+    )
+    last_nodes = np.array(
+        list(map(lambda segment: max(segment, key=lambda node: node[0]), segments))
+    )
+    segments_df = pd.DataFrame(
+        {
+            "segment": segments,
+            "first_frame": first_nodes[:, 0],
+            "first_index": first_nodes[:, 1],
+            "last_frame": last_nodes[:, 0],
+            "last_index": last_nodes[:, 1],
+        }
+    ).reset_index()
+
+    for prefix in ["first", "last"]:
+        segments_df[f"{prefix}_frame_coords"] = segments_df.apply(
+            lambda row: coords[row[f"{prefix}_frame"]][row[f"{prefix}_index"]],
+            axis=1,
+        )
+    return segments_df
+
+
 class SplittingMergingMode(str, Enum):
     ONE_STEP = "ONE_STEP"
     TWO_STEP = "TWO_STEP"
@@ -123,13 +150,7 @@ class LapTrack(BaseModel):
 
     splitting_merging_mode: SplittingMergingMode = SplittingMergingMode.ONE_STEP
 
-    def predict(self, coords) -> nx.Graph:
-        if any(list(map(lambda coord: coord.ndim != 2, coords))):
-            raise ValueError("the elements in coords must be 2-dim.")
-        coord_dim = coords[0].shape[1]
-        if any(list(map(lambda coord: coord.shape[1] != coord_dim, coords))):
-            raise ValueError("the second dimension in coords must have the same size")
-
+    def _link_frames(self, coords) -> nx.Graph:
         # initialize tree
         track_tree = nx.Graph()
         for frame, coord in enumerate(coords):
@@ -161,82 +182,95 @@ class LapTrack(BaseModel):
             # track_end=[i for i in range(count2) if ys[i]>count1]
             for connection in connections:
                 track_tree.add_edge((frame, connection[0]), (frame + 1, connection[1]))
+        return track_tree
+
+    def _get_gap_closing_candidates(self, segments_df):
+        if self.gap_closing_cost_cutoff:
+
+            def to_gap_closing_candidates(row):
+                target_coord = row["last_frame_coords"]
+                frame_diff = segments_df["first_frame"] - row["last_frame"]
+                indices = (1 <= frame_diff) & (
+                    frame_diff <= self.gap_closing_max_frame_count
+                )
+                df = segments_df[indices]
+                # note: can use KDTree if metric is distance,
+                # but might not be appropriate for general metrics
+                # https://stackoverflow.com/questions/35459306/find-points-within-cutoff-distance-of-other-points-with-scipy # noqa
+                # TrackMate also uses this (trivial) implementation.
+                if len(df) > 0:
+                    target_dist_matrix = cdist(
+                        [target_coord],
+                        np.stack(df["first_frame_coords"].values),
+                        metric=self.track_dist_metric,
+                    )
+                    assert target_dist_matrix.shape[0] == 1
+                    indices2 = np.where(
+                        target_dist_matrix[0] < self.gap_closing_cost_cutoff
+                    )[0]
+                    return (
+                        df.index[indices2].values,
+                        target_dist_matrix[0][indices2],
+                    )
+                else:
+                    return [], []
+
+            segments_df["gap_closing_candidates"] = segments_df.apply(
+                to_gap_closing_candidates, axis=1
+            )
+        else:
+            segments_df["gap_closing_candidates"] = [[]] * len(segments_df)
+        return segments_df
+
+    def _get_splitting_merging_candidates(
+        self, segments_df, coords, cutoff, prefix, dist_metric
+    ):
+        if cutoff:
+
+            def to_candidates(row):
+                target_coord = row[f"{prefix}_frame_coords"]
+                frame = row[f"{prefix}_frame"] + (-1 if prefix == "first" else 1)
+                # note: can use KDTree if metric is distance,
+                # but might not be appropriate for general metrics
+                # https://stackoverflow.com/questions/35459306/find-points-within-cutoff-distance-of-other-points-with-scipy # noqa
+                if frame < 0 or len(coords) <= frame:
+                    return [], []
+                target_dist_matrix = cdist(
+                    [target_coord], coords[frame], metric=dist_metric
+                )
+                assert target_dist_matrix.shape[0] == 1
+                indices = np.where(target_dist_matrix[0] < cutoff)[0]
+                return [(frame, index) for index in indices], target_dist_matrix[0][
+                    indices
+                ]
+
+            segments_df[f"{prefix}_candidates"] = segments_df.apply(
+                to_candidates, axis=1
+            )
+        else:
+            segments_df[f"{prefix}_candidates"] = [([], [])] * len(segments_df)
+        return segments_df
+
+    def predict(self, coords) -> nx.Graph:
+        if any(list(map(lambda coord: coord.ndim != 2, coords))):
+            raise ValueError("the elements in coords must be 2-dim.")
+        coord_dim = coords[0].shape[1]
+        if any(list(map(lambda coord: coord.shape[1] != coord_dim, coords))):
+            raise ValueError("the second dimension in coords must have the same size")
+
+        track_tree = self._link_frames(coords)
 
         if (
             self.gap_closing_cost_cutoff
             or self.splitting_cost_cutoff
             or self.merging_cost_cutoff
         ):
-            # linking between tracks
-            segments = list(nx.connected_components(track_tree))
-            N_segments = len(segments)
-            first_nodes = np.array(
-                list(
-                    map(
-                        lambda segment: min(segment, key=lambda node: node[0]), segments
-                    )
-                )
-            )
-            last_nodes = np.array(
-                list(
-                    map(
-                        lambda segment: max(segment, key=lambda node: node[0]), segments
-                    )
-                )
-            )
-            segments_df = pd.DataFrame(
-                {
-                    "segment": segments,
-                    "first_frame": first_nodes[:, 0],
-                    "first_index": first_nodes[:, 1],
-                    "last_frame": last_nodes[:, 0],
-                    "last_index": last_nodes[:, 1],
-                }
-            ).reset_index()
-
-            for prefix in ["first", "last"]:
-                segments_df[f"{prefix}_frame_coords"] = segments_df.apply(
-                    lambda row: coords[row[f"{prefix}_frame"]][row[f"{prefix}_index"]],
-                    axis=1,
-                )
+            segments_df = _get_segment_df(coords, track_tree)
 
             # compute candidate for gap closing
-            if self.gap_closing_cost_cutoff:
+            segments_df = self._get_gap_closing_candidates(segments_df)
 
-                def to_gap_closing_candidates(row):
-                    target_coord = row["last_frame_coords"]
-                    frame_diff = segments_df["first_frame"] - row["last_frame"]
-                    indices = (1 <= frame_diff) & (
-                        frame_diff <= self.gap_closing_max_frame_count
-                    )
-                    df = segments_df[indices]
-                    # note: can use KDTree if metric is distance,
-                    # but might not be appropriate for general metrics
-                    # https://stackoverflow.com/questions/35459306/find-points-within-cutoff-distance-of-other-points-with-scipy # noqa
-                    # TrackMate also uses this (trivial) implementation.
-                    if len(df) > 0:
-                        target_dist_matrix = cdist(
-                            [target_coord],
-                            np.stack(df["first_frame_coords"].values),
-                            metric=self.track_dist_metric,
-                        )
-                        assert target_dist_matrix.shape[0] == 1
-                        indices2 = np.where(
-                            target_dist_matrix[0] < self.gap_closing_cost_cutoff
-                        )[0]
-                        return (
-                            df.index[indices2].values,
-                            target_dist_matrix[0][indices2],
-                        )
-                    else:
-                        return [], []
-
-                segments_df["gap_closing_candidates"] = segments_df.apply(
-                    to_gap_closing_candidates, axis=1
-                )
-            else:
-                segments_df["gap_closing_candidates"] = [[]] * len(segments_df)
-
+            N_segments = len(segments_df)
             gap_closing_dist_matrix = coo_matrix_builder(
                 (N_segments, N_segments), dtype=np.float32
             )
@@ -257,32 +291,9 @@ class LapTrack(BaseModel):
                 [self.splitting_cost_cutoff, self.merging_cost_cutoff],
                 [self.splitting_dist_metric, self.merging_dist_metric],
             ):
-                if cutoff:
-
-                    def to_candidates(row):
-                        target_coord = row[f"{prefix}_frame_coords"]
-                        frame = row[f"{prefix}_frame"] + (
-                            -1 if prefix == "first" else 1
-                        )
-                        # note: can use KDTree if metric is distance,
-                        # but might not be appropriate for general metrics
-                        # https://stackoverflow.com/questions/35459306/find-points-within-cutoff-distance-of-other-points-with-scipy # noqa
-                        if frame < 0 or len(coords) <= frame:
-                            return [], []
-                        target_dist_matrix = cdist(
-                            [target_coord], coords[frame], metric=dist_metric
-                        )
-                        assert target_dist_matrix.shape[0] == 1
-                        indices = np.where(target_dist_matrix[0] < cutoff)[0]
-                        return [
-                            (frame, index) for index in indices
-                        ], target_dist_matrix[0][indices]
-
-                    segments_df[f"{prefix}_candidates"] = segments_df.apply(
-                        to_candidates, axis=1
-                    )
-                else:
-                    segments_df[f"{prefix}_candidates"] = [([], [])] * len(segments_df)
+                segments_df = self._get_splitting_merging_candidates(
+                    segments_df, coords, cutoff, prefix, dist_metric
+                )
 
                 all_candidates[prefix] = np.unique(
                     sum(

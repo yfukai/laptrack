@@ -2,7 +2,7 @@ from typing import Optional
 from typing import Union
 
 import numpy as np
-from scipy.sparse.coo import coo_matrix
+from scipy.sparse import coo_matrix
 
 from ._typing_utils import Float
 from ._typing_utils import Matrix
@@ -141,7 +141,7 @@ def build_segment_cost_matrix(
                 # XXX seems numpy / mypy is over-strict here. Will fix later.
                 C.data,  # type: ignore
                 alternative_cost_percentile,
-                interpolation=alternative_cost_percentile_interpolation,
+                method=alternative_cost_percentile_interpolation,
             )
             * alternative_cost_factor
         )
