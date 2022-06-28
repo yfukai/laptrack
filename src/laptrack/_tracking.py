@@ -57,6 +57,60 @@ def _get_segment_df(coords, track_tree):
     return segments_df
 
 
+def _get_splitting_merging_candidates(
+    segments_df,
+    coords,
+    cutoff,
+    prefix,
+    dist_metric,
+):
+    if cutoff:
+
+        def to_candidates(row):
+            target_coord = row[f"{prefix}_frame_coords"]
+            frame = row[f"{prefix}_frame"] + (-1 if prefix == "first" else 1)
+            # note: can use KDTree if metric is distance,
+            # but might not be appropriate for general metrics
+            # https://stackoverflow.com/questions/35459306/find-points-within-cutoff-distance-of-other-points-with-scipy # noqa
+            if frame < 0 or len(coords) <= frame:
+                return [], []
+            target_dist_matrix = cdist(
+                [target_coord], coords[frame], metric=dist_metric
+            )
+            assert target_dist_matrix.shape[0] == 1
+            indices = np.where(target_dist_matrix[0] < cutoff)[0]
+            return [(frame, index) for index in indices], target_dist_matrix[0][indices]
+
+        segments_df[f"{prefix}_candidates"] = segments_df.apply(to_candidates, axis=1)
+    else:
+        segments_df[f"{prefix}_candidates"] = [([], [])] * len(segments_df)
+
+    middle_point_candidates = np.unique(
+        sum(
+            segments_df[f"{prefix}_candidates"].apply(lambda x: list(x[0])),
+            [],
+        ),
+        axis=0,
+    )
+
+    N_segments = len(segments_df)
+    N_middle = len(middle_point_candidates)
+    dist_matrix = coo_matrix_builder((N_segments, N_middle), dtype=np.float32)
+
+    middle_point_candidates_dict = {
+        tuple(val): i for i, val in enumerate(middle_point_candidates)
+    }
+    for ind, row in segments_df.iterrows():
+        candidate_frame_indices = row[f"{prefix}_candidates"][0]
+        candidate_inds = [
+            middle_point_candidates_dict[tuple(fi)] for fi in candidate_frame_indices
+        ]
+        candidate_costs = row[f"{prefix}_candidates"][1]
+        dist_matrix[(int(cast(Int, ind)), candidate_inds)] = candidate_costs
+
+    return segments_df, dist_matrix, middle_point_candidates
+
+
 class SplittingMergingMode(str, Enum):
     ONE_STEP = "ONE_STEP"
     TWO_STEP = "TWO_STEP"
@@ -78,6 +132,7 @@ class LapTrack(BaseModel):
         description="The metric for calculating merging cost."
         + "See `track_dist_metric`",
     )
+
     alternative_cost_factor: float = Field(
         1.05,
         description="The factor to calculate the alternative costs"
@@ -94,6 +149,7 @@ class LapTrack(BaseModel):
         + "(b,d,b',d' in Jaqaman et al 2008 NMeth)."
         + "See `numpy.percentile` for accepted values.",
     )
+
     track_cost_cutoff: float = Field(
         15**2,
         description="The cost cutoff for the connected points in the track."
@@ -105,7 +161,6 @@ class LapTrack(BaseModel):
         description="The cost for starting the track (b in Jaqaman et al 2008 NMeth),"
         + "if None, automatically estimated",
     )
-
     track_end_cost: Optional[float] = Field(
         None,  # b in Jaqaman et al 2008 NMeth.
         description="The cost for ending the track (b in Jaqaman et al 2008 NMeth),"
@@ -148,9 +203,20 @@ class LapTrack(BaseModel):
         description="The cost to reject merging, if None, automatically estimated.",
     )
 
-    splitting_merging_mode: SplittingMergingMode = SplittingMergingMode.ONE_STEP
+    splitting_merging_mode: SplittingMergingMode = Field(
+        SplittingMergingMode.ONE_STEP,
+        description="The mode to calculate splitting and merging.",
+    )
 
     def _link_frames(self, coords) -> nx.Graph:
+        """Link particles between frames according to the cost function
+
+        Args:
+            coords (_type_): _description_
+
+        Returns:
+            nx.Graph: _description_
+        """
         # initialize tree
         track_tree = nx.Graph()
         for frame, coord in enumerate(coords):
@@ -184,7 +250,7 @@ class LapTrack(BaseModel):
                 track_tree.add_edge((frame, connection[0]), (frame + 1, connection[1]))
         return track_tree
 
-    def _get_gap_closing_candidates(self, segments_df):
+    def _get_gap_closing_matrix(self, segments_df):
         if self.gap_closing_cost_cutoff:
 
             def to_gap_closing_candidates(row):
@@ -220,44 +286,44 @@ class LapTrack(BaseModel):
             )
         else:
             segments_df["gap_closing_candidates"] = [[]] * len(segments_df)
-        return segments_df
 
-    def _get_splitting_merging_candidates(
-        self, segments_df, coords, cutoff, prefix, dist_metric
-    ):
-        if cutoff:
+        N_segments = len(segments_df)
+        gap_closing_dist_matrix = coo_matrix_builder(
+            (N_segments, N_segments), dtype=np.float32
+        )
+        for ind, row in segments_df.iterrows():
+            candidate_inds = row["gap_closing_candidates"][0]
+            candidate_costs = row["gap_closing_candidates"][1]
+            # row ... track end, col ... track start
+            gap_closing_dist_matrix[
+                (int(cast(int, ind)), candidate_inds)
+            ] = candidate_costs
 
-            def to_candidates(row):
-                target_coord = row[f"{prefix}_frame_coords"]
-                frame = row[f"{prefix}_frame"] + (-1 if prefix == "first" else 1)
-                # note: can use KDTree if metric is distance,
-                # but might not be appropriate for general metrics
-                # https://stackoverflow.com/questions/35459306/find-points-within-cutoff-distance-of-other-points-with-scipy # noqa
-                if frame < 0 or len(coords) <= frame:
-                    return [], []
-                target_dist_matrix = cdist(
-                    [target_coord], coords[frame], metric=dist_metric
-                )
-                assert target_dist_matrix.shape[0] == 1
-                indices = np.where(target_dist_matrix[0] < cutoff)[0]
-                return [(frame, index) for index in indices], target_dist_matrix[0][
-                    indices
-                ]
-
-            segments_df[f"{prefix}_candidates"] = segments_df.apply(
-                to_candidates, axis=1
-            )
-        else:
-            segments_df[f"{prefix}_candidates"] = [([], [])] * len(segments_df)
-        return segments_df
+        return segments_df, gap_closing_dist_matrix
 
     def predict(self, coords) -> nx.Graph:
+        """Predict the tracking graph from coordinates
+
+        Args:
+            coords : Sequence[FloatArray]
+                The list of coordinates of point for each frame.
+                The array index means (sample, dimension).
+
+
+        Raises:
+            ValueError: raised for invalid coordinate formats.
+
+        Returns:
+            nx.Graph: The graph for the tracks, whose nodes are (frame, index).
+        """
+
         if any(list(map(lambda coord: coord.ndim != 2, coords))):
             raise ValueError("the elements in coords must be 2-dim.")
         coord_dim = coords[0].shape[1]
         if any(list(map(lambda coord: coord.shape[1] != coord_dim, coords))):
             raise ValueError("the second dimension in coords must have the same size")
 
+        ####### Particle-particle tracking #######
         track_tree = self._link_frames(coords)
 
         if (
@@ -268,21 +334,11 @@ class LapTrack(BaseModel):
             segments_df = _get_segment_df(coords, track_tree)
 
             # compute candidate for gap closing
-            segments_df = self._get_gap_closing_candidates(segments_df)
-
-            N_segments = len(segments_df)
-            gap_closing_dist_matrix = coo_matrix_builder(
-                (N_segments, N_segments), dtype=np.float32
+            segments_df, gap_closing_dist_matrix = self._get_gap_closing_matrix(
+                segments_df
             )
-            for ind, row in segments_df.iterrows():
-                candidate_inds = row["gap_closing_candidates"][0]
-                candidate_costs = row["gap_closing_candidates"][1]
-                # row ... track end, col ... track start
-                gap_closing_dist_matrix[
-                    (int(cast(int, ind)), candidate_inds)
-                ] = candidate_costs
 
-            all_candidates: Dict = {}
+            middle_points: Dict = {}
             dist_matrices: Dict = {}
 
             # compute candidate for splitting and merging
@@ -291,40 +347,18 @@ class LapTrack(BaseModel):
                 [self.splitting_cost_cutoff, self.merging_cost_cutoff],
                 [self.splitting_dist_metric, self.merging_dist_metric],
             ):
-                segments_df = self._get_splitting_merging_candidates(
+                (
+                    segments_df,
+                    dist_matrices[prefix],
+                    middle_points[prefix],
+                ) = _get_splitting_merging_candidates(
                     segments_df, coords, cutoff, prefix, dist_metric
                 )
 
-                all_candidates[prefix] = np.unique(
-                    sum(
-                        segments_df[f"{prefix}_candidates"].apply(lambda x: list(x[0])),
-                        [],
-                    ),
-                    axis=0,
-                )
-
-                N_middle = len(all_candidates[prefix])
-                dist_matrices[prefix] = coo_matrix_builder(
-                    (N_segments, N_middle), dtype=np.float32
-                )
-
-                all_candidates_dict = {
-                    tuple(val): i for i, val in enumerate(all_candidates[prefix])
-                }
-                for ind, row in segments_df.iterrows():
-                    candidate_frame_indices = row[f"{prefix}_candidates"][0]
-                    candidate_inds = [
-                        all_candidates_dict[tuple(fi)] for fi in candidate_frame_indices
-                    ]
-                    candidate_costs = row[f"{prefix}_candidates"][1]
-                    dist_matrices[prefix][
-                        (int(cast(Int, ind)), candidate_inds)
-                    ] = candidate_costs
-
             splitting_dist_matrix = dist_matrices["first"]
             merging_dist_matrix = dist_matrices["last"]
-            splitting_all_candidates = all_candidates["first"]
-            merging_all_candidates = all_candidates["last"]
+            splitting_all_candidates = middle_points["first"]
+            merging_all_candidates = middle_points["last"]
             cost_matrix = build_segment_cost_matrix(
                 gap_closing_dist_matrix,
                 splitting_dist_matrix,
