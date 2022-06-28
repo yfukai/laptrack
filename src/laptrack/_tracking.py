@@ -113,7 +113,7 @@ def _get_splitting_merging_candidates(
 
 class SplittingMergingMode(str, Enum):
     ONE_STEP = "ONE_STEP"
-    TWO_STEP = "TWO_STEP"
+    MULTI_STEP = "MULTI_STEP"
 
 
 class LapTrack(BaseModel):
@@ -331,74 +331,81 @@ class LapTrack(BaseModel):
             or self.splitting_cost_cutoff
             or self.merging_cost_cutoff
         ):
-            segments_df = _get_segment_df(coords, track_tree)
 
-            # compute candidate for gap closing
-            segments_df, gap_closing_dist_matrix = self._get_gap_closing_matrix(
-                segments_df
-            )
+            if self.splitting_merging_mode == SplittingMergingMode.ONE_STEP:
+                # "one-step" type of fitting, as TrackMate and K. Jaqaman et al., Nat Methods 5, 695 (2008).
+                segments_df = _get_segment_df(coords, track_tree)
 
-            middle_points: Dict = {}
-            dist_matrices: Dict = {}
-
-            # compute candidate for splitting and merging
-            for prefix, cutoff, dist_metric in zip(
-                ["first", "last"],
-                [self.splitting_cost_cutoff, self.merging_cost_cutoff],
-                [self.splitting_dist_metric, self.merging_dist_metric],
-            ):
-                (
-                    segments_df,
-                    dist_matrices[prefix],
-                    middle_points[prefix],
-                ) = _get_splitting_merging_candidates(
-                    segments_df, coords, cutoff, prefix, dist_metric
+                # compute candidate for gap closing
+                segments_df, gap_closing_dist_matrix = self._get_gap_closing_matrix(
+                    segments_df
                 )
 
-            splitting_dist_matrix = dist_matrices["first"]
-            merging_dist_matrix = dist_matrices["last"]
-            splitting_all_candidates = middle_points["first"]
-            merging_all_candidates = middle_points["last"]
-            cost_matrix = build_segment_cost_matrix(
-                gap_closing_dist_matrix,
-                splitting_dist_matrix,
-                merging_dist_matrix,
-                self.track_start_cost,
-                self.track_end_cost,
-                self.no_splitting_cost,
-                self.no_merging_cost,
-                self.alternative_cost_factor,
-                self.alternative_cost_percentile,
-                self.alternative_cost_percentile_interpolation,
-            )
+                middle_points: Dict = {}
+                dist_matrices: Dict = {}
 
-            if not cost_matrix is None:
-                _, xs, ys = lap_optimization(cost_matrix)
+                # compute candidate for splitting and merging
+                for prefix, cutoff, dist_metric in zip(
+                    ["first", "last"],
+                    [self.splitting_cost_cutoff, self.merging_cost_cutoff],
+                    [self.splitting_dist_metric, self.merging_dist_metric],
+                ):
+                    (
+                        segments_df,
+                        dist_matrices[prefix],
+                        middle_points[prefix],
+                    ) = _get_splitting_merging_candidates(
+                        segments_df, coords, cutoff, prefix, dist_metric
+                    )
 
-                M = gap_closing_dist_matrix.shape[0]
-                N1 = splitting_dist_matrix.shape[1]
-                N2 = merging_dist_matrix.shape[1]
+                splitting_dist_matrix = dist_matrices["first"]
+                merging_dist_matrix = dist_matrices["last"]
+                splitting_all_candidates = middle_points["first"]
+                merging_all_candidates = middle_points["last"]
+                cost_matrix = build_segment_cost_matrix(
+                    gap_closing_dist_matrix,
+                    splitting_dist_matrix,
+                    merging_dist_matrix,
+                    self.track_start_cost,
+                    self.track_end_cost,
+                    self.no_splitting_cost,
+                    self.no_merging_cost,
+                    self.alternative_cost_factor,
+                    self.alternative_cost_percentile,
+                    self.alternative_cost_percentile_interpolation,
+                )
 
-                for ind, row in segments_df.iterrows():
-                    col_ind = xs[ind]
-                    first_frame_index = (row["first_frame"], row["first_index"])
-                    last_frame_index = (row["last_frame"], row["last_index"])
-                    if col_ind < M:
-                        target_frame_index = tuple(
-                            segments_df.loc[col_ind, ["first_frame", "first_index"]]
-                        )
-                        track_tree.add_edge(last_frame_index, target_frame_index)
-                    elif col_ind < M + N2:
-                        track_tree.add_edge(
-                            last_frame_index, tuple(merging_all_candidates[col_ind - M])
-                        )
+                if not cost_matrix is None:
+                    _, xs, ys = lap_optimization(cost_matrix)
 
-                    row_ind = ys[ind]
-                    if M <= row_ind and row_ind < M + N1:
-                        track_tree.add_edge(
-                            first_frame_index,
-                            tuple(splitting_all_candidates[row_ind - M]),
-                        )
+                    M = gap_closing_dist_matrix.shape[0]
+                    N1 = splitting_dist_matrix.shape[1]
+                    N2 = merging_dist_matrix.shape[1]
+
+                    for ind, row in segments_df.iterrows():
+                        col_ind = xs[ind]
+                        first_frame_index = (row["first_frame"], row["first_index"])
+                        last_frame_index = (row["last_frame"], row["last_index"])
+                        if col_ind < M:
+                            target_frame_index = tuple(
+                                segments_df.loc[col_ind, ["first_frame", "first_index"]]
+                            )
+                            track_tree.add_edge(last_frame_index, target_frame_index)
+                        elif col_ind < M + N2:
+                            track_tree.add_edge(
+                                last_frame_index,
+                                tuple(merging_all_candidates[col_ind - M]),
+                            )
+
+                        row_ind = ys[ind]
+                        if M <= row_ind and row_ind < M + N1:
+                            track_tree.add_edge(
+                                first_frame_index,
+                                tuple(splitting_all_candidates[row_ind - M]),
+                            )
+
+            elif self.splitting_merging_mode == SplittingMergingMode.MULTI_STEP:
+                pass
 
         return track_tree
 
