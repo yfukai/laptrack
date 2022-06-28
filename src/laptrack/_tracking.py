@@ -1,7 +1,7 @@
 """Main module for tracking."""
 from abc import ABC
 from abc import abstractmethod
-from enum import Enum
+from inspect import signature
 from typing import Callable
 from typing import cast
 from typing import Dict
@@ -162,9 +162,20 @@ def _get_splitting_merging_candidates(
     return segments_df, dist_matrix, middle_point_candidates
 
 
-class SplittingMergingMode(str, Enum):
-    ONE_STEP = "ONE_STEP"
-    MULTI_STEP = "MULTI_STEP"
+def _remove_no_split_merge_links(track_tree, segment_connected_edges):
+    for edge in segment_connected_edges:
+        assert len(edge) == 2
+        younger, elder = edge
+        # if the edge is involved with branching or merging, do not remove the edge
+        if (
+            sum([int(node[0] > younger[0]) for node in track_tree.neighbors(younger)])
+            > 1
+        ):
+            continue
+        if sum([int(node[0] < elder[0]) for node in track_tree.neighbors(elder)]) > 1:
+            continue
+        track_tree.remove_edge(*edge)
+    return track_tree
 
 
 class LapTrackBase(BaseModel, ABC):
@@ -230,7 +241,7 @@ class LapTrackBase(BaseModel, ABC):
         2, description="The maximum frame gaps, by default 2."
     )
 
-    splitting_cost_cutoff: Union[float, Literal[False]] = Field(
+    splitting_cost_cutoff: Union[Literal[False], float] = Field(
         False,
         description="The cost cutoff for splitting."
         + "See `gap_closing_cost_cutoff`."
@@ -242,7 +253,7 @@ class LapTrackBase(BaseModel, ABC):
         description="The cost to reject splitting, if None, automatically estimated.",
     )
 
-    merging_cost_cutoff: Union[float, Literal[False]] = Field(
+    merging_cost_cutoff: Union[Literal[False], float] = Field(
         False,
         description="The cost cutoff for merging."
         + "See `gap_closing_cost_cutoff`."
@@ -523,11 +534,31 @@ class LapTrackMulti(LapTrackBase):
             [self.splitting_cost_cutoff, self.merging_cost_cutoff],
             [self.splitting_dist_metric, self.merging_dist_metric],
         ):
-            if callable(dist_metric) and False:
-                _coords = [[] for c in coords]
+            if callable(dist_metric) and len(signature(dist_metric)) == 3:
+                # for splitting case, check the yonger one of newly added edges
+                segment_connected_nodes = [
+                    e[0 if prefix == "first" else 1] for e in segment_connected_edges
+                ]
+                _coords = [
+                    [
+                        (c, frame, (frame, ind) in segment_connected_nodes)
+                        for ind, c in enumerate(coord_frame)
+                    ]
+                    for frame, coord_frame in enumerate(coords)
+                ]
+                # _coords ... (coordinate, frame, if connected by segment_connecting step)
 
+                # the dist_metric function is assumed to take
+                # (coordinate1, coordinate2, connected by segment_connecting step)
                 def _dist_metric(c1, c2):
-                    return dist_metric(c1, c2, c1)
+                    _c1, frame1, if_segment_connected1 = c1
+                    _c2, frame2, if_segment_connected2 = c2
+                    # for splitting case, check the yonger one
+                    check1 = frame1 < frame2 if prefix == "first" else frame1 > frame2
+                    if check1:
+                        return dist_metric(_c1, _c2, if_segment_connected1)
+                    else:
+                        return dist_metric(_c1, _c2, if_segment_connected2)
 
             else:
                 _coords = coords
@@ -556,11 +587,12 @@ class LapTrackMulti(LapTrackBase):
             merging_all_candidates,
         )
 
-        #        if self.remove_no_split_merge_links:
-        #            for edge in segment_connected_edges:
-        #                for node in edge:
-        #                    if track_tree.neighbors(node)
+        ###### remove segment connections if not associated with split / merge ######
 
+        if self.remove_no_split_merge_links:
+            track_tree = _remove_no_split_merge_links(
+                track_tree.copy(), segment_connected_edges
+            )
         return track_tree
 
 
