@@ -23,6 +23,7 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 from scipy.spatial.distance import cdist
+from scipy.sparse import coo_matrix
 from pydantic import BaseModel, Field
 
 from ._cost_matrix import build_frame_cost_matrix, build_segment_cost_matrix
@@ -92,7 +93,7 @@ def _get_segment_end_connecting_matrix(
             to_gap_closing_candidates, axis=1
         )
     else:
-        segments_df["gap_closing_candidates"] = [[]] * len(segments_df)
+        segments_df["gap_closing_candidates"] = [([], [])] * len(segments_df)
 
     N_segments = len(segments_df)
     gap_closing_dist_matrix = coo_matrix_builder(
@@ -217,7 +218,7 @@ class LapTrackBase(BaseModel, ABC):
         + "if None, automatically estimated",
     )
 
-    gap_closing_cost_cutoff: Union[float, Literal[False]] = Field(
+    gap_closing_cost_cutoff: Union[Literal[False], float] = Field(
         15**2,
         description="The cost cutoff for gap closing."
         + "For default cases with `dist_metric='sqeuclidean'`,"
@@ -359,7 +360,7 @@ class LapTrackBase(BaseModel, ABC):
 
     @abstractmethod
     def _predict_gap_split_merge(self, coords, track_tree):
-        pass
+        ...
 
     def predict(self, coords) -> nx.Graph:
         """Predict the tracking graph from coordinates
@@ -461,6 +462,11 @@ class LapTrackMulti(LapTrackBase):
         description="The cost cutoff for splitting." + "See `gap_closing_cost_cutoff`.",
     )
 
+    remove_no_split_merge_links: bool = Field(
+        False,
+        description="if True, remove segment connections if splitting did not happen.",
+    )
+
     def _get_segment_connecting_matrix(self, segments_df):
         return _get_segment_end_connecting_matrix(
             segments_df,
@@ -476,12 +482,13 @@ class LapTrackMulti(LapTrackBase):
         ###### gap closing step ######
         ###### split - merge step 1 ######
 
-        get_matrix_fns = [
-            self._get_gap_closing_matrix,
-            self._get_segment_connecting_matrix,
-        ]
+        get_matrix_fns = {
+            "gap_closing": self._get_gap_closing_matrix,
+            "segment_connecting": self._get_segment_connecting_matrix,
+        }
 
-        for get_matrix_fn in get_matrix_fns:
+        segment_connected_edges = []
+        for mode, get_matrix_fn in get_matrix_fns.items():
             segments_df, gap_closing_dist_matrix = get_matrix_fn(segments_df)
             cost_matrix = build_frame_cost_matrix(
                 gap_closing_dist_matrix,
@@ -501,7 +508,12 @@ class LapTrackMulti(LapTrackBase):
                 node_to = tuple(
                     segments_df.loc[connection[1], ["first_frame", "first_index"]]
                 )
-                track_tree.add_edge((node_from, node_to))
+                track_tree.add_edge(node_from, node_to)
+                if mode == "segment_connecting":
+                    segment_connected_edges.append((node_from, node_to))
+
+        # regenerate segments after closing gaps
+        segments_df = _get_segment_df(coords, track_tree)
 
         ###### split - merge step 2 ######
         middle_points: Dict = {}
@@ -511,27 +523,45 @@ class LapTrackMulti(LapTrackBase):
             [self.splitting_cost_cutoff, self.merging_cost_cutoff],
             [self.splitting_dist_metric, self.merging_dist_metric],
         ):
+            if callable(dist_metric) and False:
+                _coords = [[] for c in coords]
+
+                def _dist_metric(c1, c2):
+                    return dist_metric(c1, c2, c1)
+
+            else:
+                _coords = coords
+                _dist_metric = dist_metric
+
             (
                 segments_df,
                 dist_matrices[prefix],
                 middle_points[prefix],
             ) = _get_splitting_merging_candidates(
-                segments_df, coords, cutoff, prefix, dist_metric
+                segments_df, _coords, cutoff, prefix, _dist_metric
             )
 
         splitting_dist_matrix = dist_matrices["first"]
         merging_dist_matrix = dist_matrices["last"]
         splitting_all_candidates = middle_points["first"]
         merging_all_candidates = middle_points["last"]
+        N_segments = len(segments_df)
         track_tree = self._link_gap_split_merge_from_matrix(
             segments_df,
             track_tree,
-            gap_closing_dist_matrix,
+            coo_matrix((N_segments, N_segments), dtype=np.float32),  # no gap closing
             splitting_dist_matrix,
             merging_dist_matrix,
             splitting_all_candidates,
             merging_all_candidates,
         )
+
+        #        if self.remove_no_split_merge_links:
+        #            for edge in segment_connected_edges:
+        #                for node in edge:
+        #                    if track_tree.neighbors(node)
+
+        return track_tree
 
 
 def laptrack(coords: Sequence[FloatArray], **kwargs) -> nx.Graph:
