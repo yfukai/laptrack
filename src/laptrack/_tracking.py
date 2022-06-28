@@ -1,4 +1,6 @@
 """Main module for tracking."""
+from abc import ABC
+from abc import abstractmethod
 from enum import Enum
 from typing import Callable
 from typing import cast
@@ -164,7 +166,7 @@ class SplittingMergingMode(str, Enum):
     MULTI_STEP = "MULTI_STEP"
 
 
-class LapTrackBase(BaseModel):
+class LapTrackBase(BaseModel, ABC):
     track_dist_metric: Union[str, Callable] = Field(
         "sqeuclidean",
         description="The metric for calculating track linking cost, "
@@ -355,6 +357,10 @@ class LapTrackBase(BaseModel):
 
         return track_tree
 
+    @abstractmethod
+    def _predict_gap_split_merge(self, coords, track_tree):
+        pass
+
     def predict(self, coords) -> nx.Graph:
         """Predict the tracking graph from coordinates
 
@@ -517,17 +523,14 @@ class LapTrackMulti(LapTrackBase):
         merging_dist_matrix = dist_matrices["last"]
         splitting_all_candidates = middle_points["first"]
         merging_all_candidates = middle_points["last"]
-        cost_matrix = build_segment_cost_matrix(
+        track_tree = self._link_gap_split_merge_from_matrix(
+            segments_df,
+            track_tree,
             gap_closing_dist_matrix,
             splitting_dist_matrix,
             merging_dist_matrix,
-            self.track_start_cost,
-            self.track_end_cost,
-            self.no_splitting_cost,
-            self.no_merging_cost,
-            self.alternative_cost_factor,
-            self.alternative_cost_percentile,
-            self.alternative_cost_percentile_interpolation,
+            splitting_all_candidates,
+            merging_all_candidates,
         )
 
 
