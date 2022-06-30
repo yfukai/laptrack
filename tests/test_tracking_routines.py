@@ -26,7 +26,7 @@ def test_reproducing_trackmate() -> None:
         ((2, 0), (3, 0)),
         ((2, 1), (3, 1)),
     ]
-    res_tree = _remove_no_split_merge_links(test_tree, segment_connected_edges)
+    res_tree = _remove_no_split_merge_links(test_tree.copy(), segment_connected_edges)
     assert set(test_tree.edges) - set(res_tree.edges) == set(removed_edges)
 
 

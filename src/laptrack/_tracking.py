@@ -1,4 +1,5 @@
 """Main module for tracking."""
+import logging
 from abc import ABC
 from abc import abstractmethod
 from inspect import signature
@@ -31,6 +32,8 @@ from ._optimization import lap_optimization
 from ._typing_utils import FloatArray
 from ._typing_utils import Int
 from ._utils import coo_matrix_builder
+
+logger = logging.getLogger(__name__)
 
 
 def _get_segment_df(coords, track_tree):
@@ -534,22 +537,24 @@ class LapTrackMulti(LapTrackBase):
             [self.splitting_cost_cutoff, self.merging_cost_cutoff],
             [self.splitting_dist_metric, self.merging_dist_metric],
         ):
-            if callable(dist_metric) and len(signature(dist_metric)) >= 3:
-                dist_metric_argnums = len(signature(dist_metric))
+            if callable(dist_metric) and len(signature(dist_metric).parameters) >= 3:
+                logger.info("using callable dist_metric with more than 2 parameters")
+                dist_metric_argnums = len(signature(dist_metric).parameters)
                 # the dist_metric function is assumed to take
                 # (coordinate1, coordinate2, coordinate_sibring, connected by segment_connecting step)
                 segment_connected_nodes = [
                     e[0 if prefix == "first" else 1] for e in segment_connected_edges
                 ]  # find nodes connected by "segment_connect" steps
                 _coords = [
-                    [(c, frame, ind) for ind, c in enumerate(coord_frame)]
+                    [(*c, frame, ind) for ind, c in enumerate(coord_frame)]
                     for frame, coord_frame in enumerate(coords)
                 ]
-                # _coords ... (coordinate, frame, if connected by segment_connecting step)
+                assert np.all(c.shape[1] == _coords[0].shape[1] for c in _coords)
 
+                # _coords ... (coordinate, frame, if connected by segment_connecting step)
                 def _dist_metric(c1, c2):
-                    _c1, frame1, ind1 = c1
-                    _c2, frame2, ind2 = c2
+                    *_c1, frame1, ind1 = c1
+                    *_c2, frame2, ind2 = c2
                     # for splitting case, check the yonger one
                     if not frame1 < frame2:
                         # swap frame1 and 2; always assume coordinate 1 is first
@@ -586,7 +591,19 @@ class LapTrackMulti(LapTrackBase):
                             _c1, _c2, c_sib, check_node in segment_connected_nodes
                         )
 
+                segments_df[f"{prefix}_frame_coords"] = segments_df.apply(
+                    lambda row: np.array(
+                        [
+                            *row[f"{prefix}_frame_coords"],
+                            row[f"{prefix}_frame"],
+                            row[f"{prefix}_frame"],
+                        ]
+                    ),
+                    axis=1,
+                )
+
             else:
+                logger.info("using callable dist_metric with 2 parameters")
                 _coords = coords
                 _dist_metric = dist_metric
 

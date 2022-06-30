@@ -103,6 +103,45 @@ def test_multi_algorithm_reproducing_trackmate(testdata) -> None:
     assert edges_set == set(track_tree.edges)
 
 
+@pytest.fixture(params=[2, 3, 4])
+def dist_metric(request):
+    if request.param == 2:
+        return lambda c1, c2: np.linalg.norm(c1 - c2) ** 2
+    elif request.param == 3:
+        return lambda c1, c2, _1: np.linalg.norm(c1 - c2) ** 2
+    elif request.param == 4:
+        return lambda c1, c2, _1, _2: np.linalg.norm(c1 - c2) ** 2
+
+
+def test_multi_algorithm_reproducing_trackmate_lambda(testdata, dist_metric) -> None:
+    params, coords, edges_set = testdata
+    params = params.copy()
+    params.update(
+        dict(
+            track_dist_metric=lambda c1, c2: np.linalg.norm(c1 - c2) ** 2,
+            splitting_dist_metric=dist_metric,
+            merging_dist_metric=dist_metric,
+        )
+    )
+    lt = LapTrackMulti(**params)
+    track_tree = lt.predict(coords)
+    assert edges_set == set(track_tree.edges)
+
+
+def test_multi_algorithm_reproducing_trackmate_3_arg_lambda(testdata) -> None:
+    params, coords, edges_set = testdata
+    lt = LapTrackMulti(**params)
+    track_tree = lt.predict(coords)
+    assert edges_set == set(track_tree.edges)
+
+
+def test_multi_algorithm_reproducing_trackmate_4_arg_lambda(testdata) -> None:
+    params, coords, edges_set = testdata
+    lt = LapTrackMulti(**params)
+    track_tree = lt.predict(coords)
+    assert edges_set == set(track_tree.edges)
+
+
 def test_laptrack_function_shortcut(testdata) -> None:
     params, coords, edges_set = testdata
     lt = LapTrack(**params)
