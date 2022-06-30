@@ -562,8 +562,28 @@ class LapTrackMulti(LapTrackBase):
                             _c1, _c2, check_node in segment_connected_nodes
                         )
                     else:
+                        if prefix == "first":
+                            # splitting sibring candidate
+                            candidates = [
+                                (frame, ind)
+                                for (frame, ind) in track_tree.neighbors(c1)
+                                if frame > frame1
+                            ]
+                        else:
+                            # merging sibring candidate
+                            candidates = [
+                                (frame, ind)
+                                for (frame, ind) in track_tree.neighbors(c2)
+                                if frame < frame2
+                            ]
+
+                        if len(candidates) == 0:
+                            c_sib = None
+                        else:
+                            assert len(candidates) == 1
+                            c_sib = candidates[0]
                         return dist_metric(
-                            _c1, _c2, check_node in segment_connected_nodes
+                            _c1, _c2, c_sib, check_node in segment_connected_nodes
                         )
 
             else:
