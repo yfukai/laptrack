@@ -534,31 +534,37 @@ class LapTrackMulti(LapTrackBase):
             [self.splitting_cost_cutoff, self.merging_cost_cutoff],
             [self.splitting_dist_metric, self.merging_dist_metric],
         ):
-            if callable(dist_metric) and len(signature(dist_metric)) == 3:
-                # for splitting case, check the yonger one of newly added edges
+            if callable(dist_metric) and len(signature(dist_metric)) >= 3:
+                dist_metric_argnums = len(signature(dist_metric))
+                # the dist_metric function is assumed to take
+                # (coordinate1, coordinate2, coordinate_sibring, connected by segment_connecting step)
                 segment_connected_nodes = [
                     e[0 if prefix == "first" else 1] for e in segment_connected_edges
-                ]
+                ]  # find nodes connected by "segment_connect" steps
                 _coords = [
-                    [
-                        (c, frame, (frame, ind) in segment_connected_nodes)
-                        for ind, c in enumerate(coord_frame)
-                    ]
+                    [(c, frame, ind) for ind, c in enumerate(coord_frame)]
                     for frame, coord_frame in enumerate(coords)
                 ]
                 # _coords ... (coordinate, frame, if connected by segment_connecting step)
 
-                # the dist_metric function is assumed to take
-                # (coordinate1, coordinate2, connected by segment_connecting step)
                 def _dist_metric(c1, c2):
-                    _c1, frame1, if_segment_connected1 = c1
-                    _c2, frame2, if_segment_connected2 = c2
+                    _c1, frame1, ind1 = c1
+                    _c2, frame2, ind2 = c2
                     # for splitting case, check the yonger one
-                    check1 = frame1 < frame2 if prefix == "first" else frame1 > frame2
-                    if check1:
-                        return dist_metric(_c1, _c2, if_segment_connected1)
+                    if not frame1 < frame2:
+                        # swap frame1 and 2; always assume coordinate 1 is first
+                        tmp = _c1, frame1, ind1
+                        _c1, frame1, ind1 = _c2, frame2, ind2
+                        _c2, frame2, ind2 = tmp
+                    check_node = (frame1, ind1) if prefix == "first" else (frame2, ind2)
+                    if dist_metric_argnums == 3:
+                        return dist_metric(
+                            _c1, _c2, check_node in segment_connected_nodes
+                        )
                     else:
-                        return dist_metric(_c1, _c2, if_segment_connected2)
+                        return dist_metric(
+                            _c1, _c2, check_node in segment_connected_nodes
+                        )
 
             else:
                 _coords = coords
