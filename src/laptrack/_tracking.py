@@ -128,6 +128,7 @@ def _get_splitting_merging_candidates(
             # https://stackoverflow.com/questions/35459306/find-points-within-cutoff-distance-of-other-points-with-scipy # noqa
             if frame < 0 or len(coords) <= frame:
                 return [], []
+            print(target_coord, coords[frame])
             target_dist_matrix = cdist(
                 [target_coord], coords[frame], metric=dist_metric
             )
@@ -564,21 +565,23 @@ class LapTrackMulti(LapTrackBase):
                     check_node = (frame1, ind1) if prefix == "first" else (frame2, ind2)
                     if dist_metric_argnums == 3:
                         return dist_metric(
-                            _c1, _c2, check_node in segment_connected_nodes
+                            np.array(_c1),
+                            np.array(_c2),
+                            check_node in segment_connected_nodes,
                         )
                     else:
                         if prefix == "first":
                             # splitting sibring candidate
                             candidates = [
                                 (frame, ind)
-                                for (frame, ind) in track_tree.neighbors(c1)
+                                for (frame, ind) in track_tree.neighbors((frame1, ind1))
                                 if frame > frame1
                             ]
                         else:
                             # merging sibring candidate
                             candidates = [
                                 (frame, ind)
-                                for (frame, ind) in track_tree.neighbors(c2)
+                                for (frame, ind) in track_tree.neighbors((frame2, ind2))
                                 if frame < frame2
                             ]
 
@@ -588,16 +591,17 @@ class LapTrackMulti(LapTrackBase):
                             assert len(candidates) == 1
                             c_sib = candidates[0]
                         return dist_metric(
-                            _c1, _c2, c_sib, check_node in segment_connected_nodes
+                            np.array(_c1),
+                            np.array(_c2),
+                            c_sib,
+                            check_node in segment_connected_nodes,
                         )
 
                 segments_df[f"{prefix}_frame_coords"] = segments_df.apply(
-                    lambda row: np.array(
-                        [
-                            *row[f"{prefix}_frame_coords"],
-                            row[f"{prefix}_frame"],
-                            row[f"{prefix}_frame"],
-                        ]
+                    lambda row: (
+                        *row[f"{prefix}_frame_coords"],
+                        int(row[f"{prefix}_frame"]),
+                        int(row[f"{prefix}_index"]),
                     ),
                     axis=1,
                 )
