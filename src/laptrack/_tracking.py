@@ -128,7 +128,6 @@ def _get_splitting_merging_candidates(
             # https://stackoverflow.com/questions/35459306/find-points-within-cutoff-distance-of-other-points-with-scipy # noqa
             if frame < 0 or len(coords) <= frame:
                 return [], []
-            print(target_coord, coords[frame])
             target_dist_matrix = cdist(
                 [target_coord], coords[frame], metric=dist_metric
             )
