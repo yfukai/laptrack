@@ -2,6 +2,7 @@
 import logging
 from abc import ABC
 from abc import abstractmethod
+from inspect import Parameter
 from inspect import signature
 from typing import Callable
 from typing import cast
@@ -26,6 +27,7 @@ import pandas as pd
 from scipy.spatial.distance import cdist
 from scipy.sparse import coo_matrix
 from pydantic import BaseModel, Field
+
 
 from ._cost_matrix import build_frame_cost_matrix, build_segment_cost_matrix
 from ._optimization import lap_optimization
@@ -537,9 +539,20 @@ class LapTrackMulti(LapTrackBase):
             [self.splitting_cost_cutoff, self.merging_cost_cutoff],
             [self.splitting_dist_metric, self.merging_dist_metric],
         ):
-            if callable(dist_metric) and len(signature(dist_metric).parameters) >= 3:
+            dist_metric_argnums = None
+            if callable(dist_metric):
+                try:
+                    s = signature(dist_metric)
+                    dist_metric_argnums = {
+                        0
+                        for p in s.parameters.values()
+                        if p.kind == Parameter.POSITIONAL_OR_KEYWORD
+                        or p.kind == Parameter.POSITIONAL_ONLY
+                    }
+                except TypeError:
+                    pass
+            if callable(dist_metric) and dist_metric_argnums >= 3:
                 logger.info("using callable dist_metric with more than 2 parameters")
-                dist_metric_argnums = len(signature(dist_metric).parameters)
                 # the dist_metric function is assumed to take
                 # (coordinate1, coordinate2, coordinate_sibring, connected by segment_connecting step)
                 segment_connected_nodes = [
