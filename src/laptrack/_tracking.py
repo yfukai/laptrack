@@ -543,12 +543,14 @@ class LapTrackMulti(LapTrackBase):
             if callable(dist_metric):
                 try:
                     s = signature(dist_metric)
-                    dist_metric_argnums = {
-                        0
-                        for p in s.parameters.values()
-                        if p.kind == Parameter.POSITIONAL_OR_KEYWORD
-                        or p.kind == Parameter.POSITIONAL_ONLY
-                    }
+                    dist_metric_argnums = len(
+                        [
+                            0
+                            for p in s.parameters.values()
+                            if p.kind == Parameter.POSITIONAL_OR_KEYWORD
+                            or p.kind == Parameter.POSITIONAL_ONLY
+                        ]
+                    )
                 except TypeError:
                     pass
             if callable(dist_metric) and dist_metric_argnums >= 3:
