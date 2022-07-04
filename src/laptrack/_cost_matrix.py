@@ -67,7 +67,7 @@ def build_segment_cost_matrix(
     alternative_cost_factor: Float = 1.05,
     alternative_cost_percentile: Float = 90,
     alternative_cost_percentile_interpolation: str = "lower",
-) -> coo_matrix:
+) -> Optional[coo_matrix]:
     """Build sparce array for segment-linking cost matrix.
 
     Parameters
