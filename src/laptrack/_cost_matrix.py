@@ -2,7 +2,7 @@ from typing import Optional
 from typing import Union
 
 import numpy as np
-from scipy.sparse.coo import coo_matrix
+from scipy.sparse import coo_matrix
 
 from ._typing_utils import Float
 from ._typing_utils import Matrix
@@ -67,7 +67,7 @@ def build_segment_cost_matrix(
     alternative_cost_factor: Float = 1.05,
     alternative_cost_percentile: Float = 90,
     alternative_cost_percentile_interpolation: str = "lower",
-) -> coo_matrix:
+) -> Optional[coo_matrix]:
     """Build sparce array for segment-linking cost matrix.
 
     Parameters
@@ -141,7 +141,7 @@ def build_segment_cost_matrix(
                 # XXX seems numpy / mypy is over-strict here. Will fix later.
                 C.data,  # type: ignore
                 alternative_cost_percentile,
-                interpolation=alternative_cost_percentile_interpolation,
+                method=alternative_cost_percentile_interpolation,
             )
             * alternative_cost_factor
         )

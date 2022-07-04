@@ -1,7 +1,7 @@
 from typing import Tuple
 
 import lap
-from scipy.sparse.csr import csr_matrix
+from scipy.sparse import csr_matrix
 
 from ._typing_utils import FloatArray
 from ._typing_utils import Int

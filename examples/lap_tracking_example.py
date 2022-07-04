@@ -2,7 +2,7 @@ from os import path
 
 import pandas as pd
 
-from laptrack import laptrack
+from laptrack import LapTrack
 
 script_path = path.dirname(path.realpath(__file__))
 filename = "../tests/data/trackmate_tracks_with_splitting_spots.csv"
@@ -26,12 +26,14 @@ print(coords)
 # ]
 
 max_distance = 15
-track_tree = laptrack(
-    coords,
+lt = LapTrack(
     track_dist_metric="sqeuclidean",
     splitting_dist_metric="sqeuclidean",
     track_cost_cutoff=max_distance**2,
     splitting_cost_cutoff=max_distance**2,
+)
+track_tree = lt.predict(
+    coords,
 )
 
 for edge in track_tree.edges():
