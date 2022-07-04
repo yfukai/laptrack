@@ -6,7 +6,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from skimage.feature import blob_log
 
-from laptrack import laptrack
+from laptrack import LapTrack
 
 #%% # noqa:
 viewer = napari.Viewer()
@@ -65,7 +65,8 @@ viewer.add_points(spots, size=3, edge_color="yellow", face_color="#ffffff00")
 
 # %%
 spots_for_tracking = [spots[spots[:, 0] == j][:, 1:] for j in range(track_length)]
-track_tree = laptrack(spots_for_tracking)
+lt = LapTrack()
+track_tree = lt.predict(spots_for_tracking)
 
 tracks = []
 for i, segment in enumerate(nx.connected_components(track_tree)):
@@ -105,7 +106,7 @@ extracted_spots_for_tracking = [
     for j in np.sort(np.unique(extracted_spots[:, 0]))
 ]
 
-test_track = laptrack(extracted_spots_for_tracking, gap_closing_cost_cutoff=False)
+test_track = lt.predict(extracted_spots_for_tracking, gap_closing_cost_cutoff=False)
 for edge in test_track.edges():
     _e = np.array(edge)
     pos = [extracted_spots_for_tracking[frame][ind] for frame, ind in edge]

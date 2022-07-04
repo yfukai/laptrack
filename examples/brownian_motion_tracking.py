@@ -4,7 +4,7 @@ from itertools import product
 import numpy as np
 from matplotlib import pyplot as plt
 
-from laptrack import laptrack
+from laptrack import LapTrack
 
 track_length = 100
 track_count = 10
@@ -41,7 +41,8 @@ for j, pos in enumerate(brownian_poss):
 plt.legend()
 
 spots = [np.array([pos[t] for pos in brownian_poss]) for t in range(track_length)]
-tree = laptrack(spots)
+lt = LapTrack()
+tree = lt.predict(spots)
 #%% # noqa:
 for edge in tree.edges():
     if (edge[0][0] + 1 != edge[1][0]) or (edge[0][1] != edge[1][1]):
