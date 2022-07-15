@@ -35,7 +35,6 @@ display(regionprops_df)
 
 # %%
 
-
 _coords = convert_dataframe_to_coords(
     regionprops_df, ["centroid-0", "centroid-1", "label"]
 )
