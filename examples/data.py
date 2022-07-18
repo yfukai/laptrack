@@ -55,4 +55,4 @@ def convert_tree_to_dataframe(tree):
 
     for k in ["clone_id", "cell_id"]:
         df[k] = df[k].astype(int)
-    return df, None
+    return df, None, None
