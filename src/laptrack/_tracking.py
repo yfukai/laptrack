@@ -33,7 +33,7 @@ from ._cost_matrix import build_frame_cost_matrix, build_segment_cost_matrix
 from ._optimization import lap_optimization
 from ._typing_utils import FloatArray
 from ._typing_utils import Int
-from ._utils import coo_matrix_builder
+from ._coo_matrix_builder import coo_matrix_builder
 
 logger = logging.getLogger(__name__)
 
