@@ -528,8 +528,8 @@ class LapTrackMulti(LapTrackBase):
                 if mode == "segment_connecting":
                     segment_connected_edges.append((node_from, node_to))
 
-        # regenerate segments after closing gaps
-        segments_df = _get_segment_df(coords, track_tree)
+            # regenerate segments after closing gaps
+            segments_df = _get_segment_df(coords, track_tree)
 
         ###### split - merge step 2 ######
         middle_points: Dict = {}
@@ -607,7 +607,7 @@ class LapTrackMulti(LapTrackBase):
                         return dist_metric(
                             np.array(_c1),
                             np.array(_c2),
-                            c_sib,
+                            np.array(coords[c_sib[0]][c_sib[1]]) if c_sib else None,
                             check_node in segment_connected_nodes,
                         )
 
