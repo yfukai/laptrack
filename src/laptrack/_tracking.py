@@ -233,6 +233,16 @@ class LapTrackBase(BaseModel, ABC):
         description="The cost for ending the track (b in Jaqaman et al 2008 NMeth),"
         + "if None, automatically estimated",
     )
+    segment_start_cost: Optional[float] = Field(
+        None,  # b in Jaqaman et al 2008 NMeth for segment connection
+        description="The cost for starting the segment (b in Jaqaman et al 2008 NMeth),"
+        + "if None, automatically estimated",
+    )
+    segment_end_cost: Optional[float] = Field(
+        None,  # b in Jaqaman et al 2008 NMeth for segment connection
+        description="The cost for ending the segment (b in Jaqaman et al 2008 NMeth),"
+        + "if None, automatically estimated",
+    )
 
     gap_closing_cost_cutoff: Union[Literal[False], float] = Field(
         15**2,
@@ -334,8 +344,8 @@ class LapTrackBase(BaseModel, ABC):
             gap_closing_dist_matrix,
             splitting_dist_matrix,
             merging_dist_matrix,
-            self.track_start_cost,
-            self.track_end_cost,
+            self.segment_start_cost,
+            self.segment_end_cost,
             self.no_splitting_cost,
             self.no_merging_cost,
             self.alternative_cost_factor,
@@ -508,8 +518,8 @@ class LapTrackMulti(LapTrackBase):
             segments_df, gap_closing_dist_matrix = get_matrix_fn(segments_df)
             cost_matrix = build_frame_cost_matrix(
                 gap_closing_dist_matrix,
-                track_start_cost=self.track_start_cost,
-                track_end_cost=self.track_end_cost,
+                track_start_cost=self.segment_start_cost,
+                track_end_cost=self.segment_end_cost,
             )
             _, xs, _ = lap_optimization(cost_matrix)
 

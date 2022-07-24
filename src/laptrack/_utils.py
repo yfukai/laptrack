@@ -155,7 +155,8 @@ class coo_matrix_builder:  # noqa: N801
             the generated coo_matrix
         """
         return coo_matrix(
-            (self.data, (self.row, self.col)), shape=(self.n_row, self.n_col)
+            (self.data, (self.row, self.col)),
+            shape=(self.n_row, self.n_col),
         )
 
     def __setitem__(
