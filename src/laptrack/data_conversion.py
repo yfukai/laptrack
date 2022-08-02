@@ -1,11 +1,19 @@
+from typing import List
+from typing import Tuple
+
 import networkx as nx
 import numpy as np
 import pandas as pd
 
+from ._typing_utils import NumArray
+
 
 def convert_dataframe_to_coords(
-    df, coordinate_cols, frame_col="frame", validate_frame=True
-):
+    df: pd.DataFrame,
+    coordinate_cols: List[str],
+    frame_col: str = "frame",
+    validate_frame: bool = True,
+) -> List[NumArray]:
     """Convert a track dataframe to a list of coordinates for input.
 
     Parameters
@@ -32,7 +40,9 @@ def convert_dataframe_to_coords(
     return coords
 
 
-def convert_tree_to_dataframe(tree):
+def convert_tree_to_dataframe(
+    tree: nx.Graph,
+) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Convert the track tree to dataframes
 
     Parameters
