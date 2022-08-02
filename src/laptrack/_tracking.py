@@ -33,7 +33,7 @@ from ._cost_matrix import build_frame_cost_matrix, build_segment_cost_matrix
 from ._optimization import lap_optimization
 from ._typing_utils import FloatArray
 from ._typing_utils import Int
-from ._utils import coo_matrix_builder
+from ._coo_matrix_builder import coo_matrix_builder
 
 logger = logging.getLogger(__name__)
 
@@ -284,10 +284,10 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
         """Link particles between frames according to the cost function
 
         Args:
-            coords (_type_): _description_
+            coords (List[np.ndarray]): the input coordinates
 
         Returns:
-            nx.Graph: _description_
+            nx.Graph: the resulted tree
         """
         # initialize tree
         track_tree = nx.Graph()
