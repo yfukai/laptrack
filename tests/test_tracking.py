@@ -5,6 +5,7 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 import pytest
+from pydantic import ValidationError
 
 from laptrack import LapTrack
 from laptrack import laptrack
@@ -191,3 +192,10 @@ def test_gap_closing(shared_datadir: str) -> None:
     for track in nx.connected_components(track_tree):
         frames, _ = zip(*track)
         assert len(set(frames)) == len(frames)
+
+
+def test_no_accepting_wrong_argments() -> None:
+    with pytest.raises(ValidationError):
+        lt = LapTrack(hogehoge=True)
+    with pytest.raises(ValidationError):
+        lt = LapTrack(fugafuga=True)
