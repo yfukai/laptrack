@@ -26,14 +26,14 @@ import numpy as np
 import pandas as pd
 from scipy.spatial.distance import cdist
 from scipy.sparse import coo_matrix
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, Extra
 
 
 from ._cost_matrix import build_frame_cost_matrix, build_segment_cost_matrix
 from ._optimization import lap_optimization
 from ._typing_utils import FloatArray
 from ._typing_utils import Int
-from ._utils import coo_matrix_builder
+from ._coo_matrix_builder import coo_matrix_builder
 
 logger = logging.getLogger(__name__)
 
@@ -183,7 +183,7 @@ def _remove_no_split_merge_links(track_tree, segment_connected_edges):
     return track_tree
 
 
-class LapTrackBase(BaseModel, ABC):
+class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
     track_dist_metric: Union[str, Callable] = Field(
         "sqeuclidean",
         description="The metric for calculating track linking cost, "
@@ -233,6 +233,16 @@ class LapTrackBase(BaseModel, ABC):
         description="The cost for ending the track (b in Jaqaman et al 2008 NMeth),"
         + "if None, automatically estimated",
     )
+    segment_start_cost: Optional[float] = Field(
+        None,  # b in Jaqaman et al 2008 NMeth for segment connection
+        description="The cost for starting the segment (b in Jaqaman et al 2008 NMeth),"
+        + "if None, automatically estimated",
+    )
+    segment_end_cost: Optional[float] = Field(
+        None,  # b in Jaqaman et al 2008 NMeth for segment connection
+        description="The cost for ending the segment (b in Jaqaman et al 2008 NMeth),"
+        + "if None, automatically estimated",
+    )
 
     gap_closing_cost_cutoff: Union[Literal[False], float] = Field(
         15**2,
@@ -274,10 +284,10 @@ class LapTrackBase(BaseModel, ABC):
         """Link particles between frames according to the cost function
 
         Args:
-            coords (_type_): _description_
+            coords (List[np.ndarray]): the input coordinates
 
         Returns:
-            nx.Graph: _description_
+            nx.Graph: the resulted tree
         """
         # initialize tree
         track_tree = nx.Graph()
@@ -334,8 +344,8 @@ class LapTrackBase(BaseModel, ABC):
             gap_closing_dist_matrix,
             splitting_dist_matrix,
             merging_dist_matrix,
-            self.track_start_cost,
-            self.track_end_cost,
+            self.segment_start_cost,
+            self.segment_end_cost,
             self.no_splitting_cost,
             self.no_merging_cost,
             self.alternative_cost_factor,
@@ -508,8 +518,8 @@ class LapTrackMulti(LapTrackBase):
             segments_df, gap_closing_dist_matrix = get_matrix_fn(segments_df)
             cost_matrix = build_frame_cost_matrix(
                 gap_closing_dist_matrix,
-                track_start_cost=self.track_start_cost,
-                track_end_cost=self.track_end_cost,
+                track_start_cost=self.segment_start_cost,
+                track_end_cost=self.segment_end_cost,
             )
             _, xs, _ = lap_optimization(cost_matrix)
 
