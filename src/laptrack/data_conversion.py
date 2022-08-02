@@ -81,7 +81,7 @@ def convert_tree_to_dataframe(tree):
     splits = []
     merges = []
     for node in tree.nodes:
-        frame0, index0 = node
+        frame0, _index0 = node
         neighbors = list(tree.neighbors(node))
         children = [(frame, index) for (frame, index) in neighbors if frame > frame0]
         parents = [(frame, index) for (frame, index) in neighbors if frame < frame0]
