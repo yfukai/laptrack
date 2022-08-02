@@ -284,10 +284,10 @@ class LapTrackBase(BaseModel, ABC):
         """Link particles between frames according to the cost function
 
         Args:
-            coords (_type_): _description_
+            coords (List[np.ndarray]): the input coordinates
 
         Returns:
-            nx.Graph: _description_
+            nx.Graph: the resulted tree
         """
         # initialize tree
         track_tree = nx.Graph()
