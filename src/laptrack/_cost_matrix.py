@@ -4,9 +4,9 @@ from typing import Union
 import numpy as np
 from scipy.sparse import coo_matrix
 
+from ._coo_matrix_builder import coo_matrix_builder
 from ._typing_utils import Float
 from ._typing_utils import Matrix
-from ._utils import coo_matrix_builder
 
 
 def build_frame_cost_matrix(
