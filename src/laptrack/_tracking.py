@@ -26,7 +26,7 @@ import numpy as np
 import pandas as pd
 from scipy.spatial.distance import cdist
 from scipy.sparse import coo_matrix
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, Extra
 
 
 from ._cost_matrix import build_frame_cost_matrix, build_segment_cost_matrix
@@ -183,7 +183,7 @@ def _remove_no_split_merge_links(track_tree, segment_connected_edges):
     return track_tree
 
 
-class LapTrackBase(BaseModel, ABC):
+class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
     track_dist_metric: Union[str, Callable] = Field(
         "sqeuclidean",
         description="The metric for calculating track linking cost, "
