@@ -484,7 +484,7 @@ class LapTrackMulti(LapTrackBase):
         + "See `track_dist_metric`.",
     )
     segment_connecting_cost_cutoff: float = Field(
-        15**2,
+        False,
         description="The cost cutoff for splitting." + "See `gap_closing_cost_cutoff`.",
     )
 
