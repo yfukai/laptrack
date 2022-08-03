@@ -189,6 +189,11 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
         description="The metric for calculating track linking cost, "
         + "See documentation for `scipy.spatial.distance.cdist` for accepted values.",
     )
+    gap_closing_dist_metric: Union[str, Callable] = Field(
+        "sqeuclidean",
+        description="The metric for calculating gap closing cost, "
+        + "See documentation for `scipy.spatial.distance.cdist` for accepted values.",
+    )
     splitting_dist_metric: Union[str, Callable] = Field(
         "sqeuclidean",
         description="The metric for calculating splitting cost."
@@ -326,7 +331,7 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
         return _get_segment_end_connecting_matrix(
             segments_df,
             self.gap_closing_max_frame_count,
-            self.track_dist_metric,
+            self.gap_closing_dist_metric,
             self.gap_closing_cost_cutoff,
         )
 
