@@ -4,6 +4,6 @@ __author__ = """Yohsuke T. Fukai"""
 __email__ = "ysk@yfukai.net"
 
 from ._tracking import laptrack, LapTrack, LapTrackMulti
-from . import data_conversion
+from . import data_conversion, scores
 
-__all__ = ["laptrack", "LapTrack", "LapTrackMulti", "data_conversion"]
+__all__ = ["laptrack", "LapTrack", "LapTrackMulti", "data_conversion", "scores"]

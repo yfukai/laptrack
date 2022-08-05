@@ -8,6 +8,8 @@ from ._coo_matrix_builder import coo_matrix_builder
 from ._typing_utils import Float
 from ._typing_utils import Matrix
 
+EPSILON = 1e-6
+
 
 def build_frame_cost_matrix(
     dist_matrix: coo_matrix_builder,
@@ -52,6 +54,8 @@ def build_frame_cost_matrix(
     C[np.arange(M), np.arange(N, N + M)] = np.ones(M) * track_start_cost
     min_val = np.min(C.data) if len(C.data) > 0 else 0
     C[dist_matrix.col + M, dist_matrix.row + N] = min_val
+
+    C.data = C.data + EPSILON
 
     return C.to_coo_matrix()
 
@@ -166,4 +170,5 @@ def build_segment_cost_matrix(
     upper_left_cols = C.col[:upper_left_size]
     C[upper_left_cols + M + N1, upper_left_rows + M + N2] = min_val
 
+    C.data = C.data + EPSILON
     return C.to_coo_matrix()
