@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "laptrack"
-version = "0.2.0-alpha.0"
+version = "0.2.0"
 description = "LapTrack"
 authors = ["Yohsuke Fukai <ysk@yfukai.net>"]
 license = "BSD-3-Clause"
@@ -51,6 +51,7 @@ xmltodict = "^0.12.0"
 pandas = "^1.3.1"
 matplotlib = "^3.5.1"
 sphinxcontrib-napoleon = "^0.7"
+autodoc_pydantic = "^1.7.2"
 
 [tool.poetry.scripts]
 laptrack = "laptrack.__main__:main"

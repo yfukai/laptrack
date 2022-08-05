@@ -10,6 +10,7 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx_click",
     "sphinx_rtd_theme",
+    "sphinxcontrib.autodoc_pydantic",
 ]
 napoleon_google_docstring = False
 autodoc_typehints = "description"

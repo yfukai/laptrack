@@ -189,45 +189,51 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
         description="The metric for calculating track linking cost, "
         + "See documentation for `scipy.spatial.distance.cdist` for accepted values.",
     )
-    gap_closing_dist_metric: Union[str, Callable] = Field(
-        "sqeuclidean",
-        description="The metric for calculating gap closing cost, "
-        + "See documentation for `scipy.spatial.distance.cdist` for accepted values.",
-    )
-    splitting_dist_metric: Union[str, Callable] = Field(
-        "sqeuclidean",
-        description="The metric for calculating splitting cost."
-        + "See `track_dist_metric`",
-    )
-    merging_dist_metric: Union[str, Callable] = Field(
-        "sqeuclidean",
-        description="The metric for calculating merging cost."
-        + "See `track_dist_metric`",
-    )
-
-    alternative_cost_factor: float = Field(
-        1.05,
-        description="The factor to calculate the alternative costs"
-        + "(b,d,b',d' in Jaqaman et al 2008 NMeth)",
-    )
-    alternative_cost_percentile: float = Field(
-        90,
-        description="The percentile to calculate the alternative costs"
-        + "(b,d,b',d' in Jaqaman et al 2008 NMeth)",
-    )
-    alternative_cost_percentile_interpolation: str = Field(
-        "lower",
-        description="The percentile interpolation to calculate the alternative costs"
-        + "(b,d,b',d' in Jaqaman et al 2008 NMeth)."
-        + "See `numpy.percentile` for accepted values.",
-    )
-
     track_cost_cutoff: float = Field(
         15**2,
         description="The cost cutoff for the connected points in the track."
         + "For default cases with `dist_metric='sqeuclidean'`,"
         + "this value should be squared maximum distance.",
     )
+    gap_closing_dist_metric: Union[str, Callable] = Field(
+        "sqeuclidean",
+        description="The metric for calculating gap closing cost, "
+        + "See documentation for `scipy.spatial.distance.cdist` for accepted values.",
+    )
+    gap_closing_cost_cutoff: Union[Literal[False], float] = Field(
+        15**2,
+        description="The cost cutoff for gap closing."
+        + "For default cases with `dist_metric='sqeuclidean'`,"
+        + "this value should be squared maximum distance."
+        + "If False, no gap closing is allowed.",
+    )
+    gap_closing_max_frame_count: int = Field(
+        2, description="The maximum frame gaps, by default 2."
+    )
+
+    splitting_dist_metric: Union[str, Callable] = Field(
+        "sqeuclidean",
+        description="The metric for calculating splitting cost."
+        + "See `track_dist_metric`",
+    )
+    splitting_cost_cutoff: Union[Literal[False], float] = Field(
+        False,
+        description="The cost cutoff for splitting."
+        + "See `gap_closing_cost_cutoff`."
+        + "If False, no splitting is allowed.",
+    )
+    merging_dist_metric: Union[str, Callable] = Field(
+        "sqeuclidean",
+        description="The metric for calculating merging cost."
+        + "See `track_dist_metric`",
+    )
+    merging_cost_cutoff: Union[Literal[False], float] = Field(
+        False,
+        description="The cost cutoff for merging."
+        + "See `gap_closing_cost_cutoff`."
+        + "If False, no merging is allowed.",
+    )
+
     track_start_cost: Optional[float] = Field(
         None,  # b in Jaqaman et al 2008 NMeth.
         description="The cost for starting the track (b in Jaqaman et al 2008 NMeth),"
@@ -248,41 +254,30 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
         description="The cost for ending the segment (b in Jaqaman et al 2008 NMeth),"
         + "if None, automatically estimated",
     )
-
-    gap_closing_cost_cutoff: Union[Literal[False], float] = Field(
-        15**2,
-        description="The cost cutoff for gap closing."
-        + "For default cases with `dist_metric='sqeuclidean'`,"
-        + "this value should be squared maximum distance."
-        + "If False, no gap closing is allowed.",
-    )
-
-    gap_closing_max_frame_count: int = Field(
-        2, description="The maximum frame gaps, by default 2."
-    )
-
-    splitting_cost_cutoff: Union[Literal[False], float] = Field(
-        False,
-        description="The cost cutoff for splitting."
-        + "See `gap_closing_cost_cutoff`."
-        + "If False, no splitting is allowed.",
-    )
-
     no_splitting_cost: Optional[float] = Field(
         None,  # d' in Jaqaman et al 2008 NMeth.
         description="The cost to reject splitting, if None, automatically estimated.",
     )
-
-    merging_cost_cutoff: Union[Literal[False], float] = Field(
-        False,
-        description="The cost cutoff for merging."
-        + "See `gap_closing_cost_cutoff`."
-        + "If False, no merging is allowed.",
-    )
-
     no_merging_cost: Optional[float] = Field(
         None,  # d' in Jaqaman et al 2008 NMeth.
         description="The cost to reject merging, if None, automatically estimated.",
+    )
+
+    alternative_cost_factor: float = Field(
+        1.05,
+        description="The factor to calculate the alternative costs"
+        + "(b,d,b',d' in Jaqaman et al 2008 NMeth)",
+    )
+    alternative_cost_percentile: float = Field(
+        90,
+        description="The percentile to calculate the alternative costs"
+        + "(b,d,b',d' in Jaqaman et al 2008 NMeth)",
+    )
+    alternative_cost_percentile_interpolation: str = Field(
+        "lower",
+        description="The percentile interpolation to calculate the alternative costs"
+        + "(b,d,b',d' in Jaqaman et al 2008 NMeth)."
+        + "See `numpy.percentile` for accepted values.",
     )
 
     def _link_frames(self, coords) -> nx.Graph:
