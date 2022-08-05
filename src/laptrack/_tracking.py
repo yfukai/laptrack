@@ -316,7 +316,7 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
                 track_start_cost=self.track_start_cost,
                 track_end_cost=self.track_end_cost,
             )
-            _, xs, _ = lap_optimization(cost_matrix)
+            xs, _ = lap_optimization(cost_matrix)
 
             count1 = dist_matrix.shape[0]
             count2 = dist_matrix.shape[1]
@@ -359,7 +359,7 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
         )
 
         if not cost_matrix is None:
-            _, xs, ys = lap_optimization(cost_matrix)
+            xs, ys = lap_optimization(cost_matrix)
 
             M = gap_closing_dist_matrix.shape[0]
             N1 = splitting_dist_matrix.shape[1]
@@ -526,7 +526,7 @@ class LapTrackMulti(LapTrackBase):
                 track_start_cost=self.segment_start_cost,
                 track_end_cost=self.segment_end_cost,
             )
-            _, xs, _ = lap_optimization(cost_matrix)
+            xs, _ = lap_optimization(cost_matrix)
 
             nrow = gap_closing_dist_matrix.shape[0]
             ncol = gap_closing_dist_matrix.shape[1]
