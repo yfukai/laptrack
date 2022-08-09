@@ -1,15 +1,10 @@
 from typing import Dict
-from typing import Sequence
-from typing import Tuple
-from typing import Union
 
 import networkx as nx
 import pandas as pd
 
-from ._typing_utils import Int
+from ._typing_utils import EdgeType
 from .data_conversion import convert_tree_to_dataframe
-
-EdgeType = Union[nx.classes.reportviews.EdgeView, Sequence[Tuple[Int, Int]]]
 
 
 def _add_split_edges(track_df, split_df):
