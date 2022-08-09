@@ -212,3 +212,19 @@ def test_connected_edges() -> None:
     track_tree = lt.predict(coords, connected_edges=connected_edges)
     edges = track_tree.edges()
     assert set(edges) == set([((0, 0), (1, 1)), ((0, 1), (1, 0))])
+
+
+def test_connected_edges_splitting() -> None:
+    coords = [
+        np.array([[10, 10], [11, 11], [13, 12]]),
+        np.array([[10, 10], [13, 11], [13, 15]]),
+    ]
+    lt = LapTrack(
+        gap_closing_cost_cutoff=100,
+        splitting_cost_cutoff=100,
+        merging_cost_cutoff=100,
+    )  # type: ignore
+    connected_edges = [((0, 0), (1, 1)), ((0, 0), (1, 2))]
+    track_tree = lt.predict(coords, connected_edges=connected_edges)
+    edges = track_tree.edges()
+    assert set(edges) == set([((0, 0), (1, 1)), ((0, 0), (1, 2)), ((0, 1), (1, 0))])
