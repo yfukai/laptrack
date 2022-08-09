@@ -280,12 +280,12 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
         + "See `numpy.percentile` for accepted values.",
     )
 
-    def _link_frames(self, coords, connected_edges_list) -> nx.Graph:
+    def _link_frames(self, coords, connected_edges) -> nx.Graph:
         """Link particles between frames according to the cost function
 
         Args:
             coords (List[np.ndarray]): the input coordinates
-            connected_edges_list (List[List[Tuple[Tuple[int, int],Tuple[int, int]]]]): the connected edges list
+            connected_edges (EdgesType): the connected edges list
 
         Returns:
             nx.Graph: the resulted tree
@@ -295,6 +295,18 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
         for frame, coord in enumerate(coords):
             for j in range(coord.shape[0]):
                 track_tree.add_node((frame, j))
+
+        # initialize connected edges
+        connected_edges_list = [[]] * len(coords)
+        if connected_edges is not None:
+            connected_edges = [
+                e if e[0][0] < e[1][0] else (e[1], e[0]) for e in connected_edges
+            ]
+            for frame in range(len(coords)):
+                connected_edges_list[frame] = [
+                    e for e in connected_edges if e[0][0] == frame
+                ]
+        assert connected_edges_list[-1] == []
 
         # linking between frames
         for frame, (coord1, coord2) in enumerate(zip(coords[:-1], coords[1:])):
@@ -359,6 +371,8 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
         )
 
         if not cost_matrix is None:
+            # FIXME connected_edges_list
+
             xs, ys = lap_optimization(cost_matrix)
 
             M = gap_closing_dist_matrix.shape[0]
@@ -415,28 +429,14 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
         if any(list(map(lambda coord: coord.shape[1] != coord_dim, coords))):
             raise ValueError("the second dimension in coords must have the same size")
 
-        ######## initialize connected edges ########
-        connected_edges_list = [[]] * len(coords)
-        if connected_edges is not None:
-            connected_edges = [
-                e if e[0][0] < e[1][0] else (e[1], e[0]) for e in connected_edges
-            ]
-            for frame in range(len(coords)):
-                connected_edges_list[frame] = [
-                    e for e in connected_edges if e[0][0] == frame
-                ]
-        assert connected_edges_list[-1] == []
-
         ####### Particle-particle tracking #######
-        track_tree = self._link_frames(coords, connected_edges_list)
-        track_tree = self._predict_gap_split_merge(
-            coords, track_tree, connected_edges_list
-        )
+        track_tree = self._link_frames(coords, connected_edges)
+        track_tree = self._predict_gap_split_merge(coords, track_tree, connected_edges)
         return track_tree
 
 
 class LapTrack(LapTrackBase):
-    def _predict_gap_split_merge(self, coords, track_tree, connected_edges_list):
+    def _predict_gap_split_merge(self, coords, track_tree, connected_edges):
         """one-step fitting, as TrackMate and K. Jaqaman et al., Nat Methods 5, 695 (2008).
 
         Args:
