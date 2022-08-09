@@ -3,6 +3,7 @@ from typing import Union
 
 import numpy as np
 from scipy.sparse import coo_matrix
+from scipy.sparse import csr_matrix
 
 from ._coo_matrix_builder import coo_matrix_builder
 from ._typing_utils import Float
@@ -16,7 +17,7 @@ def build_frame_cost_matrix(
     *,
     track_start_cost: Optional[Float],
     track_end_cost: Optional[Float],
-) -> coo_matrix:
+) -> csr_matrix:
     """Build sparce array for frame-linking cost matrix.
 
     Parameters
@@ -57,7 +58,7 @@ def build_frame_cost_matrix(
 
     C.data = C.data + EPSILON
 
-    return C.to_coo_matrix()
+    return C.to_csr_matrix()
 
 
 def build_segment_cost_matrix(
