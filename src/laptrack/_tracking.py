@@ -436,8 +436,33 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
         if any(list(map(lambda coord: coord.shape[1] != coord_dim, coords))):
             raise ValueError("the second dimension in coords must have the same size")
 
+        if connected_edges:
+            connected_edges = [
+                (n1, n2) if n1[0] < n2[0] else (n2, n1) for n1, n2 in connected_edges
+            ]
+            tree = nx.from_edgelist(connected_edges)
+            split_edges = []
+            merge_edges = []
+            for m in tree.nodes():
+                successors = [n for n in tree.neighbors(m) if n[0] > m[0]]
+                if len(successors) > 1:
+                    assert len(successors) == 2, "splitting into >2 nodes"
+                    split_edges.append((m, successors[0]))
+                predecessors = [n for n in tree.neighbors(m) if n[0] < m[0]]
+                if len(predecessors) > 1:
+                    assert len(predecessors) == 2, "merging of >2 nodes"
+                    merge_edges.append((m, predecessors[0]))
+            segment_connected_edges = list(
+                set(connected_edges) - set(split_edges) - set(merge_edges)
+            )
+        else:
+            segment_connected_edges = None
+            split_edges = None
+            merge_edges = None
+
         ####### Particle-particle tracking #######
-        track_tree = self._link_frames(coords, connected_edges)
+        print(segment_connected_edges)
+        track_tree = self._link_frames(coords, segment_connected_edges)
         track_tree = self._predict_gap_split_merge(coords, track_tree, connected_edges)
         return track_tree
 
