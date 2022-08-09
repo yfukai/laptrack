@@ -222,7 +222,7 @@ def test_connected_edges_splitting() -> None:
     lt = LapTrack(
         gap_closing_cost_cutoff=100,
         splitting_cost_cutoff=100,
-        merging_cost_cutoff=100,
+        merging_cost_cutoff=False,
     )  # type: ignore
     connected_edges = [((0, 0), (1, 1)), ((0, 0), (1, 2))]
     track_tree = lt.predict(coords, connected_edges=connected_edges)
