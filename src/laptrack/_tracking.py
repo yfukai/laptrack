@@ -310,7 +310,14 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
 
         # linking between frames
         for frame, (coord1, coord2) in enumerate(zip(coords[:-1], coords[1:])):
+            force_end_indices = [e[0][1] for e in connected_edges_list[frame]]
+            force_start_indices = [
+                e[1][1] for e in connected_edges_list[frame] if e[1][0] == frame + 1
+            ]
             dist_matrix = cdist(coord1, coord2, metric=self.track_dist_metric)
+            dist_matrix[force_end_indices, :] = np.inf
+            dist_matrix[:, force_start_indices] = np.inf
+
             ind = np.where(dist_matrix < self.track_cost_cutoff)
             dist_matrix = coo_matrix_builder(
                 dist_matrix.shape,
@@ -319,15 +326,13 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
                 data=dist_matrix[(*ind,)],
                 dtype=dist_matrix.dtype,
             )
+
             cost_matrix = build_frame_cost_matrix(
                 dist_matrix,
                 track_start_cost=self.track_start_cost,
                 track_end_cost=self.track_end_cost,
             )
-            if len(connected_edges_list[frame]) > 0:
-                min_val = -cost_matrix.max() * 1.05
-                for n1, n2 in connected_edges_list[frame]:
-                    cost_matrix[n1[1], n2[1]] = min_val
+            print(cost_matrix.todense())
             xs, _ = lap_optimization(cost_matrix)
 
             count1 = dist_matrix.shape[0]
@@ -335,6 +340,8 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
             connections = [(i, xs[i]) for i in range(count1) if xs[i] < count2]
             # track_start=[i for i in range(count1) if xs[i]>count2]
             # track_end=[i for i in range(count2) if ys[i]>count1]
+            for edge in connected_edges_list[frame]:
+                track_tree.add_edge(*edge)
             for connection in connections:
                 track_tree.add_edge((frame, connection[0]), (frame + 1, connection[1]))
         return track_tree
@@ -485,6 +492,12 @@ class LapTrack(LapTrackBase):
             merging_dist_matrix = dist_matrices["last"]
             splitting_all_candidates = middle_points["first"]
             merging_all_candidates = middle_points["last"]
+            print("========")
+            print(segments_df)
+            print(splitting_all_candidates)
+            print(merging_all_candidates)
+            print("========")
+
             track_tree = self._link_gap_split_merge_from_matrix(
                 segments_df,
                 track_tree,
