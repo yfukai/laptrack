@@ -280,11 +280,12 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
         + "See `numpy.percentile` for accepted values.",
     )
 
-    def _link_frames(self, coords) -> nx.Graph:
+    def _link_frames(self, coords, connected_edges_list) -> nx.Graph:
         """Link particles between frames according to the cost function
 
         Args:
             coords (List[np.ndarray]): the input coordinates
+            connected_edges_list (List[List[Tuple[Tuple[int, int],Tuple[int, int]]]]): the connected edges list
 
         Returns:
             nx.Graph: the resulted tree
@@ -311,6 +312,10 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
                 track_start_cost=self.track_start_cost,
                 track_end_cost=self.track_end_cost,
             )
+            if len(connected_edges_list[frame]) > 0:
+                min_val = -cost_matrix.max() * 1.05
+                for n1, n2 in connected_edges_list[frame]:
+                    cost_matrix[n1[1], n2[1]] = min_val
             xs, _ = lap_optimization(cost_matrix)
 
             count1 = dist_matrix.shape[0]
@@ -385,10 +390,10 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
         return track_tree
 
     @abstractmethod
-    def _predict_gap_split_merge(self, coords, track_tree):
+    def _predict_gap_split_merge(self, coords, track_tree, connected_edges_list):
         ...
 
-    def predict(self, coords) -> nx.Graph:
+    def predict(self, coords, connected_edges=None) -> nx.Graph:
         """Predict the tracking graph from coordinates
 
         Args:
@@ -410,14 +415,28 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
         if any(list(map(lambda coord: coord.shape[1] != coord_dim, coords))):
             raise ValueError("the second dimension in coords must have the same size")
 
+        ######## initialize connected edges ########
+        connected_edges_list = [[]] * len(coords)
+        if connected_edges is not None:
+            connected_edges = [
+                e if e[0][0] < e[1][0] else (e[1], e[0]) for e in connected_edges
+            ]
+            for frame in range(len(coords)):
+                connected_edges_list[frame] = [
+                    e for e in connected_edges if e[0][0] == frame
+                ]
+        assert connected_edges_list[-1] == []
+
         ####### Particle-particle tracking #######
-        track_tree = self._link_frames(coords)
-        track_tree = self._predict_gap_split_merge(coords, track_tree)
+        track_tree = self._link_frames(coords, connected_edges_list)
+        track_tree = self._predict_gap_split_merge(
+            coords, track_tree, connected_edges_list
+        )
         return track_tree
 
 
 class LapTrack(LapTrackBase):
-    def _predict_gap_split_merge(self, coords, track_tree):
+    def _predict_gap_split_merge(self, coords, track_tree, connected_edges_list):
         """one-step fitting, as TrackMate and K. Jaqaman et al., Nat Methods 5, 695 (2008).
 
         Args:
@@ -426,6 +445,8 @@ class LapTrack(LapTrackBase):
                 The array index means (sample, dimension).
             track_tree : nx.Graph
                 the track tree
+            connected_edges_list (List[List[Tuple[Tuple[int, int],Tuple[int, int]]]]):
+                the connected edges list
 
         Returns:
             track_tree : nx.Graph
@@ -501,7 +522,7 @@ class LapTrackMulti(LapTrackBase):
             self.segment_connecting_cost_cutoff,
         )
 
-    def _predict_gap_split_merge(self, coords, track_tree):
+    def _predict_gap_split_merge(self, coords, track_tree, connected_edges_list):
         # "multi-step" type of fitting (Y. T. Fukai (2022))
         segments_df = _get_segment_df(coords, track_tree)
 

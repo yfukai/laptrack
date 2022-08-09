@@ -8,6 +8,7 @@ from typing import Union
 import numpy as np
 import numpy.typing as npt
 from scipy.sparse import coo_matrix
+from scipy.sparse import csr_matrix
 
 from ._typing_utils import Float
 from ._typing_utils import Int
@@ -155,6 +156,19 @@ class coo_matrix_builder:  # noqa: N801
             the generated coo_matrix
         """
         return coo_matrix(
+            (self.data, (self.row, self.col)),
+            shape=(self.n_row, self.n_col),
+        )
+
+    def to_csr_matrix(self) -> coo_matrix:
+        """Generate `csr_matrix`.
+
+        Returns
+        -------
+        matrix : csr_matrix
+            the generated csr_matrix
+        """
+        return csr_matrix(
             (self.data, (self.row, self.col)),
             shape=(self.n_row, self.n_col),
         )
