@@ -1,5 +1,8 @@
+from typing import Sequence
+from typing import Tuple
 from typing import Union
 
+import networkx as nx
 import numpy as np
 import numpy.typing as npt
 from scipy.sparse import coo_matrix
@@ -13,3 +16,4 @@ Int = Union[int, np.int_]
 Float = Union[float, np.float_]
 
 Matrix = Union[FloatArray, coo_matrix, lil_matrix]
+EdgeType = Union[nx.classes.reportviews.EdgeView, Sequence[Tuple[Int, Int]]]
