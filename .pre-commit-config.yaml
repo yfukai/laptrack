@@ -31,3 +31,8 @@ repos:
     rev: v2.3.0
     hooks:
       - id: prettier
+  - repo: https://github.com/pycqa/pydocstyle
+    rev: 6.1.1
+    hooks:
+      - id: pydocstyle
+        args: [--ignore=D107, D204]
