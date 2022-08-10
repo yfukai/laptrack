@@ -84,7 +84,7 @@ def convert_tree_to_dataframe(
             )
         )
     df = pd.concat(df_data).set_index(["frame", "index"])
-    connected_components = list(nx.connected_components(tree))
+    connected_components = list(nx.connected_components(nx.Graph(tree)))
     for track_id, nodes in enumerate(connected_components):
         for (frame, index) in nodes:
             df.loc[(frame, index), "tree_id"] = track_id

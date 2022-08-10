@@ -494,7 +494,7 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
     def _predict_gap_split_merge(self, coords, track_tree, split_edges, merge_edges):
         ...
 
-    def predict(self, coords, connected_edges=None) -> nx.Graph:
+    def predict(self, coords, connected_edges=None) -> nx.DiGraph:
         """Predict the tracking graph from coordinates
 
         Args:
@@ -547,7 +547,14 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
         track_tree = self._predict_gap_split_merge(
             coords, track_tree, split_edges, merge_edges
         )
-        return track_tree
+
+        # convert to directed graph
+        edges = [
+            (n1, n2) if n1[0] < n2[0] else (n2, n1) for (n1, n2) in track_tree.edges()
+        ]
+        track_tree_directed = nx.from_edgelist(edges, create_using=nx.DiGraph())
+
+        return track_tree_directed
 
 
 class LapTrack(LapTrackBase):
