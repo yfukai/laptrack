@@ -109,18 +109,17 @@ def calc_scores(
         target_effectiveness = _calc_overlap_score(gt_edgess, pred_edgess)
 
         def get_children(m):
-            return [n for n in gt_tree.neighbors(m) if n[0] > m[0]]
+            return gt_tree.successors(m)
 
         dividing_nodes = [m for m in gt_tree.nodes() if len(get_children(m)) > 1]
         division_recovery_count = 0
         for m in dividing_nodes:
             children = get_children(m)
-            if all(
-                [
-                    (n, m) in predicted_edges or (m, n) in predicted_edges
-                    for n in children
-                ]
-            ):
+
+            def check_in(edges):
+                return all([(n, m) in edges or (m, n) in edges for n in children])
+
+            if check_in(predicted_edges) and not check_in(exclude_true_edges):
                 division_recovery_count += 1
         division_recovery = division_recovery_count / len(dividing_nodes)
 
