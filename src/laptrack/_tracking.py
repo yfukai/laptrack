@@ -85,8 +85,9 @@ def _get_segment_end_connecting_matrix(
     max_frame_count,
     dist_metric,
     cost_cutoff,
-    force_end_indices=[],
-    force_start_indices=[],
+    *,
+    force_end_nodes=[],
+    force_start_nodes=[],
 ):
     """Generate the cost matrix for connecting segment ends.
 
@@ -115,7 +116,7 @@ def _get_segment_end_connecting_matrix(
 
         def to_gap_closing_candidates(row):
             # if the index is in force_end_indices, do not add to gap closing candidates
-            if row.name in force_end_indices:
+            if (row["last_frame"], row["last_index"]) in force_end_nodes:
                 return [], []
 
             target_coord = row["last_frame_coords"]
@@ -125,9 +126,13 @@ def _get_segment_end_connecting_matrix(
             # segments in df is later than the candidate segment (row)
             indices = (1 <= frame_diff) & (frame_diff <= max_frame_count)
             df = segments_df[indices]
-            df = df.drop(
-                index=force_start_indices, errors="ignore"
-            )  # do not connect to the segments that is forced to be start
+            force_start = df.apply(
+                lambda row: (row["first_frame"], row["first_index"])
+                in force_start_nodes,
+                axis=1,
+            )
+            df = df[~force_start]
+            # do not connect to the segments that is forced to be start
             # note: can use KDTree if metric is distance,
             # but might not be appropriate for general metrics
             # https://stackoverflow.com/questions/35459306/find-points-within-cutoff-distance-of-other-points-with-scipy # noqa
@@ -172,23 +177,52 @@ def _get_splitting_merging_candidates(
     cutoff,
     prefix,
     dist_metric,
+    *,
+    force_end_nodes=[],
+    force_start_nodes=[],
 ):
     if cutoff:
 
         def to_candidates(row):
+            # if the prefix is first, this means the row is the track start, and the target is the track end
+            other_frame = row[f"{prefix}_frame"] + (-1 if prefix == "first" else 1)
             target_coord = row[f"{prefix}_frame_coords"]
-            frame = row[f"{prefix}_frame"] + (-1 if prefix == "first" else 1)
+            row_no_connection_nodes = (
+                force_start_nodes if prefix == "first" else force_end_nodes
+            )
+            other_no_connection_nodes = (
+                force_end_nodes if prefix == "first" else force_start_nodes
+            )
+            other_no_connection_indices = [
+                n[1] for n in other_no_connection_nodes if n[0] == other_frame
+            ]
+
+            if (
+                row[f"{prefix}_frame"],
+                row[f"{prefix}_index"],
+            ) in row_no_connection_nodes:
+                return (
+                    [],
+                    [],
+                )  # do not connect to the segments that is forced to be start or end
             # note: can use KDTree if metric is distance,
             # but might not be appropriate for general metrics
             # https://stackoverflow.com/questions/35459306/find-points-within-cutoff-distance-of-other-points-with-scipy # noqa
-            if frame < 0 or len(coords) <= frame:
+            if other_frame < 0 or len(coords) <= other_frame:
                 return [], []
             target_dist_matrix = cdist(
-                [target_coord], coords[frame], metric=dist_metric
+                [target_coord], coords[other_frame], metric=dist_metric
             )
             assert target_dist_matrix.shape[0] == 1
+            target_dist_matrix[
+                0, other_no_connection_indices
+            ] = (
+                np.inf
+            )  # do not connect to the segments that is forced to be start or end
             indices = np.where(target_dist_matrix[0] < cutoff)[0]
-            return [(frame, index) for index in indices], target_dist_matrix[0][indices]
+            return [(other_frame, index) for index in indices], target_dist_matrix[0][
+                indices
+            ]
 
         segments_df[f"{prefix}_candidates"] = segments_df.apply(to_candidates, axis=1)
     else:
