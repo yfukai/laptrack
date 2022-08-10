@@ -280,12 +280,15 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
         + "See `numpy.percentile` for accepted values.",
     )
 
-    def _link_frames(self, coords, connected_edges) -> nx.Graph:
+    def _link_frames(
+        self, coords, segment_connected_edges, split_merge_edges
+    ) -> nx.Graph:
         """Link particles between frames according to the cost function
 
         Args:
             coords (List[np.ndarray]): the input coordinates
-            connected_edges (EdgesType): the connected edges list
+            segment_connected_edges (EdgesType): the connected edges list that will be connected in this step
+            split_merge_edges (EdgesType): the connected edges list that will be connected in split and merge step
 
         Returns:
             nx.Graph: the resulted tree
@@ -296,24 +299,11 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
             for j in range(coord.shape[0]):
                 track_tree.add_node((frame, j))
 
-        # initialize connected edges
-        connected_edges_list = [[]] * len(coords)
-        if connected_edges is not None:
-            connected_edges = [
-                e if e[0][0] < e[1][0] else (e[1], e[0]) for e in connected_edges
-            ]
-            for frame in range(len(coords)):
-                connected_edges_list[frame] = [
-                    e for e in connected_edges if e[0][0] == frame
-                ]
-        assert connected_edges_list[-1] == []
-
         # linking between frames
+        edges_list = list(segment_connected_edges) + list(split_merge_edges)
         for frame, (coord1, coord2) in enumerate(zip(coords[:-1], coords[1:])):
-            force_end_indices = [e[0][1] for e in connected_edges_list[frame]]
-            force_start_indices = [
-                e[1][1] for e in connected_edges_list[frame] if e[1][0] == frame + 1
-            ]
+            force_end_indices = [e[0][1] for e in edges_list if e[0][0] == frame]
+            force_start_indices = [e[1][1] for e in edges_list if e[1][0] == frame + 1]
             dist_matrix = cdist(coord1, coord2, metric=self.track_dist_metric)
             dist_matrix[force_end_indices, :] = np.inf
             dist_matrix[:, force_start_indices] = np.inf
@@ -340,10 +330,9 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
             connections = [(i, xs[i]) for i in range(count1) if xs[i] < count2]
             # track_start=[i for i in range(count1) if xs[i]>count2]
             # track_end=[i for i in range(count2) if ys[i]>count1]
-            for edge in connected_edges_list[frame]:
-                track_tree.add_edge(*edge)
             for connection in connections:
                 track_tree.add_edge((frame, connection[0]), (frame + 1, connection[1]))
+        track_tree.add_edges_from(segment_connected_edges)
         return track_tree
 
     def _get_gap_closing_matrix(self, segments_df):
@@ -451,18 +440,19 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
                 predecessors = [n for n in tree.neighbors(m) if n[0] < m[0]]
                 if len(predecessors) > 1:
                     assert len(predecessors) == 2, "merging of >2 nodes"
-                    merge_edges.append((m, predecessors[0]))
+                    merge_edges.append((predecessors[0], m))
             segment_connected_edges = list(
                 set(connected_edges) - set(split_edges) - set(merge_edges)
             )
         else:
-            segment_connected_edges = None
-            split_edges = None
-            merge_edges = None
+            segment_connected_edges = []
+            split_edges = []
+            merge_edges = []
 
         ####### Particle-particle tracking #######
-        print(segment_connected_edges)
-        track_tree = self._link_frames(coords, segment_connected_edges)
+        track_tree = self._link_frames(
+            coords, segment_connected_edges, list(split_edges) + list(merge_edges)
+        )
         track_tree = self._predict_gap_split_merge(coords, track_tree, connected_edges)
         return track_tree
 
