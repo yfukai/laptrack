@@ -55,6 +55,7 @@ autodoc_pydantic = "^1.7.2"
 pre-commit = "^2.20.0"
 nox = "^2022.8.7"
 nox-poetry = "^1.0.1"
+toml = "^0.10.2"
 
 [tool.poetry.scripts]
 laptrack = "laptrack.__main__:main"
