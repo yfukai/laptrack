@@ -63,3 +63,19 @@ def test_scores_exclude(test_trees) -> None:
         "division_recovery": -1,
     }
     assert score == calc_scores(true_tree.edges, pred_tree.edges, exclude_edges)
+
+
+def test_scores_exclude2(test_trees) -> None:
+    true_tree, pred_tree = test_trees
+    exclude_edges = [
+        ((2, 0), (3, 0)),
+    ]
+    score = {
+        "union_ratio": 7 / 11,
+        "true_ratio": 7 / 10,
+        "predicted_ratio": 7 / 8,
+        "track_purity": 7 / 9,
+        "target_effectiveness": 6 / 11,
+        "division_recovery": 1,
+    }
+    assert score == calc_scores(true_tree.edges, pred_tree.edges, exclude_edges)
