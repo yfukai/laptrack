@@ -641,19 +641,26 @@ class LapTrackMulti(LapTrackBase):
         description="if True, remove segment connections if splitting did not happen.",
     )
 
-    def _get_segment_connecting_matrix(self, segments_df):
+    def _get_segment_connecting_matrix(
+        self, segments_df, force_end_nodes=[], force_start_nodes=[]
+    ):
         return _get_segment_end_connecting_matrix(
             segments_df,
             1,  # only arrow 1-frame difference
             self.segment_connecting_metric,
             self.segment_connecting_cost_cutoff,
+            force_end_nodes=force_end_nodes,
+            force_start_nodes=force_start_nodes,
         )
 
     def _predict_gap_split_merge(self, coords, track_tree, split_edges, merge_edges):
         # "multi-step" type of fitting (Y. T. Fukai (2022))
 
-        edges = list(split_edges) + list(merge_edges)
         segments_df = _get_segment_df(coords, track_tree)
+
+        edges = list(split_edges) + list(merge_edges)
+        force_end_nodes = [tuple(map(int, e[0])) for e in edges]
+        force_start_nodes = [tuple(map(int, e[1])) for e in edges]
 
         ###### gap closing step ######
         ###### split - merge step 1 ######
@@ -665,7 +672,11 @@ class LapTrackMulti(LapTrackBase):
 
         segment_connected_edges = []
         for mode, get_matrix_fn in get_matrix_fns.items():
-            segments_df, gap_closing_dist_matrix = get_matrix_fn(segments_df)
+            segments_df, gap_closing_dist_matrix = get_matrix_fn(
+                segments_df,
+                force_end_nodes=force_end_nodes,
+                force_start_nodes=force_start_nodes,
+            )
             cost_matrix = build_frame_cost_matrix(
                 gap_closing_dist_matrix,
                 track_start_cost=self.segment_start_cost,
@@ -790,7 +801,13 @@ class LapTrackMulti(LapTrackBase):
                 dist_matrices[prefix],
                 middle_points[prefix],
             ) = _get_splitting_merging_candidates(
-                segments_df, _coords, cutoff, prefix, _dist_metric
+                segments_df,
+                _coords,
+                cutoff,
+                prefix,
+                _dist_metric,
+                force_end_nodes=force_end_nodes,
+                force_start_nodes=force_start_nodes,
             )
 
         splitting_dist_matrix = dist_matrices["first"]
@@ -814,6 +831,7 @@ class LapTrackMulti(LapTrackBase):
             track_tree = _remove_no_split_merge_links(
                 track_tree.copy(), segment_connected_edges
             )
+        track_tree.add_edges_from(edges)
         return track_tree
 
 
