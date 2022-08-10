@@ -16,4 +16,6 @@ Int = Union[int, np.int_]
 Float = Union[float, np.float_]
 
 Matrix = Union[FloatArray, coo_matrix, lil_matrix]
-EdgeType = Union[nx.classes.reportviews.EdgeView, Sequence[Tuple[Int, Int]]]
+EdgeType = Union[
+    nx.classes.reportviews.EdgeView, Sequence[Tuple[Tuple[Int, Int], Tuple[Int, Int]]]
+]
