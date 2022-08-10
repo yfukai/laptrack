@@ -422,7 +422,6 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
                 track_start_cost=self.track_start_cost,
                 track_end_cost=self.track_end_cost,
             )
-            print(cost_matrix.todense())
             xs, _ = lap_optimization(cost_matrix)
 
             count1 = dist_matrix.shape[0]
