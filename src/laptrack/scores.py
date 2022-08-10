@@ -50,17 +50,22 @@ def _calc_overlap_score(reference_edgess, overlap_edgess):
     )
 
 
-def calc_scores(true_edges: EdgeType, predicted_edges: EdgeType) -> Dict[str, float]:
+def calc_scores(
+    true_edges: EdgeType, predicted_edges: EdgeType, exclude_true_edges: EdgeType = []
+) -> Dict[str, float]:
     """
     Calculate track prediction scores.
 
     Parameters
     ----------
-    true_edges : Sequence[Tuple[Int,Int]]
+    true_edges : EdgeType
         the list of true edges. assumes ((frame1,index1), (frame2,index2)) for each edge
 
-    predicted_edges : Sequence[Tuple[Int,Int]]
-        the list of predicted edges. assumes ((frame1,index1), (frame2,index2)) for each edge
+    predicted_edges : EdgeType
+        the list of predicted edges. see `true_edges` for format
+
+    exclude_true_edges : EdgeType, default []
+        the list of true edges to be excluded from "*_ratio". see `true_edges` for format
 
     Returns
     -------
@@ -74,15 +79,13 @@ def calc_scores(true_edges: EdgeType, predicted_edges: EdgeType) -> Dict[str, fl
         "division_recovery" : the number of divisions that were correctly predicted.
     """
     # return the count o
-    te = set(true_edges)
-    pe = set(predicted_edges)
-    if len(pe) == 0:
+    if len(list(predicted_edges)) == 0:
         return {
             "union_ratio": 0,
             "true_ratio": 0,
             "predicted_ratio": 0,
             "track_purity": 0,
-            "target_efficiency": 0,
+            "target_effectiveness": 0,
             "division_recovery": 0,
         }
     else:
@@ -112,10 +115,17 @@ def calc_scores(true_edges: EdgeType, predicted_edges: EdgeType) -> Dict[str, fl
         division_recovery_count = 0
         for m in dividing_nodes:
             children = get_children(m)
-            if all([(n, m) in pe or (m, n) in pe for n in children]):
+            if all(
+                [
+                    (n, m) in predicted_edges or (m, n) in predicted_edges
+                    for n in children
+                ]
+            ):
                 division_recovery_count += 1
         division_recovery = division_recovery_count / len(dividing_nodes)
 
+        te = set(true_edges) - set(exclude_true_edges)
+        pe = set(predicted_edges) - set(exclude_true_edges)
         return {
             "union_ratio": len(te & pe) / len(te | pe),
             "true_ratio": len(te & pe) / len(te),
