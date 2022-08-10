@@ -45,7 +45,7 @@ def convert_dataframe_to_coords(
 
 
 def convert_tree_to_dataframe(
-    tree: nx.Graph,
+    tree: nx.DiGraph,
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Convert the track tree to dataframes.
 
@@ -95,11 +95,8 @@ def convert_tree_to_dataframe(
     splits: List[Tuple[IntTuple, List[IntTuple]]] = []
     merges: List[Tuple[IntTuple, List[IntTuple]]] = []
     for node in tree.nodes:
-        frame0, _index0 = node
-        neighbors = list(tree.neighbors(node))
-        children = [(frame, index) for (frame, index) in neighbors if frame > frame0]
-        parents = [(frame, index) for (frame, index) in neighbors if frame < frame0]
-        assert len(children) + len(parents) == len(neighbors)
+        children = list(tree.successors(node))
+        parents = list(tree.predecessors(node))
         if len(children) > 1:
             for child in children:
                 if tree2.has_edge(node, child):
@@ -113,7 +110,7 @@ def convert_tree_to_dataframe(
             if node not in [p[0] for p in merges]:
                 merges.append((node, parents))
 
-    connected_components = list(nx.connected_components(tree2))
+    connected_components = list(nx.connected_components(nx.Graph(tree2)))
     for track_id, nodes in enumerate(connected_components):
         for (frame, index) in nodes:
             df.loc[(frame, index), "track_id"] = track_id

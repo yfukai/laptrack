@@ -5,7 +5,7 @@ from laptrack._tracking import _get_segment_df
 from laptrack._tracking import _remove_no_split_merge_links
 
 
-def test_reproducing_trackmate() -> None:
+def test_remove_no_split_merge_links() -> None:
     test_tree = nx.Graph()
     test_tree.add_edges_from(
         [
