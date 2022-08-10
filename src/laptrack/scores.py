@@ -109,22 +109,30 @@ def calc_scores(
         target_effectiveness = _calc_overlap_score(gt_edgess, pred_edgess)
 
         def get_children(m):
-            return gt_tree.successors(m)
+            return list(gt_tree.successors(m))
 
         dividing_nodes = [m for m in gt_tree.nodes() if len(get_children(m)) > 1]
         division_recovery_count = 0
+        total_count = 0
         for m in dividing_nodes:
             children = get_children(m)
 
             def check_in(edges):
                 return all([(n, m) in edges or (m, n) in edges for n in children])
 
-            if check_in(predicted_edges) and not check_in(exclude_true_edges):
+            excluded = check_in(exclude_true_edges)
+            if check_in(predicted_edges) and not excluded:
                 division_recovery_count += 1
-        division_recovery = division_recovery_count / len(dividing_nodes)
+            if not excluded:
+                total_count += 1
+        if total_count > 0:
+            division_recovery = division_recovery_count / total_count
+        else:
+            division_recovery = -1
 
         te = set(true_edges) - set(exclude_true_edges)
         pe = set(predicted_edges) - set(exclude_true_edges)
+        print(len(true_edges), len(exclude_true_edges), len(te))
         return {
             "union_ratio": len(te & pe) / len(te | pe),
             "true_ratio": len(te & pe) / len(te),
