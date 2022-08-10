@@ -507,7 +507,8 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
             ValueError: raised for invalid coordinate formats.
 
         Returns:
-            nx.Graph: The graph for the tracks, whose nodes are (frame, index).
+            nx.DiGraph: The graph for the tracks, whose nodes are (frame, index).
+                        The edge direction represents the time order.
         """
 
         if any(list(map(lambda coord: coord.ndim != 2, coords))):
