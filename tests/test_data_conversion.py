@@ -1,8 +1,11 @@
 import networkx as nx
 import numpy as np
 import pandas as pd
+import pytest
 
 from laptrack import data_conversion
+from laptrack import LapTrack
+from laptrack import LapTrackMulti
 
 
 def test_convert_dataframe_to_coords():
@@ -40,7 +43,8 @@ def test_convert_tree_to_dataframe():
             ((2, 2), (3, 2)),
             ((3, 2), (4, 2)),
             ((1, 3), (2, 2)),
-        ]
+        ],
+        create_using=nx.DiGraph,
     )
     segments = [
         [(0, 0), (1, 0), (2, 0)],
@@ -86,3 +90,25 @@ def test_convert_tree_to_dataframe():
     assert np.all(
         merge_df[["parent_track_id", "child_track_id"]].values == merge_df_target
     )
+
+
+@pytest.mark.parametrize("track_class", [LapTrack, LapTrackMulti])
+def test_integration(track_class):
+    df = pd.DataFrame(
+        {
+            "frame": [0, 0, 0, 1, 1, 2, 2, 2, 2, 2],
+            "x": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+            "y": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+            "z": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+        }
+    )
+    coords_target = [
+        np.array([[0, 0], [1, 1], [2, 2]]),
+        np.array([[3, 3], [4, 4]]),
+        np.array([[5, 5], [6, 6], [7, 7], [8, 8], [9, 9]]),
+    ]
+
+    coords = data_conversion.convert_dataframe_to_coords(df, ["x", "y"])
+    lt = track_class()
+    tree = lt.predict(coords)
+    data_conversion.convert_tree_to_dataframe(tree)

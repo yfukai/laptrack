@@ -6,6 +6,7 @@ import pandas as pd
 
 from ._typing_utils import EdgeType
 from .data_conversion import convert_tree_to_dataframe
+from .utils import order_edges
 
 
 def _add_split_edges(track_df, split_df):
@@ -85,10 +86,10 @@ def calc_scores(true_edges: EdgeType, predicted_edges: EdgeType) -> Dict[str, fl
             "division_recovery": 0,
         }
     else:
-        gt_tree = nx.Graph()
-        gt_tree.add_edges_from(te)
-        pred_tree = nx.Graph()
-        pred_tree.add_edges_from(pe)
+        gt_tree = nx.from_edgelist(order_edges(true_edges), create_using=nx.DiGraph)
+        pred_tree = nx.from_edgelist(
+            order_edges(predicted_edges), create_using=nx.DiGraph
+        )
         gt_track_df, gt_split_df, _gt_merge_df = convert_tree_to_dataframe(gt_tree)
         pred_track_df, pred_split_df, _pred_merge_df = convert_tree_to_dataframe(
             pred_tree
