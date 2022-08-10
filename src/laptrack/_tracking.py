@@ -651,6 +651,8 @@ class LapTrackMulti(LapTrackBase):
 
     def _predict_gap_split_merge(self, coords, track_tree, split_edges, merge_edges):
         # "multi-step" type of fitting (Y. T. Fukai (2022))
+
+        edges = list(split_edges) + list(merge_edges)
         segments_df = _get_segment_df(coords, track_tree)
 
         ###### gap closing step ######
