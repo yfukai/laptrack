@@ -39,6 +39,21 @@ logger = logging.getLogger(__name__)
 
 
 def _get_segment_df(coords, track_tree):
+    """Create segment dataframe from track tree.
+
+    Parameters
+    ----------
+    coords :
+        coordinates
+    track_tree : nx.Graph
+        the track tree
+
+    Returns
+    -------
+    pd.DataFrame
+        the segment dataframe, with columns "segment", "first_frame", "first_index",
+        "first_frame_coords", "last_frame", "last_index", "last_frame_coords"
+    """
     # linking between tracks
     segments = list(nx.connected_components(track_tree))
     first_nodes = np.array(
@@ -66,15 +81,53 @@ def _get_segment_df(coords, track_tree):
 
 
 def _get_segment_end_connecting_matrix(
-    segments_df, max_frame_count, dist_metric, cost_cutoff
+    segments_df,
+    max_frame_count,
+    dist_metric,
+    cost_cutoff,
+    force_end_indices=[],
+    force_start_indices=[],
 ):
+    """Generate the cost matrix for connecting segment ends.
+
+    Parameters
+    ----------
+    segments_df : pd.DataFrame
+        must have columns "first_frame", "first_index", "first_crame_coords", "last_frame", "last_index", "last_frame_coords"
+    max_frame_count : int
+        connecting cost is set to infinity if the distance between the two ends is larger than this value
+    dist_metric :
+        the distance metric
+    cost_cutoff : float
+        the cutoff value for the cost
+    force_end_indices : list of int
+        the indices of the segments_df that is forced to be end for future connection
+    force_start_indices : list of int
+        the indices of the segments_df that is forced to be start for future connection
+
+    Returns
+    -------
+    segments_df: pd.DataFrame
+        the segments dataframe with additional column "gap_closing_candidates"
+        (index of the candidate row of segments_df, the associated costs)
+    """
     if cost_cutoff:
 
         def to_gap_closing_candidates(row):
+            # if the index is in force_end_indices, do not add to gap closing candidates
+            if row.name in force_end_indices:
+                return [], []
+
             target_coord = row["last_frame_coords"]
             frame_diff = segments_df["first_frame"] - row["last_frame"]
+
+            # only take the elements that are within the frame difference range.
+            # segments in df is later than the candidate segment (row)
             indices = (1 <= frame_diff) & (frame_diff <= max_frame_count)
             df = segments_df[indices]
+            df = df.drop(
+                index=force_start_indices, errors="ignore"
+            )  # do not connect to the segments that is forced to be start
             # note: can use KDTree if metric is distance,
             # but might not be appropriate for general metrics
             # https://stackoverflow.com/questions/35459306/find-points-within-cutoff-distance-of-other-points-with-scipy # noqa
@@ -400,7 +453,7 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
         return track_tree
 
     @abstractmethod
-    def _predict_gap_split_merge(self, coords, track_tree, connected_edges_list):
+    def _predict_gap_split_merge(self, coords, track_tree, split_edges, merge_edges):
         ...
 
     def predict(self, coords, connected_edges=None) -> nx.Graph:
@@ -453,12 +506,14 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
         track_tree = self._link_frames(
             coords, segment_connected_edges, list(split_edges) + list(merge_edges)
         )
-        track_tree = self._predict_gap_split_merge(coords, track_tree, connected_edges)
+        track_tree = self._predict_gap_split_merge(
+            coords, track_tree, split_edges, merge_edges
+        )
         return track_tree
 
 
 class LapTrack(LapTrackBase):
-    def _predict_gap_split_merge(self, coords, track_tree, connected_edges):
+    def _predict_gap_split_merge(self, coords, track_tree, split_edges, merge_edges):
         """one-step fitting, as TrackMate and K. Jaqaman et al., Nat Methods 5, 695 (2008).
 
         Args:
@@ -550,7 +605,7 @@ class LapTrackMulti(LapTrackBase):
             self.segment_connecting_cost_cutoff,
         )
 
-    def _predict_gap_split_merge(self, coords, track_tree, connected_edges_list):
+    def _predict_gap_split_merge(self, coords, track_tree, split_edges, merge_edges):
         # "multi-step" type of fitting (Y. T. Fukai (2022))
         segments_df = _get_segment_df(coords, track_tree)
 
