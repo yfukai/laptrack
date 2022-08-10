@@ -96,6 +96,9 @@ def test_reproducing_trackmate(testdata, tracker_class) -> None:
     lt = tracker_class(**params)
     track_tree = lt.predict(coords)
     assert edges_set == set(track_tree.edges)
+    for n in track_tree.nodes():
+        for m in track_tree.successors(n):
+            assert m[0] > n[0]
 
 
 @pytest.fixture(params=[2, 3, 4])
@@ -183,7 +186,7 @@ def test_gap_closing(shared_datadir: str) -> None:
         merging_cost_cutoff=False,
     )  # type: ignore
     track_tree = lt.predict(coords)
-    for track in nx.connected_components(track_tree):
+    for track in nx.connected_components(nx.Graph(track_tree)):
         frames, _ = zip(*track)
         assert len(set(frames)) == len(frames)
 
