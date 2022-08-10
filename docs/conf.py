@@ -13,5 +13,7 @@ extensions = [
     "sphinxcontrib.autodoc_pydantic",
 ]
 napoleon_google_docstring = False
+napoleon_numpy_docstring = True
 autodoc_typehints = "description"
 html_theme = "sphinx_rtd_theme"
+autodoc_pydantic_model_show_json = False
