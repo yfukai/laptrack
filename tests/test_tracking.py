@@ -90,16 +90,10 @@ def testdata(request, shared_datadir: str):
     return params, coords, edges_set
 
 
-def test_reproducing_trackmate(testdata) -> None:
+@pytest.mark.parametrize("tracker_class", [LapTrack, LapTrackMulti])
+def test_reproducing_trackmate(testdata, tracker_class) -> None:
     params, coords, edges_set = testdata
-    lt = LapTrack(**params)
-    track_tree = lt.predict(coords)
-    assert edges_set == set(track_tree.edges)
-
-
-def test_multi_algorithm_reproducing_trackmate(testdata) -> None:
-    params, coords, edges_set = testdata
-    lt = LapTrackMulti(**params)
+    lt = tracker_class(**params)
     track_tree = lt.predict(coords)
     assert edges_set == set(track_tree.edges)
 
@@ -199,3 +193,34 @@ def test_no_accepting_wrong_argments() -> None:
         lt = LapTrack(hogehoge=True)
     with pytest.raises(ValidationError):
         lt = LapTrack(fugafuga=True)
+
+
+@pytest.mark.parametrize("tracker_class", [LapTrack, LapTrackMulti])
+def test_connected_edges(tracker_class) -> None:
+    coords = [np.array([[10, 10], [12, 11]]), np.array([[10, 10], [13, 11]])]
+    lt = tracker_class(
+        gap_closing_cost_cutoff=100,
+        splitting_cost_cutoff=100,
+        merging_cost_cutoff=100,
+    )  # type: ignore
+    connected_edges = [((0, 0), (1, 1))]
+    track_tree = lt.predict(coords, connected_edges=connected_edges)
+    edges = track_tree.edges()
+    assert set(edges) == set([((0, 0), (1, 1)), ((0, 1), (1, 0))])
+
+
+@pytest.mark.parametrize("tracker_class", [LapTrack, LapTrackMulti])
+def test_connected_edges_splitting(tracker_class) -> None:
+    coords = [
+        np.array([[10, 10], [11, 11], [13, 12]]),
+        np.array([[10, 10], [13, 11], [13, 15]]),
+    ]
+    lt = tracker_class(
+        gap_closing_cost_cutoff=100,
+        splitting_cost_cutoff=100,
+        merging_cost_cutoff=False,
+    )  # type: ignore
+    connected_edges = [((0, 0), (1, 1)), ((0, 0), (1, 2))]
+    track_tree = lt.predict(coords, connected_edges=connected_edges)
+    edges = track_tree.edges()
+    assert set(edges) == set([((0, 0), (1, 1)), ((0, 0), (1, 2)), ((0, 1), (1, 0))])

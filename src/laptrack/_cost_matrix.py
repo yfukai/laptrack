@@ -6,6 +6,7 @@ from scipy.sparse import coo_matrix
 
 from ._coo_matrix_builder import coo_matrix_builder
 from ._typing_utils import Float
+from ._typing_utils import FloatArray
 from ._typing_utils import Matrix
 
 EPSILON = 1e-6
@@ -14,8 +15,8 @@ EPSILON = 1e-6
 def build_frame_cost_matrix(
     dist_matrix: coo_matrix_builder,
     *,
-    track_start_cost: Optional[Float],
-    track_end_cost: Optional[Float],
+    track_start_cost: Optional[Union[Float, FloatArray]],
+    track_end_cost: Optional[Union[Float, FloatArray]],
 ) -> coo_matrix:
     """Build sparce array for frame-linking cost matrix.
 
@@ -23,9 +24,9 @@ def build_frame_cost_matrix(
     ----------
     dist_matrix : Matrix or `_utils.coo_matrix_builder`
         The distance matrix for points at time t and t+1.
-    track_start_cost : Float, optional
+    track_start_cost : Float or FloatArray, optional
         The cost for starting the track (b in Jaqaman et al 2008 NMeth)
-    track_end_cost : Float, optional
+    track_end_cost : Float or FloatArray, optional
         The cost for ending the track (d in Jaqaman et al 2008 NMeth)
 
     Returns
@@ -50,8 +51,11 @@ def build_frame_cost_matrix(
         else:
             track_end_cost = 1.05
 
-    C[np.arange(M, M + N), np.arange(N)] = np.ones(N) * track_end_cost
-    C[np.arange(M), np.arange(N, N + M)] = np.ones(M) * track_start_cost
+    track_end_costs = np.ones(N) * track_end_cost
+    track_start_costs = np.ones(M) * track_start_cost
+
+    C[np.arange(M, M + N), np.arange(N)] = track_end_costs
+    C[np.arange(M), np.arange(N, N + M)] = track_start_costs
     min_val = np.min(C.data) if len(C.data) > 0 else 0
     C[dist_matrix.col + M, dist_matrix.row + N] = min_val
 
