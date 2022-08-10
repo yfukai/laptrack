@@ -35,4 +35,5 @@ repos:
     rev: 6.1.1
     hooks:
       - id: pydocstyle
-        args: [--ignore=D107, D204]
+        args: ["--convention=numpy"]
+        exclude: tests/|examples/
