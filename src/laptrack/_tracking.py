@@ -422,12 +422,16 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
         track_tree.add_edges_from(segment_connected_edges)
         return track_tree
 
-    def _get_gap_closing_matrix(self, segments_df):
+    def _get_gap_closing_matrix(
+        self, segments_df, *, force_end_nodes=[], force_start_nodes=[]
+    ):
         return _get_segment_end_connecting_matrix(
             segments_df,
             self.gap_closing_max_frame_count,
             self.gap_closing_dist_metric,
             self.gap_closing_cost_cutoff,
+            force_end_nodes=force_end_nodes,
+            force_start_nodes=force_start_nodes,
         )
 
     def _link_gap_split_merge_from_matrix(
@@ -563,16 +567,21 @@ class LapTrack(LapTrackBase):
             track_tree : nx.Graph
                 the updated track tree
         """
+        edges = list(split_edges) + list(merge_edges)
         if (
             self.gap_closing_cost_cutoff
             or self.splitting_cost_cutoff
             or self.merging_cost_cutoff
         ):
             segments_df = _get_segment_df(coords, track_tree)
+            force_end_nodes = [tuple(map(int, e[0])) for e in edges]
+            force_start_nodes = [tuple(map(int, e[1])) for e in edges]
 
             # compute candidate for gap closing
             segments_df, gap_closing_dist_matrix = self._get_gap_closing_matrix(
-                segments_df
+                segments_df,
+                force_end_nodes=force_end_nodes,
+                force_start_nodes=force_start_nodes,
             )
 
             middle_points: Dict = {}
@@ -589,18 +598,19 @@ class LapTrack(LapTrackBase):
                     dist_matrices[prefix],
                     middle_points[prefix],
                 ) = _get_splitting_merging_candidates(
-                    segments_df, coords, cutoff, prefix, dist_metric
+                    segments_df,
+                    coords,
+                    cutoff,
+                    prefix,
+                    dist_metric,
+                    force_end_nodes=force_end_nodes,
+                    force_start_nodes=force_start_nodes,
                 )
 
             splitting_dist_matrix = dist_matrices["first"]
             merging_dist_matrix = dist_matrices["last"]
             splitting_all_candidates = middle_points["first"]
             merging_all_candidates = middle_points["last"]
-            print("========")
-            print(segments_df)
-            print(splitting_all_candidates)
-            print(merging_all_candidates)
-            print("========")
 
             track_tree = self._link_gap_split_merge_from_matrix(
                 segments_df,
@@ -611,7 +621,7 @@ class LapTrack(LapTrackBase):
                 splitting_all_candidates,
                 merging_all_candidates,
             )
-
+        track_tree.add_edges_from(edges)
         return track_tree
 
 
