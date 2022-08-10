@@ -33,7 +33,8 @@ class coo_matrix_builder:  # noqa: N801
         dtype: npt.DTypeLike = np.float64,
         index_dtype: npt.DTypeLike = np.int64,
     ) -> None:
-        """Initialize the object.
+        """
+        Initialize the object.
 
         Parameters
         ----------

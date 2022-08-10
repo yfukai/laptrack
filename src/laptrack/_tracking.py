@@ -39,7 +39,8 @@ logger = logging.getLogger(__name__)
 
 
 def _get_segment_df(coords, track_tree):
-    """Create segment dataframe from track tree.
+    """
+    Create segment dataframe from track tree.
 
     Parameters
     ----------
@@ -53,6 +54,7 @@ def _get_segment_df(coords, track_tree):
     pd.DataFrame
         the segment dataframe, with columns "segment", "first_frame", "first_index",
         "first_frame_coords", "last_frame", "last_index", "last_frame_coords"
+
     """
     # linking between tracks
     segments = list(nx.connected_components(track_tree))
@@ -89,7 +91,8 @@ def _get_segment_end_connecting_matrix(
     force_end_nodes=[],
     force_start_nodes=[],
 ):
-    """Generate the cost matrix for connecting segment ends.
+    """
+    Generate the cost matrix for connecting segment ends.
 
     Parameters
     ----------
@@ -101,9 +104,9 @@ def _get_segment_end_connecting_matrix(
         the distance metric
     cost_cutoff : float
         the cutoff value for the cost
-    force_end_indices : list of int
+    force_end_nodes : list of int
         the indices of the segments_df that is forced to be end for future connection
-    force_start_indices : list of int
+    force_start_nodes : list of int
         the indices of the segments_df that is forced to be start for future connection
 
     Returns
@@ -111,6 +114,7 @@ def _get_segment_end_connecting_matrix(
     segments_df: pd.DataFrame
         the segments dataframe with additional column "gap_closing_candidates"
         (index of the candidate row of segments_df, the associated costs)
+
     """
     if cost_cutoff:
 
@@ -271,6 +275,8 @@ def _remove_no_split_merge_links(track_tree, segment_connected_edges):
 
 
 class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
+    """Tracking base class for all LAP tracker with parameters."""
+
     track_dist_metric: Union[str, Callable] = Field(
         "sqeuclidean",
         description="The metric for calculating track linking cost, "
@@ -370,15 +376,22 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
     def _link_frames(
         self, coords, segment_connected_edges, split_merge_edges
     ) -> nx.Graph:
-        """Link particles between frames according to the cost function
+        """
+        Link particles between frames according to the cost function.
 
-        Args:
-            coords (List[np.ndarray]): the input coordinates
-            segment_connected_edges (EdgesType): the connected edges list that will be connected in this step
-            split_merge_edges (EdgesType): the connected edges list that will be connected in split and merge step
+        Parameters
+        ----------
+            coords : List[np.ndarray]
+                the input coordinates
+            segment_connected_edges : EdgesType
+                the connected edges list that will be connected in this step
+            split_merge_edges : EdgesType
+                the connected edges list that will be connected in split and merge step
 
-        Returns:
+        Returns
+        -------
             nx.Graph: the resulted tree
+
         """
         # initialize tree
         track_tree = nx.Graph()
@@ -492,25 +505,45 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
 
     @abstractmethod
     def _predict_gap_split_merge(self, coords, track_tree, split_edges, merge_edges):
+        """
+        Perform gap-closing and splitting/merging prediction.
+
+        Parameters
+        ----------
+             coords : Sequence[FloatArray]
+                 The list of coordinates of point for each frame.
+                 The array index means (sample, dimension).
+             track_tree : nx.Graph
+                 the track tree
+             connected_edges_list (List[List[Tuple[Tuple[int, int],Tuple[int, int]]]]):
+                 the connected edges list
+
+        Returns
+        -------
+             track_tree : nx.Graph
+                 the updated track tree
+        """
         ...
 
     def predict(self, coords, connected_edges=None) -> nx.DiGraph:
-        """Predict the tracking graph from coordinates
+        """Predict the tracking graph from coordinates.
 
-        Args:
+        Parameters
+        ----------
             coords : Sequence[FloatArray]
                 The list of coordinates of point for each frame.
                 The array index means (sample, dimension).
 
 
-        Raises:
+        Raises
+        ------
             ValueError: raised for invalid coordinate formats.
 
-        Returns:
+        Returns
+        -------
             nx.DiGraph: The graph for the tracks, whose nodes are (frame, index).
                         The edge direction represents the time order.
         """
-
         if any(list(map(lambda coord: coord.ndim != 2, coords))):
             raise ValueError("the elements in coords must be 2-dim.")
         coord_dim = coords[0].shape[1]
@@ -559,22 +592,9 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
 
 
 class LapTrack(LapTrackBase):
+    """Two-step tracking, as TrackMate and K. Jaqaman et al., Nat Methods 5, 695 (2008)."""
+
     def _predict_gap_split_merge(self, coords, track_tree, split_edges, merge_edges):
-        """one-step fitting, as TrackMate and K. Jaqaman et al., Nat Methods 5, 695 (2008).
-
-        Args:
-            coords : Sequence[FloatArray]
-                The list of coordinates of point for each frame.
-                The array index means (sample, dimension).
-            track_tree : nx.Graph
-                the track tree
-            connected_edges_list (List[List[Tuple[Tuple[int, int],Tuple[int, int]]]]):
-                the connected edges list
-
-        Returns:
-            track_tree : nx.Graph
-                the updated track tree
-        """
         edges = list(split_edges) + list(merge_edges)
         if (
             self.gap_closing_cost_cutoff
@@ -634,6 +654,8 @@ class LapTrack(LapTrackBase):
 
 
 class LapTrackMulti(LapTrackBase):
+    """Four-step tracking, performing independent "segment_connecting" steps."""
+
     segment_connecting_metric: Union[str, Callable] = Field(
         "sqeuclidean",
         description="The metric for calculating cost to connect segment ends."
@@ -844,7 +866,8 @@ class LapTrackMulti(LapTrackBase):
 
 
 def laptrack(coords: Sequence[FloatArray], **kwargs) -> nx.Graph:
-    """Track points by solving linear assignment problem.
+    """
+    Shorthand for calling `LapTrack.fit(coords)`.
 
     Parameters
     ----------
