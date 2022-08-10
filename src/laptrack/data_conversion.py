@@ -1,3 +1,4 @@
+"""Data conversion utilities for tracking."""
 from typing import List
 from typing import Tuple
 
@@ -17,7 +18,8 @@ def convert_dataframe_to_coords(
     frame_col: str = "frame",
     validate_frame: bool = True,
 ) -> List[NumArray]:
-    """Convert a track dataframe to a list of coordinates for input.
+    """
+    Convert a track dataframe to a list of coordinates for input.
 
     Parameters
     ----------
@@ -35,7 +37,6 @@ def convert_dataframe_to_coords(
     coords : List[np.ndarray]
         the list of coordinates
     """
-
     grps = list(df.groupby(frame_col, sort=True))
     if validate_frame:
         assert np.array_equal(np.arange(df[frame_col].max() + 1), [g[0] for g in grps])
@@ -46,7 +47,7 @@ def convert_dataframe_to_coords(
 def convert_tree_to_dataframe(
     tree: nx.Graph,
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """Convert the track tree to dataframes
+    """Convert the track tree to dataframes.
 
     Parameters
     ----------

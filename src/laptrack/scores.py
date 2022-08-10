@@ -1,3 +1,4 @@
+"""Tracking score calculation utilities."""
 from typing import Dict
 
 import networkx as nx
@@ -49,7 +50,8 @@ def _calc_overlap_score(reference_edgess, overlap_edgess):
 
 
 def calc_scores(true_edges: EdgeType, predicted_edges: EdgeType) -> Dict[str, float]:
-    """Calculate track prediction scores
+    """
+    Calculate track prediction scores.
 
     Parameters
     ----------
