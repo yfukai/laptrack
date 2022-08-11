@@ -1,4 +1,5 @@
 """Test cases for the tracking."""
+from itertools import product
 from os import path
 
 import networkx as nx
@@ -227,3 +228,14 @@ def test_connected_edges_splitting(tracker_class) -> None:
     track_tree = lt.predict(coords, connected_edges=connected_edges)
     edges = track_tree.edges()
     assert set(edges) == set([((0, 0), (1, 1)), ((0, 0), (1, 2)), ((0, 1), (1, 0))])
+
+
+@pytest.mark.parametrize("tracker_class", [LapTrack, LapTrackMulti])
+def test_no_connected_node(tracker_class) -> None:
+    coords = [np.array([[10, 10], [12, 11]]), np.array([[10, 10], [100, 11]])]
+    lt = tracker_class(
+        gap_closing_cost_cutoff=1,
+    )  # type: ignore
+    track_tree = lt.predict(coords)
+    for frame, index in product([0, 1], [0, 1]):
+        assert (frame, index) in track_tree.nodes()
