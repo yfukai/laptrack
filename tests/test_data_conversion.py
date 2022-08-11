@@ -46,6 +46,7 @@ def test_convert_tree_to_dataframe():
         ],
         create_using=nx.DiGraph,
     )
+    tree.add_node((0, 4))
     segments = [
         [(0, 0), (1, 0), (2, 0)],
         [(3, 0), (4, 0), (5, 0)],
@@ -53,14 +54,17 @@ def test_convert_tree_to_dataframe():
         [(1, 2)],
         [(2, 2), (3, 2), (4, 2)],
         [(1, 3)],
+        [(0, 4)],
     ]
-    clones = [segments[:3], segments[3:]]
+    clones = [segments[:3], segments[3:6], segments[6:]]
     # 0-0-0-0-0-0
     #      |
     #      -1-1-1
     #   2-2-2-2
     #    |
     #   3-
+    #
+    # 4
     df, split_df, merge_df = data_conversion.convert_tree_to_dataframe(tree)
     len(set(df["track_id"])) == len(segments)
     segment_ids = []
@@ -102,12 +106,6 @@ def test_integration(track_class):
             "z": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
         }
     )
-    coords_target = [
-        np.array([[0, 0], [1, 1], [2, 2]]),
-        np.array([[3, 3], [4, 4]]),
-        np.array([[5, 5], [6, 6], [7, 7], [8, 8], [9, 9]]),
-    ]
-
     coords = data_conversion.convert_dataframe_to_coords(df, ["x", "y"])
     lt = track_class()
     tree = lt.predict(coords)
