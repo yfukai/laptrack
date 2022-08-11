@@ -585,7 +585,9 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
         edges = [
             (n1, n2) if n1[0] < n2[0] else (n2, n1) for (n1, n2) in track_tree.edges()
         ]
-        track_tree_directed = nx.from_edgelist(edges, create_using=nx.DiGraph())
+        track_tree_directed = nx.DiGraph()
+        track_tree_directed.add_nodes_from(track_tree.nodes())
+        track_tree_directed.add_edges_from(edges)
 
         return track_tree_directed
 

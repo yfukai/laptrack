@@ -132,7 +132,6 @@ def calc_scores(
 
         te = set(true_edges) - set(exclude_true_edges)
         pe = set(predicted_edges) - set(exclude_true_edges)
-        print(len(true_edges), len(exclude_true_edges), len(te))
         return {
             "union_ratio": len(te & pe) / len(te | pe),
             "true_ratio": len(te & pe) / len(te),
