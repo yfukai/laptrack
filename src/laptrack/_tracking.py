@@ -524,7 +524,9 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
         """
         ...
 
-    def predict(self, coords, connected_edges=None) -> nx.DiGraph:
+    def predict(
+        self, coords, connected_edges=None, split_merge_validation=True
+    ) -> nx.DiGraph:
         """Predict the tracking graph from coordinates.
 
         Parameters
@@ -532,6 +534,11 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
             coords : Sequence[FloatArray]
                 The list of coordinates of point for each frame.
                 The array index means (sample, dimension).
+            connected_edges : Optional[EdgeType]
+                The edges that is known to be connected.
+                If None, no edges are assumed to be connected.
+            split_merge_validation : bool
+                If true, check if the split/merge edges are two.
 
 
         Raises
@@ -559,11 +566,13 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
             for m in tree.nodes():
                 successors = [n for n in tree.neighbors(m) if n[0] > m[0]]
                 if len(successors) > 1:
-                    assert len(successors) == 2, "splitting into >2 nodes"
+                    if split_merge_validation:
+                        assert len(successors) == 2, "splitting into >2 nodes"
                     split_edges.append((m, successors[0]))
                 predecessors = [n for n in tree.neighbors(m) if n[0] < m[0]]
                 if len(predecessors) > 1:
-                    assert len(predecessors) == 2, "merging of >2 nodes"
+                    if split_merge_validation:
+                        assert len(predecessors) == 2, "merging of >2 nodes"
                     merge_edges.append((predecessors[0], m))
             segment_connected_edges = list(
                 set(connected_edges) - set(split_edges) - set(merge_edges)
