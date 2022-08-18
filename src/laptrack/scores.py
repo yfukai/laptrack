@@ -123,12 +123,11 @@ def calc_scores(
         gt_edgess = _df_to_edges(gt_track_df)
         pred_edgess = _df_to_edges(pred_track_df)
 
-        pred_edgess = [
-            [e for e in edges if e[0][0] in include_frames] for edges in pred_edgess
-        ]
-        gt_edgess = [
-            [e for e in edges if e[0][0] in include_frames] for edges in gt_edgess
-        ]
+        filter_edges = (
+            lambda e: e[0][0] in include_frames and e not in exclude_true_edges
+        )
+        pred_edgess = [[e for e in edges if filter_edges(e)] for edges in pred_edgess]
+        gt_edgess = [[e for e in edges if filter_edges(e)] for edges in gt_edgess]
         track_purity = _calc_overlap_score(pred_edgess, gt_edgess)
         target_effectiveness = _calc_overlap_score(gt_edgess, pred_edgess)
 
