@@ -1,7 +1,7 @@
 """Tracking score calculation utilities."""
 from typing import Dict
-from typing import List
 from typing import Optional
+from typing import Sequence
 
 import networkx as nx
 import numpy as np
@@ -58,7 +58,7 @@ def calc_scores(
     true_edges: EdgeType,
     predicted_edges: EdgeType,
     exclude_true_edges: EdgeType = [],
-    include_frames: Optional[List[Int]] = None,
+    include_frames: Optional[Sequence[Int]] = None,
 ) -> Dict[str, float]:
     """
     Calculate track prediction scores.
@@ -91,7 +91,7 @@ def calc_scores(
     # return the count o
 
     if include_frames is None:
-        include_frames = np.arange(np.max([e[0][0] for e in true_edges]) + 1)
+        include_frames = list(range(np.max([e[0][0] for e in true_edges]) + 1))
     true_edges_included = [e for e in true_edges if e[0][0] in include_frames]
     predicted_edges_included = [e for e in predicted_edges if e[0][0] in include_frames]
 
