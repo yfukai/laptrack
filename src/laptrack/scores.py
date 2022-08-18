@@ -1,10 +1,14 @@
 """Tracking score calculation utilities."""
 from typing import Dict
+from typing import List
+from typing import Optional
 
 import networkx as nx
+import numpy as np
 import pandas as pd
 
 from ._typing_utils import EdgeType
+from ._typing_utils import Int
 from .data_conversion import convert_tree_to_dataframe
 from .utils import order_edges
 
@@ -51,7 +55,10 @@ def _calc_overlap_score(reference_edgess, overlap_edgess):
 
 
 def calc_scores(
-    true_edges: EdgeType, predicted_edges: EdgeType, exclude_true_edges: EdgeType = []
+    true_edges: EdgeType,
+    predicted_edges: EdgeType,
+    exclude_true_edges: EdgeType = [],
+    include_frames: Optional[List[Int]] = None,
 ) -> Dict[str, float]:
     """
     Calculate track prediction scores.
@@ -67,6 +74,9 @@ def calc_scores(
     exclude_true_edges : EdgeType, default []
         the list of true edges to be excluded from "*_ratio". see `true_edges` for format
 
+    include_frames : Optional[List[Int]], default None
+        the list of frames to include in the score calculation. if None, all frames are included.
+
     Returns
     -------
     Dict[str,float]
@@ -79,6 +89,12 @@ def calc_scores(
         "division_recovery" : the number of divisions that were correctly predicted.
     """
     # return the count o
+
+    if include_frames is None:
+        include_frames = np.arange(np.max([e[0][0] for e in true_edges]) + 1)
+    true_edges_included = [e for e in true_edges if e[0][0] in include_frames]
+    predicted_edges_included = [e for e in predicted_edges if e[0][0] in include_frames]
+
     if len(list(predicted_edges)) == 0:
         return {
             "union_ratio": 0,
@@ -89,6 +105,8 @@ def calc_scores(
             "division_recovery": 0,
         }
     else:
+
+        ################ calculate track scores #################
         gt_tree = nx.from_edgelist(order_edges(true_edges), create_using=nx.DiGraph)
         pred_tree = nx.from_edgelist(
             order_edges(predicted_edges), create_using=nx.DiGraph
@@ -105,33 +123,43 @@ def calc_scores(
         gt_edgess = _df_to_edges(gt_track_df)
         pred_edgess = _df_to_edges(pred_track_df)
 
+        pred_edgess = [
+            [e for e in edges if e[0][0] in include_frames] for edges in pred_edgess
+        ]
+        gt_edgess = [
+            [e for e in edges if e[0][0] in include_frames] for edges in gt_edgess
+        ]
         track_purity = _calc_overlap_score(pred_edgess, gt_edgess)
         target_effectiveness = _calc_overlap_score(gt_edgess, pred_edgess)
 
+        ################ calculate division recovery #################
         def get_children(m):
             return list(gt_tree.successors(m))
 
         dividing_nodes = [m for m in gt_tree.nodes() if len(get_children(m)) > 1]
+        dividing_nodes = [m for m in dividing_nodes if m[0] in include_frames]
         division_recovery_count = 0
         total_count = 0
         for m in dividing_nodes:
             children = get_children(m)
 
-            def check_in(edges):
+            def check_match_children(edges):
                 return all([(n, m) in edges or (m, n) in edges for n in children])
 
-            excluded = check_in(exclude_true_edges)
-            if check_in(predicted_edges) and not excluded:
-                division_recovery_count += 1
+            excluded = check_match_children(exclude_true_edges)
             if not excluded:
+                if check_match_children(predicted_edges):
+                    division_recovery_count += 1
                 total_count += 1
+
         if total_count > 0:
             division_recovery = division_recovery_count / total_count
         else:
             division_recovery = -1
 
-        te = set(true_edges) - set(exclude_true_edges)
-        pe = set(predicted_edges) - set(exclude_true_edges)
+        ################ calculate edge overlaps #################
+        te = set(true_edges_included) - set(exclude_true_edges)
+        pe = set(predicted_edges_included) - set(exclude_true_edges)
         return {
             "union_ratio": len(te & pe) / len(te | pe),
             "true_ratio": len(te & pe) / len(te),
