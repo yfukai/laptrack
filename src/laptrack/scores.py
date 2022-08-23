@@ -49,9 +49,8 @@ def _calc_overlap_score(reference_edgess, overlap_edgess):
         ]
         max_overlap = max(overlaps)
         correct_count += max_overlap
-    return correct_count / sum(
-        [len(reference_edges) for reference_edges in reference_edgess]
-    )
+    total_count = sum([len(reference_edges) for reference_edges in reference_edgess])
+    return correct_count / total_count if total_count > 0 else -1
 
 
 def calc_scores(
