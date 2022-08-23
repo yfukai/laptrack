@@ -58,6 +58,7 @@ def calc_scores(
     predicted_edges: EdgeType,
     exclude_true_edges: EdgeType = [],
     include_frames: Optional[Sequence[Int]] = None,
+    track_scores=True,
 ) -> Dict[str, float]:
     """
     Calculate track prediction scores.
@@ -75,6 +76,9 @@ def calc_scores(
 
     include_frames : Optional[List[Int]], default None
         the list of frames to include in the score calculation. if None, all frames are included.
+
+    track_scores : bool, default True
+        if True, calculate track_purity, target_effectiveness and division_recovery
 
     Returns
     -------
@@ -105,54 +109,61 @@ def calc_scores(
         }
     else:
 
-        ################ calculate track scores #################
-        gt_tree = nx.from_edgelist(order_edges(true_edges), create_using=nx.DiGraph)
-        pred_tree = nx.from_edgelist(
-            order_edges(predicted_edges), create_using=nx.DiGraph
-        )
-        gt_track_df, gt_split_df, _gt_merge_df = convert_tree_to_dataframe(gt_tree)
-        pred_track_df, pred_split_df, _pred_merge_df = convert_tree_to_dataframe(
-            pred_tree
-        )
-        gt_track_df = gt_track_df.reset_index()
-        pred_track_df = pred_track_df.reset_index()
+        if track_scores:
+            ################ calculate track scores #################
+            gt_tree = nx.from_edgelist(order_edges(true_edges), create_using=nx.DiGraph)
+            pred_tree = nx.from_edgelist(
+                order_edges(predicted_edges), create_using=nx.DiGraph
+            )
+            gt_track_df, gt_split_df, _gt_merge_df = convert_tree_to_dataframe(gt_tree)
+            pred_track_df, pred_split_df, _pred_merge_df = convert_tree_to_dataframe(
+                pred_tree
+            )
+            gt_track_df = gt_track_df.reset_index()
+            pred_track_df = pred_track_df.reset_index()
 
-        gt_track_df = _add_split_edges(gt_track_df, gt_split_df)
-        pred_track_df = _add_split_edges(pred_track_df, pred_split_df)
-        gt_edgess = _df_to_edges(gt_track_df)
-        pred_edgess = _df_to_edges(pred_track_df)
+            gt_track_df = _add_split_edges(gt_track_df, gt_split_df)
+            pred_track_df = _add_split_edges(pred_track_df, pred_split_df)
+            gt_edgess = _df_to_edges(gt_track_df)
+            pred_edgess = _df_to_edges(pred_track_df)
 
-        filter_edges = (
-            lambda e: e[0][0] in include_frames and e not in exclude_true_edges
-        )
-        pred_edgess = [[e for e in edges if filter_edges(e)] for edges in pred_edgess]
-        gt_edgess = [[e for e in edges if filter_edges(e)] for edges in gt_edgess]
-        track_purity = _calc_overlap_score(pred_edgess, gt_edgess)
-        target_effectiveness = _calc_overlap_score(gt_edgess, pred_edgess)
+            filter_edges = (
+                lambda e: e[0][0] in include_frames and e not in exclude_true_edges
+            )
+            pred_edgess = [
+                [e for e in edges if filter_edges(e)] for edges in pred_edgess
+            ]
+            gt_edgess = [[e for e in edges if filter_edges(e)] for edges in gt_edgess]
+            track_purity = _calc_overlap_score(pred_edgess, gt_edgess)
+            target_effectiveness = _calc_overlap_score(gt_edgess, pred_edgess)
 
-        ################ calculate division recovery #################
-        def get_children(m):
-            return list(gt_tree.successors(m))
+            ################ calculate division recovery #################
+            def get_children(m):
+                return list(gt_tree.successors(m))
 
-        dividing_nodes = [m for m in gt_tree.nodes() if len(get_children(m)) > 1]
-        dividing_nodes = [m for m in dividing_nodes if m[0] in include_frames]
-        division_recovery_count = 0
-        total_count = 0
-        for m in dividing_nodes:
-            children = get_children(m)
+            dividing_nodes = [m for m in gt_tree.nodes() if len(get_children(m)) > 1]
+            dividing_nodes = [m for m in dividing_nodes if m[0] in include_frames]
+            division_recovery_count = 0
+            total_count = 0
+            for m in dividing_nodes:
+                children = get_children(m)
 
-            def check_match_children(edges):
-                return all([(n, m) in edges or (m, n) in edges for n in children])
+                def check_match_children(edges):
+                    return all([(n, m) in edges or (m, n) in edges for n in children])
 
-            excluded = check_match_children(exclude_true_edges)
-            if not excluded:
-                if check_match_children(predicted_edges):
-                    division_recovery_count += 1
-                total_count += 1
+                excluded = check_match_children(exclude_true_edges)
+                if not excluded:
+                    if check_match_children(predicted_edges):
+                        division_recovery_count += 1
+                    total_count += 1
 
-        if total_count > 0:
-            division_recovery = division_recovery_count / total_count
+            if total_count > 0:
+                division_recovery = division_recovery_count / total_count
+            else:
+                division_recovery = -1
         else:
+            track_purity = -1
+            target_effectiveness = -1
             division_recovery = -1
 
         ################ calculate edge overlaps #################
