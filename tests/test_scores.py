@@ -56,6 +56,19 @@ def test_scores(test_trees) -> None:
     assert score == calc_scores(true_tree.edges, pred_tree.edges)
 
 
+def test_scores_no_track(test_trees) -> None:
+    true_tree, pred_tree = test_trees
+    score = {
+        "union_ratio": 8 / 12,
+        "true_ratio": 8 / 11,
+        "predicted_ratio": 8 / 9,
+        "track_purity": -1,
+        "target_effectiveness": -1,
+        "division_recovery": -1,
+    }
+    assert score == calc_scores(true_tree.edges, pred_tree.edges, track_scores=False)
+
+
 def test_scores_exclude(test_trees) -> None:
     true_tree, pred_tree = test_trees
     exclude_edges = [((2, 0), (3, 0)), ((2, 0), (3, 1))]
