@@ -9,3 +9,5 @@
 /src/*.egg-info/
 __pycache__/
 .vscode/settings.json
+examples/images.npy
+examples/masks.npy
