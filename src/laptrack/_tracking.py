@@ -10,6 +10,7 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Sequence
+from typing import Tuple
 from typing import TYPE_CHECKING
 from typing import Union
 
@@ -611,7 +612,7 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
         coordinate_cols: List[str],
         frame_col: str = "frame",
         validate_frame: bool = True,
-    ) -> pd.DataFrame:
+    ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         """Shorthand for the tracking with the dataframe input / output.
 
         Parameters
