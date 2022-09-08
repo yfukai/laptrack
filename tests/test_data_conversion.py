@@ -168,8 +168,6 @@ def test_convert_tree_to_dataframe(test_trees):
         merge_df[["parent_track_id", "child_track_id"]].values == merge_df_target
     )
 
-    print(df)
-
 
 @pytest.mark.parametrize("track_class", [LapTrack, LapTrackMulti])
 def test_integration(track_class):
