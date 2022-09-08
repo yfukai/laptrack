@@ -32,7 +32,7 @@ from pydantic import BaseModel, Field, Extra
 
 from ._cost_matrix import build_frame_cost_matrix, build_segment_cost_matrix
 from ._optimization import lap_optimization
-from ._typing_utils import FloatArray
+from ._typing_utils import NumArray
 from ._typing_utils import Int
 from ._coo_matrix_builder import coo_matrix_builder
 from .data_conversion import convert_dataframe_to_coords, convert_tree_to_dataframe
@@ -511,7 +511,7 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
 
         Parameters
         ----------
-             coords : Sequence[FloatArray]
+             coords : Sequence[NumArray]
                  The list of coordinates of point for each frame.
                  The array index means (sample, dimension).
              track_tree : nx.Graph
@@ -528,7 +528,7 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
 
     def predict(
         self,
-        coords: Sequence[FloatArray],
+        coords: Sequence[NumArray],
         connected_edges=None,
         split_merge_validation=True,
     ) -> nx.DiGraph:
@@ -536,7 +536,7 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
 
         Parameters
         ----------
-            coords : Sequence[FloatArray]
+            coords : Sequence[NumArray]
                 The list of coordinates of point for each frame.
                 The array index means (sample, dimension).
             connected_edges : Optional[EdgeType]
@@ -926,13 +926,13 @@ class LapTrackMulti(LapTrackBase):
         return track_tree
 
 
-def laptrack(coords: Sequence[FloatArray], **kwargs) -> nx.Graph:
+def laptrack(coords: Sequence[NumArray], **kwargs) -> nx.Graph:
     """
     Shorthand for calling `LapTrack.fit(coords)`.
 
     Parameters
     ----------
-    coords : Sequence[FloatArray]
+    coords : Sequence[NumArray]
         The list of coordinates of point for each frame.
         The array index means (sample, dimension).
 
