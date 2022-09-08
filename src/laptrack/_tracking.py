@@ -7,6 +7,7 @@ from inspect import signature
 from typing import Callable
 from typing import cast
 from typing import Dict
+from typing import List
 from typing import Optional
 from typing import Sequence
 from typing import TYPE_CHECKING
@@ -34,6 +35,7 @@ from ._optimization import lap_optimization
 from ._typing_utils import FloatArray
 from ._typing_utils import Int
 from ._coo_matrix_builder import coo_matrix_builder
+from .data_conversion import convert_dataframe_to_coords, convert_tree_to_dataframe
 
 logger = logging.getLogger(__name__)
 
@@ -605,33 +607,49 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
 
     def predict_dataframe(
         self,
-        coords: Sequence[FloatArray],
-        connected_edges=None,
-        split_merge_validation=True,
-    ) -> nx.DiGraph:
+        df: pd.DataFrame,
+        coordinate_cols: List[str],
+        frame_col: str = "frame",
+        validate_frame: bool = True,
+    ) -> pd.DataFrame:
         """Shorthand for the tracking with the dataframe input / output.
 
         Parameters
         ----------
-            coords : Sequence[FloatArray]
-                The list of coordinates of point for each frame.
-                The array index means (sample, dimension).
-            connected_edges : Optional[EdgeType]
-                The edges that is known to be connected.
-                If None, no edges are assumed to be connected.
-            split_merge_validation : bool
-                If true, check if the split/merge edges are two.
-
-
-        Raises
-        ------
-            ValueError: raised for invalid coordinate formats.
+        df : pd.DataFrame
+            The input dataframe
+        coordinate_cols : List[str]
+            The list of columns to use for coordinates
+        frame_col : str, optional
+            The column name to use for the frame index. Defaults to "frame".
+        validate_frame : bool, optional
+            Whether to validate the frame. Defaults to True.
 
         Returns
         -------
-            nx.DiGraph: The graph for the tracks, whose nodes are (frame, index).
-                        The edge direction represents the time order.
+        df : pd.DataFrame
+            the track dataframe, with the following columns:
+            - "frame" : the frame index
+            - "index" : the coordinate index
+            - "track_id" : the track id
+            - "tree_id" : the tree id
+            - other columns : the coordinate values.
+        split_df : pd.DataFrame
+            the splitting dataframe, with the following columns:
+            - "parent_track_id" : the track id of the parent
+            - "child_track_id" : the track id of the parent
+        merge_df : pd.DataFrame
+            the splitting dataframe, with the following columns:
+            - "parent_track_id" : the track id of the parent
+            - "child_track_id" : the track id of the parent
         """
+        coords = convert_dataframe_to_coords(
+            df, coordinate_cols, frame_col, validate_frame
+        )
+        tree = self.predict(coords)
+        df, split_df, merge_df = convert_tree_to_dataframe(tree, coords)
+        df = df.rename(columns={f"coord-{i}": k for i, k in enumerate(coordinate_cols)})
+        return df, split_df, merge_df
 
 
 class LapTrack(LapTrackBase):
