@@ -525,7 +525,10 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
         ...
 
     def predict(
-        self, coords, connected_edges=None, split_merge_validation=True
+        self,
+        coords: Sequence[FloatArray],
+        connected_edges=None,
+        split_merge_validation=True,
     ) -> nx.DiGraph:
         """Predict the tracking graph from coordinates.
 
@@ -599,6 +602,36 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
         track_tree_directed.add_edges_from(edges)
 
         return track_tree_directed
+
+    def predict_dataframe(
+        self,
+        coords: Sequence[FloatArray],
+        connected_edges=None,
+        split_merge_validation=True,
+    ) -> nx.DiGraph:
+        """Shorthand for the tracking with the dataframe input / output.
+
+        Parameters
+        ----------
+            coords : Sequence[FloatArray]
+                The list of coordinates of point for each frame.
+                The array index means (sample, dimension).
+            connected_edges : Optional[EdgeType]
+                The edges that is known to be connected.
+                If None, no edges are assumed to be connected.
+            split_merge_validation : bool
+                If true, check if the split/merge edges are two.
+
+
+        Raises
+        ------
+            ValueError: raised for invalid coordinate formats.
+
+        Returns
+        -------
+            nx.DiGraph: The graph for the tracks, whose nodes are (frame, index).
+                        The edge direction represents the time order.
+        """
 
 
 class LapTrack(LapTrackBase):
