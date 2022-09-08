@@ -28,7 +28,8 @@ def test_convert_dataframe_to_coords():
     assert all([np.all(c1 == c2) for c1, c2 in zip(coords, coords_target)])
 
 
-def test_convert_tree_to_dataframe():
+@pytest.fixture
+def test_trees():
     tree = nx.from_edgelist(
         [
             ((0, 0), (1, 0)),
@@ -57,6 +58,7 @@ def test_convert_tree_to_dataframe():
         [(0, 4)],
     ]
     clones = [segments[:3], segments[3:6], segments[6:]]
+
     # 0-0-0-0-0-0
     #      |
     #      -1-1-1
@@ -65,8 +67,72 @@ def test_convert_tree_to_dataframe():
     #   3-
     #
     # 4
-    df, split_df, merge_df = data_conversion.convert_tree_to_dataframe(tree)
+
+    coords = [
+        np.array(
+            [
+                [0.0, 0.0],
+                [0.1, 0.1],
+                [0.2, 0.2],
+                [0.3, 0.3],
+                [0.4, 0.4],
+            ]
+        ),
+        np.array(
+            [
+                [1.0, 1.0],
+                [1.1, 1.1],
+                [1.2, 1.2],
+                [1.3, 1.3],
+                [1.4, 1.4],
+            ]
+        ),
+        np.array(
+            [
+                [2.0, 2.0],
+                [2.1, 2.1],
+                [2.2, 2.2],
+                [2.3, 2.3],
+                [2.4, 2.4],
+            ]
+        ),
+        np.array(
+            [
+                [3.0, 3.0],
+                [3.1, 3.1],
+                [3.2, 3.2],
+                [3.3, 3.3],
+                [3.4, 3.4],
+            ]
+        ),
+        np.array(
+            [
+                [4.0, 4.0],
+                [4.1, 4.1],
+                [4.2, 4.2],
+                [4.3, 4.3],
+                [4.4, 4.4],
+            ]
+        ),
+        np.array(
+            [
+                [5.0, 5.0],
+                [5.1, 5.1],
+                [5.2, 5.2],
+                [5.3, 5.3],
+                [5.4, 5.4],
+            ]
+        ),
+    ]
+
+    return tree, segments, clones, coords
+
+
+def test_convert_tree_to_dataframe(test_trees):
+    tree, segments, clones, coords = test_trees
+    df, split_df, merge_df = data_conversion.convert_tree_to_dataframe(tree, coords)
     len(set(df["track_id"])) == len(segments)
+
     segment_ids = []
     for segment in segments:
         len(set(df.loc[segment, "track_id"])) == 1  # unique track id
@@ -74,6 +140,13 @@ def test_convert_tree_to_dataframe():
     for clone in clones:
         clone_all = sum(clone, [])
         len(set(df.loc[clone_all, "tree_id"])) == 1  # unique track id
+
+    for i in range(2):
+        assert np.allclose(
+            df[f"coord-{i}"],
+            df.index.get_level_values("frame")
+            + 0.1 * df.index.get_level_values("index"),
+        )
 
     split_df_target = np.array(
         [

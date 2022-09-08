@@ -11,6 +11,7 @@ from pydantic import ValidationError
 from laptrack import LapTrack
 from laptrack import laptrack
 from laptrack import LapTrackMulti
+from laptrack.data_conversion import convert_tree_to_dataframe
 
 DEFAULT_PARAMS = dict(
     track_dist_metric="sqeuclidean",
@@ -100,6 +101,26 @@ def test_reproducing_trackmate(testdata, tracker_class) -> None:
     for n in track_tree.nodes():
         for m in track_tree.successors(n):
             assert m[0] > n[0]
+
+    data = []
+    for frame, c in enumerate(coords):
+        assert c.shape[1] == 2
+        data.append(
+            pd.DataFrame(
+                {
+                    "frame": [frame] * len(c),
+                    "x": c[:, 0],
+                    "y": c[:, 1],
+                }
+            )
+        )
+    df = pd.concat(data)
+    track_df, split_df, merge_df = lt.predict_dataframe(df, ["x", "y"])
+    track_df2, split_df2, merge_df2 = convert_tree_to_dataframe(track_tree, coords)
+    track_df2 = track_df2.rename(columns={"coord-0": "x", "coord-1": "y"})
+    assert all(track_df == track_df2)
+    assert all(split_df == split_df2)
+    assert all(merge_df == merge_df2)
 
 
 @pytest.fixture(params=[2, 3, 4])

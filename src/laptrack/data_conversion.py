@@ -1,5 +1,7 @@
 """Data conversion utilities for tracking."""
 from typing import List
+from typing import Optional
+from typing import Sequence
 from typing import Tuple
 
 import networkx as nx
@@ -45,7 +47,7 @@ def convert_dataframe_to_coords(
 
 
 def convert_tree_to_dataframe(
-    tree: nx.DiGraph,
+    tree: nx.DiGraph, coords: Optional[Sequence[NumArray]] = None
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Convert the track tree to dataframes.
 
@@ -53,6 +55,8 @@ def convert_tree_to_dataframe(
     ----------
     tree : nx.Graph
         The track tree, resulted from the traking
+    coords : Optional[Sequence[NumArray]]
+        The coordinate values. If None, no coordinate values are appended to the dataframe.
 
     Returns
     -------
@@ -62,6 +66,7 @@ def convert_tree_to_dataframe(
         - "index" : the coordinate index
         - "track_id" : the track id
         - "tree_id" : the tree id
+        - "coord-0", "coord-1", ... : the coordinate values. Exists if coords is not None.
     split_df : pd.DataFrame
         the splitting dataframe, with the following columns:
         - "parent_track_id" : the track id of the parent
@@ -84,7 +89,16 @@ def convert_tree_to_dataframe(
                 }
             )
         )
-    df = pd.concat(df_data).set_index(["frame", "index"])
+    df = pd.concat(df_data)
+    if coords is not None:
+        # XXX there may exist faster impl.
+        for i in range(coords[0].shape[1]):
+            df[f"coord-{i}"] = [
+                coords[int(row["frame"])][int(row["index"]), i]
+                for _, row in df.iterrows()
+            ]
+
+    df = df.set_index(["frame", "index"])
     connected_components = list(nx.connected_components(nx.Graph(tree)))
     for track_id, nodes in enumerate(connected_components):
         for (frame, index) in nodes:

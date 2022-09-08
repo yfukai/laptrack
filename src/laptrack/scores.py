@@ -78,18 +78,18 @@ def calc_scores(
         the list of frames to include in the score calculation. if None, all frames are included.
 
     track_scores : bool, default True
-        if True, calculate track_purity, target_effectiveness and division_recovery
+        if True, calculate track_purity, target_effectiveness and mitotic_branching_correctness
 
     Returns
     -------
     Dict[str,float]
         the scores. keys are:
-        "union_ratio": (number of TP edges) / (number of TP edges + number of FP edges + number of FN edges)
-        "true_ratio": (number of TP edges) / (number of TP edges + number of FN edges)
-        "predicted_ratio": (number of TP edges) / (number of TP edges + number of FP edges)
+        "Jaccard_index": (number of TP edges) / (number of TP edges + number of FP edges + number of FN edges)
+        "true_positive_rate": (number of TP edges) / (number of TP edges + number of FN edges)
+        "precision": (number of TP edges) / (number of TP edges + number of FP edges)
         "track_purity" : the track purity.
         "target_effectiveness" : the target effectiveness.
-        "division_recovery" : the number of divisions that were correctly predicted.
+        "mitotic_branching_correctness" : the number of divisions that were correctly predicted.
     """
     # return the count o
 
@@ -100,12 +100,12 @@ def calc_scores(
 
     if len(list(predicted_edges)) == 0:
         return {
-            "union_ratio": 0,
-            "true_ratio": 0,
-            "predicted_ratio": 0,
+            "Jaccard_index": 0,
+            "true_positive_rate": 0,
+            "precision": 0,
             "track_purity": 0,
             "target_effectiveness": 0,
-            "division_recovery": 0,
+            "mitotic_branching_correctness": 0,
         }
     else:
 
@@ -143,7 +143,7 @@ def calc_scores(
 
             dividing_nodes = [m for m in gt_tree.nodes() if len(get_children(m)) > 1]
             dividing_nodes = [m for m in dividing_nodes if m[0] in include_frames]
-            division_recovery_count = 0
+            mitotic_branching_correctness_count = 0
             total_count = 0
             for m in dividing_nodes:
                 children = get_children(m)
@@ -154,26 +154,28 @@ def calc_scores(
                 excluded = check_match_children(exclude_true_edges)
                 if not excluded:
                     if check_match_children(predicted_edges):
-                        division_recovery_count += 1
+                        mitotic_branching_correctness_count += 1
                     total_count += 1
 
             if total_count > 0:
-                division_recovery = division_recovery_count / total_count
+                mitotic_branching_correctness = (
+                    mitotic_branching_correctness_count / total_count
+                )
             else:
-                division_recovery = -1
+                mitotic_branching_correctness = -1
         else:
             track_purity = -1
             target_effectiveness = -1
-            division_recovery = -1
+            mitotic_branching_correctness = -1
 
         ################ calculate edge overlaps #################
         te = set(true_edges_included) - set(exclude_true_edges)
         pe = set(predicted_edges_included) - set(exclude_true_edges)
         return {
-            "union_ratio": len(te & pe) / len(te | pe),
-            "true_ratio": len(te & pe) / len(te),
-            "predicted_ratio": len(te & pe) / len(pe),
+            "Jaccard_index": len(te & pe) / len(te | pe),
+            "true_positive_rate": len(te & pe) / len(te),
+            "precision": len(te & pe) / len(pe),
             "track_purity": track_purity,
             "target_effectiveness": target_effectiveness,
-            "division_recovery": division_recovery,
+            "mitotic_branching_correctness": mitotic_branching_correctness,
         }

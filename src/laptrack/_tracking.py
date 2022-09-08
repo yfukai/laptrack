@@ -7,8 +7,10 @@ from inspect import signature
 from typing import Callable
 from typing import cast
 from typing import Dict
+from typing import List
 from typing import Optional
 from typing import Sequence
+from typing import Tuple
 from typing import TYPE_CHECKING
 from typing import Union
 
@@ -31,9 +33,10 @@ from pydantic import BaseModel, Field, Extra
 
 from ._cost_matrix import build_frame_cost_matrix, build_segment_cost_matrix
 from ._optimization import lap_optimization
-from ._typing_utils import FloatArray
+from ._typing_utils import NumArray
 from ._typing_utils import Int
 from ._coo_matrix_builder import coo_matrix_builder
+from .data_conversion import convert_dataframe_to_coords, convert_tree_to_dataframe
 
 logger = logging.getLogger(__name__)
 
@@ -509,7 +512,7 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
 
         Parameters
         ----------
-             coords : Sequence[FloatArray]
+             coords : Sequence[NumArray]
                  The list of coordinates of point for each frame.
                  The array index means (sample, dimension).
              track_tree : nx.Graph
@@ -525,13 +528,16 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
         ...
 
     def predict(
-        self, coords, connected_edges=None, split_merge_validation=True
+        self,
+        coords: Sequence[NumArray],
+        connected_edges=None,
+        split_merge_validation=True,
     ) -> nx.DiGraph:
         """Predict the tracking graph from coordinates.
 
         Parameters
         ----------
-            coords : Sequence[FloatArray]
+            coords : Sequence[NumArray]
                 The list of coordinates of point for each frame.
                 The array index means (sample, dimension).
             connected_edges : Optional[EdgeType]
@@ -599,6 +605,52 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
         track_tree_directed.add_edges_from(edges)
 
         return track_tree_directed
+
+    def predict_dataframe(
+        self,
+        df: pd.DataFrame,
+        coordinate_cols: List[str],
+        frame_col: str = "frame",
+        validate_frame: bool = True,
+    ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+        """Shorthand for the tracking with the dataframe input / output.
+
+        Parameters
+        ----------
+        df : pd.DataFrame
+            The input dataframe
+        coordinate_cols : List[str]
+            The list of columns to use for coordinates
+        frame_col : str, optional
+            The column name to use for the frame index. Defaults to "frame".
+        validate_frame : bool, optional
+            Whether to validate the frame. Defaults to True.
+
+        Returns
+        -------
+        df : pd.DataFrame
+            the track dataframe, with the following columns:
+            - "frame" : the frame index
+            - "index" : the coordinate index
+            - "track_id" : the track id
+            - "tree_id" : the tree id
+            - other columns : the coordinate values.
+        split_df : pd.DataFrame
+            the splitting dataframe, with the following columns:
+            - "parent_track_id" : the track id of the parent
+            - "child_track_id" : the track id of the parent
+        merge_df : pd.DataFrame
+            the splitting dataframe, with the following columns:
+            - "parent_track_id" : the track id of the parent
+            - "child_track_id" : the track id of the parent
+        """
+        coords = convert_dataframe_to_coords(
+            df, coordinate_cols, frame_col, validate_frame
+        )
+        tree = self.predict(coords)
+        df, split_df, merge_df = convert_tree_to_dataframe(tree, coords)
+        df = df.rename(columns={f"coord-{i}": k for i, k in enumerate(coordinate_cols)})
+        return df, split_df, merge_df
 
 
 class LapTrack(LapTrackBase):
@@ -875,13 +927,13 @@ class LapTrackMulti(LapTrackBase):
         return track_tree
 
 
-def laptrack(coords: Sequence[FloatArray], **kwargs) -> nx.Graph:
+def laptrack(coords: Sequence[NumArray], **kwargs) -> nx.Graph:
     """
     Shorthand for calling `LapTrack.fit(coords)`.
 
     Parameters
     ----------
-    coords : Sequence[FloatArray]
+    coords : Sequence[NumArray]
         The list of coordinates of point for each frame.
         The array index means (sample, dimension).
 
