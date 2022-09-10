@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "laptrack"
-version = "0.3.6"
+version = "0.4.0"
 description = "LapTrack"
 authors = ["Yohsuke Fukai <ysk@yfukai.net>"]
 license = "BSD-3-Clause"
@@ -9,7 +9,7 @@ homepage = "https://github.com/yfukai/laptrack"
 repository = "https://github.com/yfukai/laptrack"
 documentation = "https://laptrack.readthedocs.io"
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
     "Natural Language :: English",
