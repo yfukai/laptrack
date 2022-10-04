@@ -60,7 +60,7 @@ def convert_tree_to_dataframe(
 
     Returns
     -------
-    df : pd.DataFrame
+    track_df : pd.DataFrame
         the track dataframe, with the following columns:
         - "frame" : the frame index
         - "index" : the coordinate index
@@ -89,20 +89,20 @@ def convert_tree_to_dataframe(
                 }
             )
         )
-    df = pd.concat(df_data)
+    track_df = pd.concat(df_data)
     if coords is not None:
         # XXX there may exist faster impl.
         for i in range(coords[0].shape[1]):
-            df[f"coord-{i}"] = [
+            track_df[f"coord-{i}"] = [
                 coords[int(row["frame"])][int(row["index"]), i]
-                for _, row in df.iterrows()
+                for _, row in track_df.iterrows()
             ]
 
-    df = df.set_index(["frame", "index"])
+    track_df = track_df.set_index(["frame", "index"])
     connected_components = list(nx.connected_components(nx.Graph(tree)))
     for track_id, nodes in enumerate(connected_components):
         for (frame, index) in nodes:
-            df.loc[(frame, index), "tree_id"] = track_id
+            track_df.loc[(frame, index), "tree_id"] = track_id
     #            tree.nodes[(frame, index)]["tree_id"] = track_id
     tree2 = tree.copy()
 
@@ -127,19 +127,19 @@ def convert_tree_to_dataframe(
     connected_components = list(nx.connected_components(nx.Graph(tree2)))
     for track_id, nodes in enumerate(connected_components):
         for (frame, index) in nodes:
-            df.loc[(frame, index), "track_id"] = track_id
+            track_df.loc[(frame, index), "track_id"] = track_id
     #            tree.nodes[(frame, index)]["track_id"] = track_id
 
     for k in ["tree_id", "track_id"]:
-        df[k] = df[k].astype(int)
+        track_df[k] = track_df[k].astype(int)
 
     split_df_data = []
     for (node, children) in splits:
         for child in children:
             split_df_data.append(
                 {
-                    "parent_track_id": df.loc[node, "track_id"],
-                    "child_track_id": df.loc[child, "track_id"],
+                    "parent_track_id": track_df.loc[node, "track_id"],
+                    "child_track_id": track_df.loc[child, "track_id"],
                 }
             )
     split_df = pd.DataFrame.from_records(split_df_data).astype(int)
@@ -149,10 +149,10 @@ def convert_tree_to_dataframe(
         for parent in parents:
             merge_df_data.append(
                 {
-                    "parent_track_id": df.loc[parent, "track_id"],
-                    "child_track_id": df.loc[node, "track_id"],
+                    "parent_track_id": track_df.loc[parent, "track_id"],
+                    "child_track_id": track_df.loc[node, "track_id"],
                 }
             )
     merge_df = pd.DataFrame.from_records(merge_df_data).astype(int)
 
-    return df, split_df, merge_df
+    return track_df, split_df, merge_df
