@@ -608,7 +608,7 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
 
     def predict_dataframe(
         self,
-        df: pd.DataFrame,
+        track_df: pd.DataFrame,
         coordinate_cols: List[str],
         frame_col: str = "frame",
         validate_frame: bool = True,
@@ -628,7 +628,7 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
 
         Returns
         -------
-        df : pd.DataFrame
+        track_df : pd.DataFrame
             the track dataframe, with the following columns:
             - "frame" : the frame index
             - "index" : the coordinate index
@@ -645,12 +645,14 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
             - "child_track_id" : the track id of the parent
         """
         coords = convert_dataframe_to_coords(
-            df, coordinate_cols, frame_col, validate_frame
+            track_df, coordinate_cols, frame_col, validate_frame
         )
         tree = self.predict(coords)
-        df, split_df, merge_df = convert_tree_to_dataframe(tree, coords)
-        df = df.rename(columns={f"coord-{i}": k for i, k in enumerate(coordinate_cols)})
-        return df, split_df, merge_df
+        track_df, split_df, merge_df = convert_tree_to_dataframe(tree, coords)
+        track_df = track_df.rename(
+            columns={f"coord-{i}": k for i, k in enumerate(coordinate_cols)}
+        )
+        return track_df, split_df, merge_df
 
 
 class LapTrack(LapTrackBase):
