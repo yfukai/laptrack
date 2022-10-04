@@ -22,10 +22,29 @@ def test_convert_dataframe_to_coords():
         np.array([[3, 3], [4, 4]]),
         np.array([[5, 5], [6, 6], [7, 7], [8, 8], [9, 9]]),
     ]
+    inverse_map_target = {
+        (0, 0): 0,
+        (0, 1): 1,
+        (0, 2): 2,
+        (1, 0): 3,
+        (1, 1): 4,
+        (2, 0): 5,
+        (2, 1): 6,
+        (2, 2): 7,
+        (2, 3): 8,
+        (2, 4): 9,
+    }
 
     coords = data_conversion.convert_dataframe_to_coords(df, ["x", "y"])
     assert len(coords) == len(df["frame"].unique())
     assert all([np.all(c1 == c2) for c1, c2 in zip(coords, coords_target)])
+
+    coords, inverse_map = data_conversion.convert_dataframe_to_coords_inverse_map(
+        df, ["x", "y"]
+    )
+    assert len(coords) == len(df["frame"].unique())
+    assert all([np.all(c1 == c2) for c1, c2 in zip(coords, coords_target)])
+    assert inverse_map == inverse_map_target
 
 
 @pytest.fixture

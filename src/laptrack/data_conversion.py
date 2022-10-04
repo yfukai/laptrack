@@ -47,7 +47,7 @@ def convert_dataframe_to_coords(
     return coords
 
 
-def convert_dataframe_to_coords_with_inverse_map(
+def convert_dataframe_to_coords_inverse_map(
     df: pd.DataFrame,
     coordinate_cols: List[str],
     frame_col: str = "frame",
