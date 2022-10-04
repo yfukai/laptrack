@@ -1,4 +1,5 @@
 """Test cases for the tracking."""
+import warnings
 from itertools import product
 from os import path
 
@@ -12,6 +13,8 @@ from laptrack import LapTrack
 from laptrack import laptrack
 from laptrack import LapTrackMulti
 from laptrack.data_conversion import convert_tree_to_dataframe
+
+warnings.simplefilter("ignore", FutureWarning)
 
 DEFAULT_PARAMS = dict(
     track_dist_metric="sqeuclidean",
@@ -118,6 +121,15 @@ def test_reproducing_trackmate(testdata, tracker_class) -> None:
     track_df, split_df, merge_df = lt.predict_dataframe(df, ["x", "y"])
     track_df2, split_df2, merge_df2 = convert_tree_to_dataframe(track_tree, coords)
     track_df2 = track_df2.rename(columns={"coord-0": "x", "coord-1": "y"})
+    assert all(track_df == track_df2)
+    assert all(split_df == split_df2)
+    assert all(merge_df == merge_df2)
+
+    track_df, split_df, merge_df = lt.predict_dataframe(
+        df, ["x", "y"], only_coordinate_cols=False
+    )
+    assert all(track_df["frame_y"] == track_df2.index.get_level_values("frame"))
+    track_df = track_df.drop(columns=["frame_y"])
     assert all(track_df == track_df2)
     assert all(split_df == split_df2)
     assert all(merge_df == merge_df2)

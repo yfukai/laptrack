@@ -55,6 +55,8 @@ def test_scores(test_trees) -> None:
     }
     assert score == calc_scores(true_tree.edges, pred_tree.edges)
 
+    assert calc_scores(true_tree.edges, []).keys() == score.keys()
+
 
 def test_scores_no_track(test_trees) -> None:
     true_tree, pred_tree = test_trees

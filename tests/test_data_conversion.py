@@ -22,10 +22,29 @@ def test_convert_dataframe_to_coords():
         np.array([[3, 3], [4, 4]]),
         np.array([[5, 5], [6, 6], [7, 7], [8, 8], [9, 9]]),
     ]
+    frame_index_target = [
+        (0, 0),
+        (0, 1),
+        (0, 2),
+        (1, 0),
+        (1, 1),
+        (2, 0),
+        (2, 1),
+        (2, 2),
+        (2, 3),
+        (2, 4),
+    ]
 
     coords = data_conversion.convert_dataframe_to_coords(df, ["x", "y"])
     assert len(coords) == len(df["frame"].unique())
     assert all([np.all(c1 == c2) for c1, c2 in zip(coords, coords_target)])
+
+    coords, frame_index = data_conversion.convert_dataframe_to_coords_frame_index(
+        df, ["x", "y"]
+    )
+    assert len(coords) == len(df["frame"].unique())
+    assert all([np.all(c1 == c2) for c1, c2 in zip(coords, coords_target)])
+    assert frame_index == frame_index_target
 
 
 @pytest.fixture
@@ -167,6 +186,30 @@ def test_convert_tree_to_dataframe(test_trees):
     assert np.all(
         merge_df[["parent_track_id", "child_track_id"]].values == merge_df_target
     )
+
+
+@pytest.mark.parametrize("track_class", [LapTrack, LapTrackMulti])
+def test_convert_tree_to_dataframe_frame_index(track_class):
+    df = pd.DataFrame(
+        {
+            "frame": [0, 0, 0, 1, 1, 2, 2, 2, 2, 2],
+            "x": [0.1, 1.1, 2.1, 0.05, 1.05, 0.1, 1.1, 7, 8, 9],
+            "y": [0.1, 1.1, 2.1, 0.05, 1.05, 0.1, 1.1, 7, 8, 9],
+            "z": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+        }
+    )
+    coords, frame_index = data_conversion.convert_dataframe_to_coords_frame_index(
+        df, ["x", "y"]
+    )
+    lt = track_class(gap_closing_max_frame_count=1)
+    tree = lt.predict(coords)
+    df, split_df, merge_df = data_conversion.convert_tree_to_dataframe(
+        tree, dataframe=df, frame_index=frame_index
+    )
+    assert all(df["frame_y"] == df.index.get_level_values("frame"))
+    assert len(np.unique(df.iloc[[0, 3, 5]]["tree_id"])) == 1
+    assert len(np.unique(df.iloc[[1, 4, 6]]["tree_id"])) == 1
+    assert len(np.unique(df["tree_id"])) > 1
 
 
 @pytest.mark.parametrize("track_class", [LapTrack, LapTrackMulti])

@@ -1,5 +1,6 @@
 """Main module for tracking."""
 import logging
+import warnings
 from abc import ABC
 from abc import abstractmethod
 from inspect import Parameter
@@ -36,7 +37,10 @@ from ._optimization import lap_optimization
 from ._typing_utils import NumArray
 from ._typing_utils import Int
 from ._coo_matrix_builder import coo_matrix_builder
-from .data_conversion import convert_dataframe_to_coords, convert_tree_to_dataframe
+from .data_conversion import (
+    convert_dataframe_to_coords_frame_index,
+    convert_tree_to_dataframe,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -612,6 +616,7 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
         coordinate_cols: List[str],
         frame_col: str = "frame",
         validate_frame: bool = True,
+        only_coordinate_cols: bool = True,
     ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         """Shorthand for the tracking with the dataframe input / output.
 
@@ -625,10 +630,12 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
             The column name to use for the frame index. Defaults to "frame".
         validate_frame : bool, optional
             Whether to validate the frame. Defaults to True.
+        only_coordinate_cols : bool, optional
+            Whether to use only coordinate columns. Defaults to True.
 
         Returns
         -------
-        df : pd.DataFrame
+        track_df : pd.DataFrame
             the track dataframe, with the following columns:
             - "frame" : the frame index
             - "index" : the coordinate index
@@ -644,13 +651,24 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
             - "parent_track_id" : the track id of the parent
             - "child_track_id" : the track id of the parent
         """
-        coords = convert_dataframe_to_coords(
+        coords, frame_index = convert_dataframe_to_coords_frame_index(
             df, coordinate_cols, frame_col, validate_frame
         )
         tree = self.predict(coords)
-        df, split_df, merge_df = convert_tree_to_dataframe(tree, coords)
-        df = df.rename(columns={f"coord-{i}": k for i, k in enumerate(coordinate_cols)})
-        return df, split_df, merge_df
+        if only_coordinate_cols:
+            track_df, split_df, merge_df = convert_tree_to_dataframe(tree, coords)
+            track_df = track_df.rename(
+                columns={f"coord-{i}": k for i, k in enumerate(coordinate_cols)}
+            )
+            warnings.warn(
+                "The parameter only_coordinate_cols will be False by default in the major release.",
+                FutureWarning,
+            )
+        else:
+            track_df, split_df, merge_df = convert_tree_to_dataframe(
+                tree, dataframe=df, frame_index=frame_index
+            )
+        return track_df, split_df, merge_df
 
 
 class LapTrack(LapTrackBase):
