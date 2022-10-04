@@ -37,7 +37,7 @@ from ._typing_utils import NumArray
 from ._typing_utils import Int
 from ._coo_matrix_builder import coo_matrix_builder
 from .data_conversion import (
-    convert_dataframe_to_coords_inverse_map,
+    convert_dataframe_to_coords_frame_index,
     convert_tree_to_dataframe,
 )
 
@@ -647,7 +647,7 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
             - "parent_track_id" : the track id of the parent
             - "child_track_id" : the track id of the parent
         """
-        coords, inverse_map = convert_dataframe_to_coords_inverse_map(
+        coords, frame_index = convert_dataframe_to_coords_frame_index(
             track_df, coordinate_cols, frame_col, validate_frame
         )
         tree = self.predict(coords)
