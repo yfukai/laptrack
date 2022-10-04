@@ -157,6 +157,7 @@ def convert_tree_to_dataframe(
                 for _, row in track_df.iterrows()
             ]
     elif dataframe is not None:
+        dataframe = dataframe.copy()
         assert len(track_df) == len(dataframe)
         df_len = len(track_df)
         if frame_index is None:
