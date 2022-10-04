@@ -206,7 +206,6 @@ def test_convert_tree_to_dataframe_frame_index(track_class):
     df, split_df, merge_df = data_conversion.convert_tree_to_dataframe(
         tree, dataframe=df, frame_index=frame_index
     )
-    print(df)
     assert all(df["frame_y"] == df.index.get_level_values("frame"))
     assert len(np.unique(df.iloc[[0, 3, 5]]["tree_id"])) == 1
     assert len(np.unique(df.iloc[[1, 4, 6]]["tree_id"])) == 1

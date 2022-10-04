@@ -1,5 +1,6 @@
 """Main module for tracking."""
 import logging
+import warnings
 from abc import ABC
 from abc import abstractmethod
 from inspect import Parameter
@@ -611,10 +612,11 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
 
     def predict_dataframe(
         self,
-        track_df: pd.DataFrame,
+        df: pd.DataFrame,
         coordinate_cols: List[str],
         frame_col: str = "frame",
         validate_frame: bool = True,
+        only_coordinate_cols: bool = True,
     ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         """Shorthand for the tracking with the dataframe input / output.
 
@@ -628,6 +630,8 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
             The column name to use for the frame index. Defaults to "frame".
         validate_frame : bool, optional
             Whether to validate the frame. Defaults to True.
+        only_coordinate_cols : bool, optional
+            Whether to use only coordinate columns. Defaults to True.
 
         Returns
         -------
@@ -648,13 +652,22 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
             - "child_track_id" : the track id of the parent
         """
         coords, frame_index = convert_dataframe_to_coords_frame_index(
-            track_df, coordinate_cols, frame_col, validate_frame
+            df, coordinate_cols, frame_col, validate_frame
         )
         tree = self.predict(coords)
-        track_df, split_df, merge_df = convert_tree_to_dataframe(tree, coords)
-        track_df = track_df.rename(
-            columns={f"coord-{i}": k for i, k in enumerate(coordinate_cols)}
-        )
+        if only_coordinate_cols:
+            track_df, split_df, merge_df = convert_tree_to_dataframe(tree, coords)
+            track_df = track_df.rename(
+                columns={f"coord-{i}": k for i, k in enumerate(coordinate_cols)}
+            )
+            warnings.warn(
+                "The parameter only_coordinate_cols will be False by default in the major release.",
+                FutureWarning,
+            )
+        else:
+            track_df, split_df, merge_df = convert_tree_to_dataframe(
+                tree, dataframe=df, frame_index=frame_index
+            )
         return track_df, split_df, merge_df
 
 
