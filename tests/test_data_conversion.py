@@ -189,6 +189,26 @@ def test_convert_tree_to_dataframe(test_trees):
 
 
 @pytest.mark.parametrize("track_class", [LapTrack, LapTrackMulti])
+def test_convert_tree_to_dataframe_by_inverse_map(track_class):
+    df = pd.DataFrame(
+        {
+            "frame": [0, 0, 0, 1, 1, 2, 2, 2, 2, 2],
+            "x": [0.1, 1.1, 2.1, 0.05, 1.05, 0.1, 1.1, 7, 8, 9],
+            "y": [0.1, 1.1, 2.1, 0.05, 1.05, 0.1, 1.1, 7, 8, 9],
+            "z": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+        }
+    )
+    coords, inverse_map = data_conversion.convert_dataframe_to_coords_inverse_map(
+        df, ["x", "y"]
+    )
+    lt = track_class()
+    tree = lt.predict(coords)
+    df, split_df, merge_df = data_conversion.convert_tree_to_dataframe(
+        tree, dataframe=df, inverse_map=inverse_map
+    )
+
+
+@pytest.mark.parametrize("track_class", [LapTrack, LapTrackMulti])
 def test_integration(track_class):
     df = pd.DataFrame(
         {

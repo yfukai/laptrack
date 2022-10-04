@@ -72,9 +72,10 @@ def convert_dataframe_to_coords_inverse_map(
     coords : List[np.ndarray]
         the list of coordinates
     inverse_map : Dict[Tuple(int,int),int]
-        the inverse map to map (frame, index) to the original iloc of the dataframe. Only returned if return_inverse_map is true.
+        the inverse map to map (frame, index) to the original iloc of the dataframe.
     """
     assert "iloc__" not in df.columns
+    df = df.copy()
     df["iloc__"] = np.arange(len(df), dtype=int)
 
     coords = convert_dataframe_to_coords(
@@ -94,7 +95,10 @@ def convert_dataframe_to_coords_inverse_map(
 
 
 def convert_tree_to_dataframe(
-    tree: nx.DiGraph, coords: Optional[Sequence[NumArray]] = None
+    tree: nx.DiGraph,
+    coords: Optional[Sequence[NumArray]] = None,
+    dataframe: Optional[pd.DataFrame] = None,
+    inverse_map: Optional[Dict[Tuple[int, int], int]] = None,
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Convert the track tree to dataframes.
 
@@ -104,6 +108,10 @@ def convert_tree_to_dataframe(
         The track tree, resulted from the traking
     coords : Optional[Sequence[NumArray]]
         The coordinate values. If None, no coordinate values are appended to the dataframe.
+    dataframe : Optional[pd.DataFrame]
+        The dataframe. If not None, `inverse_map` should also exist. Ignored if `coords` is not None.
+    inverse_map : Optional[Dict[Tuple[int,int],int]]
+        the inverse map to map (frame, index) to the original iloc of the dataframe.
 
     Returns
     -------
@@ -144,6 +152,27 @@ def convert_tree_to_dataframe(
                 coords[int(row["frame"])][int(row["index"]), i]
                 for _, row in track_df.iterrows()
             ]
+    elif dataframe is not None:
+        if inverse_map is None:
+            raise ValueError("inverse_map must not be None if dataframe is not None")
+        ilocs = np.array(list(inverse_map.values()), dtype=int)
+        assert np.all(
+            ilocs == np.arange(len(dataframe))
+        ), "inverse map iloc is incorrect"
+
+        frame_index = set(
+            [
+                tuple([int(v) for v in vv])
+                for vv in track_df[["frame", "index"]].to_numpy()
+            ]
+        )
+        assert (
+            set(list(inverse_map.keys())) == frame_index
+        ), "inverse map (frame,index) is incorrect"
+
+        assert "__frame" not in dataframe.columns()
+        assert "__index" not in dataframe.columns()
+        dataframe["__frame"] = []
 
     track_df = track_df.set_index(["frame", "index"])
     connected_components = list(nx.connected_components(nx.Graph(tree)))
