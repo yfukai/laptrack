@@ -1,4 +1,5 @@
 """Data conversion utilities for tracking."""
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Sequence
@@ -19,7 +20,6 @@ def convert_dataframe_to_coords(
     coordinate_cols: List[str],
     frame_col: str = "frame",
     validate_frame: bool = True,
-    return_inverse_map: bool = False,
 ) -> List[NumArray]:
     """
     Convert a track dataframe to a list of coordinates for input.
@@ -34,41 +34,63 @@ def convert_dataframe_to_coords(
         The column name to use for the frame index. Defaults to "frame".
     validate_frame : bool, optional
         Whether to validate the frame. Defaults to True.
-    return_inverse_map : bool, optional
-        If True, a dict with {(frame, index): original_iloc} will be returned as the second value. Defaults to False.
+
+    Returns
+    -------
+    coords : List[np.ndarray]
+        the list of coordinates
+    """
+    grps = list(df.groupby(frame_col, sort=True))
+    if validate_frame:
+        assert np.array_equal(np.arange(df[frame_col].max() + 1), [g[0] for g in grps])
+    coords = [grp[list(coordinate_cols)].values for _frame, grp in grps]
+    return coords
+
+
+def convert_dataframe_to_coords_with_inverse_map(
+    df: pd.DataFrame,
+    coordinate_cols: List[str],
+    frame_col: str = "frame",
+    validate_frame: bool = True,
+) -> Tuple[List[NumArray], Dict[Tuple[int, int], int]]:
+    """
+    Convert a track dataframe to a list of coordinates for input.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        the input dataframe
+    coordinate_cols : List[str]
+        the list of columns to use for coordinates
+    frame_col : str, optional
+        The column name to use for the frame index. Defaults to "frame".
+    validate_frame : bool, optional
+        Whether to validate the frame. Defaults to True.
 
     Returns
     -------
     coords : List[np.ndarray]
         the list of coordinates
     inverse_map : Dict[Tuple(int,int),int]
-        the inverse map to map (frame, index) to the original iloc of the dataframe.
+        the inverse map to map (frame, index) to the original iloc of the dataframe. Only returned if return_inverse_map is true.
     """
-    if return_inverse_map:
-        assert "iloc__" not in df.columns
-        df["iloc__"] = np.arange(len(df))
+    assert "iloc__" not in df.columns
+    df["iloc__"] = np.arange(len(df), dtype=int)
 
-    grps = list(df.groupby(frame_col, sort=True))
-    if validate_frame:
-        assert np.array_equal(np.arange(df[frame_col].max() + 1), [g[0] for g in grps])
+    coords = convert_dataframe_to_coords(
+        df, list(coordinate_cols) + ["iloc__"], frame_col, validate_frame
+    )
 
-    if return_inverse_map:
-        coords = [
-            grp[list(coordinate_cols) + ["iloc__"]].values for _frame, grp in grps
-        ]
-        inverse_map = dict(
-            sum(
-                [
-                    [((frame, index), c2[-1]) for index, c2 in enumerate(c)]
-                    for frame, c in enumerate(coords)
-                ],
-                [],
-            )
+    inverse_map = dict(
+        sum(
+            [
+                [((frame, index), int(c2[-1])) for index, c2 in enumerate(c)]
+                for frame, c in enumerate(coords)
+            ],
+            [],
         )
-        return [c[:, :-1] for c in coords], inverse_map
-    else:
-        coords = [grp[list(coordinate_cols)].values for _frame, grp in grps]
-        return coords
+    )
+    return [c[:, :-1] for c in coords], inverse_map
 
 
 def convert_tree_to_dataframe(
