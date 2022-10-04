@@ -51,7 +51,7 @@ def convert_dataframe_to_coords_frame_index(
     coordinate_cols: List[str],
     frame_col: str = "frame",
     validate_frame: bool = True,
-) -> Tuple[List[NumArray], Tuple[int, int]]:
+) -> Tuple[List[NumArray], List[Tuple[int, int]]]:
     """
     Convert a track dataframe to a list of coordinates for input.
 
@@ -70,7 +70,7 @@ def convert_dataframe_to_coords_frame_index(
     -------
     coords : List[np.ndarray]
         the list of coordinates
-    frame_index : Tuple[int,int]
+    frame_index : List[Tuple[int, int]]
         the (frame, index) list for the original iloc of the dataframe.
     """
     assert "iloc__" not in df.columns
@@ -102,7 +102,7 @@ def convert_tree_to_dataframe(
     tree: nx.DiGraph,
     coords: Optional[Sequence[NumArray]] = None,
     dataframe: Optional[pd.DataFrame] = None,
-    frame_index: Optional[Tuple[int, int]] = None,
+    frame_index: Optional[List[Tuple[int, int]]] = None,
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Convert the track tree to dataframes.
 
@@ -114,7 +114,7 @@ def convert_tree_to_dataframe(
         The coordinate values. If None, no coordinate values are appended to the dataframe.
     dataframe : Optional[pd.DataFrame]
         The dataframe. If not None, `frame_index` should also exist. Ignored if `coords` is not None.
-    frame_index : Optional[Tuple[int,int]]
+    frame_index : Optional[List[Tuple[int, int]]]
         the inverse map to map (frame, index) to the original iloc of the dataframe.
 
     Returns
