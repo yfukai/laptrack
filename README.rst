@@ -43,6 +43,9 @@ Features
 
 Provides a robust particle tracking algorithm using the Linear Assignment Problem, with various cost functions for linking.
 
+See the `preprint`_ and `associated repository`_ for the algorithm and parameter optimization by `Ray-Tune`_.
+
+
 Installation
 ------------
 
@@ -115,6 +118,9 @@ If you use this program for your research, please cite it and help us build more
       url   = {https://doi.org/10.5281/zenodo.5519537},
    }
 
+.. _preprint: https://www.biorxiv.org/content/10.1101/2022.10.05.511038v1
+.. _associated repository: https://github.com/NoneqPhysLivingMatterLab/laptrack-optimization
+.. _Ray-Tune: https://www.ray.io/ray-tune
 
 .. _K. Jaqaman et al. (2008): https://www.nature.com/articles/nmeth.1237
 .. _TrackMate: https://imagej.net/plugins/trackmate/
