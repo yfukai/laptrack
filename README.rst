@@ -98,6 +98,16 @@ If you use this program for your research, please cite it and help us build more
 
 .. code-block:: bib
 
+   @misc{fukai_2022,
+     title = {{{LapTrack}}: {{Linear}} Assignment Particle Tracking with Tunable Metrics},
+     shorttitle = {{{LapTrack}}},
+     author = {Fukai, Yohsuke T. and Kawaguchi, Kyogo},
+     year = {2022},
+     month = oct,
+     pages = {2022.10.05.511038},
+     publisher = {{bioRxiv}},
+     doi = {10.1101/2022.10.05.511038},
+   }
    @misc{laptrack,
       author = {Yohsuke T. Fukai},
       title = {laptrack},
