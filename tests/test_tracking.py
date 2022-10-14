@@ -63,6 +63,12 @@ FILENAME_SUFFIX_PARAMS = [
             "splitting_cost_cutoff": False,
         },
     ),
+    (
+        "with_merging_splitting",
+        {
+            **DEFAULT_PARAMS,  # type: ignore
+        },
+    ),
 ]  # type: ignore
 
 
