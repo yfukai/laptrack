@@ -24,7 +24,7 @@ lt = LapTrack(
 track_df, split_df, merge_df = lt.predict_dataframe(
     spots_df,
     ["position_x", "position_y"],
-    only_coordinate_cols=False,
+    #    only_coordinate_cols=False,
 )
 
 print(
@@ -113,4 +113,11 @@ for edge in track_tree.edges():
 # [116.28953441, 116.35973216] and [116.18952078, 116.27853574] in this example.
 
 
+# %%
+# import napari
+#
+# v = napari.Viewer()
+# v.add_points(spots_df[["frame", "position_x", "position_y"]])
+# track_df2 = track_df.reset_index()
+# v.add_tracks(track_df2[["track_id", "frame", "position_x", "position_y"]])
 # %%
