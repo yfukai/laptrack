@@ -209,8 +209,8 @@ def convert_tree_to_dataframe(
                 splits.append((node, children))
         if len(parents) > 1:
             for parent in parents:
-                if tree2.has_edge(node, parent):
-                    tree2.remove_edge(node, parent)
+                if tree2.has_edge(parent, node):
+                    tree2.remove_edge(parent, node)
             if node not in [p[0] for p in merges]:
                 merges.append((node, parents))
 
