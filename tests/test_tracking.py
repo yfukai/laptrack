@@ -1,3 +1,4 @@
+# %%
 """Test cases for the tracking."""
 import warnings
 from itertools import product
@@ -61,6 +62,13 @@ FILENAME_SUFFIX_PARAMS = [
         {
             **DEFAULT_PARAMS,  # type: ignore
             "splitting_cost_cutoff": False,
+        },
+    ),
+    (
+        "with_splitting_merging",
+        {
+            **DEFAULT_PARAMS,  # type: ignore
+            "alternative_cost_percentile_interpolation": "higher",
         },
     ),
 ]  # type: ignore
@@ -272,3 +280,37 @@ def test_no_connected_node(tracker_class) -> None:
     track_tree = lt.predict(coords)
     for frame, index in product([0, 1], [0, 1]):
         assert (frame, index) in track_tree.nodes()
+
+
+# # %%
+# filename_suffix, params = FILENAME_SUFFIX_PARAMS[-1]
+# # params['splitting_cost_cutoff']=False
+# #params['merging_cost_cutoff']=50**2
+# filename = path.join("data/", f"trackmate_tracks_{filename_suffix}")
+# spots_df = pd.read_csv(filename + "_spots.csv")
+# frame_max = spots_df["frame"].max()
+# coords = []
+# spot_ids = []
+# for i in range(frame_max):
+#     df = spots_df[spots_df["frame"] == i]
+#     coords.append(df[["position_x", "position_y"]].values)
+#     spot_ids.append(df["id"].values)
+#
+# spot_id_to_coord_id = {}
+# for i, spot_ids_frame in enumerate(spot_ids):
+#     for j, spot_id in enumerate(spot_ids_frame):
+#         assert not spot_id in spot_id_to_coord_id
+#         spot_id_to_coord_id[spot_id] = (i, j)
+#
+# edges_df = pd.read_csv(filename + "_edges.csv", index_col=0)
+# edges_df["coord_source_id"] = edges_df["spot_source_id"].map(spot_id_to_coord_id)
+# edges_df["coord_target_id"] = edges_df["spot_target_id"].map(spot_id_to_coord_id)
+# valid_edges_df = edges_df[~pd.isna(edges_df["coord_target_id"])]
+# edges_arr = valid_edges_df[["coord_source_id", "coord_target_id"]].values
+# edges_set = set(list(map(tuple, (edges_arr))))
+#
+# lt = LapTrack(**params)
+# track_tree = lt.predict(coords)
+# assert edges_set == set(track_tree.edges)
+# # %%
+#
