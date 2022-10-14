@@ -127,6 +127,8 @@ def test_reproducing_trackmate(testdata, tracker_class) -> None:
         )
     df = pd.concat(data)
     track_df, split_df, merge_df = lt.predict_dataframe(df, ["x", "y"])
+    assert not any(split_df.duplicated())
+    assert not any(merge_df.duplicated())
     track_df2, split_df2, merge_df2 = convert_tree_to_dataframe(track_tree, coords)
     track_df2 = track_df2.rename(columns={"coord-0": "x", "coord-1": "y"})
     assert all(track_df == track_df2)
