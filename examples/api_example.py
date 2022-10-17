@@ -24,7 +24,7 @@ lt = LapTrack(
 track_df, split_df, merge_df = lt.predict_dataframe(
     spots_df,
     ["position_x", "position_y"],
-    #    only_coordinate_cols=False,
+    only_coordinate_cols=False,
 )
 
 print(
