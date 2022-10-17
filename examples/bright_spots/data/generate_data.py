@@ -118,12 +118,7 @@ viewer.add_image(images2)
 np.save("brownian_particles_images.npy", images2)
 images3 = images2 + np.random.normal(scale=0.05, size=images2.shape)
 viewer.add_image(images3)
-np.savez_compressed(
-    "brownian_particles_images_with_noise.npz", images=images3[:, :50, :50]
-)
-
-# %%
-images3 = np.load("brownian_particles_images_with_noise.npz")["images"]
+np.savez_compressed("brownian_particles_images_with_noise.npz", images=images3)
 np.savez_compressed(
     "brownian_particles_images_with_noise_small.npz", images=images3[:, :80, :80]
 )
