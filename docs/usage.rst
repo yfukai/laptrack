@@ -3,9 +3,9 @@ Usage
 
 Example usage: tracking pre-detected spots
 
-.. literalinclude:: ../examples/lap_tracking_example.py
+.. literalinclude:: ../examples/api_example.py
    :language: python
-   :emphasize-lines: 29-37
+   :emphasize-lines: 24-28, 101-103
 
 Example usage: manual-annotation-aware tracking
 
