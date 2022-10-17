@@ -38,14 +38,14 @@ print(
     ]
 )
 
-#              position_x  position_y  tree_id  track_id
+#              position_x  position_y  track_id  tree_id
 # frame index
-# 0     0      116.289534  116.359732        0         0
-#       1       63.970888    4.018656        1         1
-# 1     0       64.120219    6.173494        1         1
-#       1      116.189521  116.278536        0         0
-# 2     0       64.088872    9.962219        1         1
-# ...                 ...         ...      ...       ...
+# 0     0      116.289534  116.359732         0        0
+#       1       63.970888    4.018656         1        1
+# 1     0       64.120219    6.173494         1        1
+#       1      116.189521  116.278536         0        0
+# 2     0       64.088872    9.962219         1        1
+# ...                 ...         ...       ...      ...
 
 # The original dataframe with additional columns "track_id" and "tree_id".
 # The track_id is a unique id for each track segments without branches.
@@ -59,6 +59,8 @@ print(split_df)
 # 1                1               3
 # 2                3               5
 # 3                3               4
+# 4                0               7
+# 5                0               6
 
 # The dataframe for splitting events with the following columns:
 # - "parent_track_id" : the track id of the parent
@@ -67,10 +69,10 @@ print(split_df)
 print(merge_df)
 
 #    parent_track_id  child_track_id
-# 0                5               5
-# 1                5               5
-# 2                2               2
-# 3                2               2
+# 0                6               8
+# 1                7               8
+# 2                4               9
+# 3                2               9
 
 # The dataframe for merging events with the following columns:
 # - "parent_track_id" : the track id of the parent

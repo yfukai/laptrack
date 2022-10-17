@@ -9,3 +9,7 @@
 /src/*.egg-info/
 __pycache__/
 .vscode/settings.json
+Untitled.ipynb
+examples/bright_spots/data/brownian_particles.gif
+examples/bright_spots/data/brownian_particles.npy
+examples/bright_spots/data/brownian_particles_images.npy
