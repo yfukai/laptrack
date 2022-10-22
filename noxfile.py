@@ -21,7 +21,7 @@ except ImportError:
 
 package = "laptrack"
 python_versions = ["3.10", "3.9", "3.8", "3.7"]
-safety_ignore = [44717, 44715, 44716] # ignore numpy 1.21 CVEs
+safety_ignore = [44717, 44715, 44716]  # ignore numpy 1.21 CVEs
 nox.needs_version = ">= 2021.6.6"
 nox.options.sessions = (
     "pre-commit",
@@ -48,8 +48,13 @@ def safety(session: Session) -> None:
     """Scan dependencies for insecure packages."""
     requirements = session.poetry.export_requirements()
     session.install("safety")
-    session.run("safety", "check", "--full-report", f"--file={requirements}", 
-                *[f"--ignore={ignore}" for ignore in safety_ignore])
+    session.run(
+        "safety",
+        "check",
+        "--full-report",
+        f"--file={requirements}",
+        *[f"--ignore={ignore}" for ignore in safety_ignore],
+    )
 
 
 @session(python=python_versions)
