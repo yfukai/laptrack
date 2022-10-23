@@ -2,6 +2,7 @@ from typing import Optional
 from typing import Union
 
 import numpy as np
+from packaging import version
 from scipy.sparse import coo_matrix
 
 from ._coo_matrix_builder import coo_matrix_builder
@@ -144,12 +145,17 @@ def build_segment_cost_matrix(
         or no_splitting_cost is None
         or no_merging_cost is None
     ):
+        if version.parse(np.__version__) < version.parse("1.22"):
+            percentile_kwarg = "interpolation"
+        else:
+            percentile_kwarg = "method"
+
         alternative_cost = (
             np.percentile(
                 # XXX seems numpy / mypy is over-strict here. Will fix later.
                 C.data,  # type: ignore
                 alternative_cost_percentile,
-                method=alternative_cost_percentile_interpolation,
+                **{percentile_kwarg: alternative_cost_percentile_interpolation},
             )
             * alternative_cost_factor
         )
