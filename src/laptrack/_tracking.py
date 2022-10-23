@@ -17,7 +17,7 @@ from typing import Union
 
 # https://stackoverflow.com/questions/59037244/mypy-incompatible-import-error-for-conditional-imports # noqa :
 if TYPE_CHECKING:
-    from typing import Literal # type: ignore
+    from typing import Literal  # type: ignore
 else:
     try:
         from typing import Literal
