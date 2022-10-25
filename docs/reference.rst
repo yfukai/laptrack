@@ -1,5 +1,5 @@
-Reference
-=========
+API Reference
+=============
 
 .. contents::
     :local:
@@ -21,8 +21,7 @@ laptrack
    :model-summary-list-order: bysource
    :member-order: bysource
 
-.. automodule:: laptrack
-   :members:
+.. autofunction:: laptrack.laptrack
 
 data conversion utilities
 ------------------------------

@@ -9,7 +9,7 @@
    :maxdepth: 1
 
    usage
-   reference
+   API reference <reference>
    contributing
    Code of Conduct <codeofconduct>
    License <license>
