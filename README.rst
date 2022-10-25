@@ -45,6 +45,12 @@ Provides a robust particle tracking algorithm using the Linear Assignment Proble
 
 See the `preprint`_ and `associated repository`_ for the algorithm and parameter optimization by `Ray-Tune`_.
 
+Requirements
+------------
+
+Python >= 3.7.11 is supported.
+The software is tested against Python 3.7-3.10 in Ubuntu, and 3.10 in MacOS and Windows environments,
+but the other combinations should also be fine. Please `file an issue`_ if you encounter any problem.
 
 Installation
 ------------
@@ -55,11 +61,21 @@ You can install *LapTrack* via pip_ from PyPI_:
 
    $ pip install laptrack
 
+In Google Colaboratory, try
+
+.. code:: console
+
+   $ pip install --upgrade laptrack spacy flask
+
+to update the pre-installed packages.
+
 
 Usage
 -----
 
 Please see the Usage_ for details.
+
+The `API reference <https://laptrack.readthedocs.io/en/latest/reference.html>`_ covers the main classes and functions provided by LapTrack.
 
 Contributing
 ------------
