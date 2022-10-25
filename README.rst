@@ -75,7 +75,7 @@ Usage
 
 Please see the Usage_ for details.
 
-`API reference <https://laptrack.readthedocs.io/en/latest/reference.html>`_ covers the main classes and functions provided by LapTrack.
+The `API reference <https://laptrack.readthedocs.io/en/latest/reference.html>`_ covers the main classes and functions provided by LapTrack.
 
 Contributing
 ------------
