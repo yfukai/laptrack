@@ -661,12 +661,12 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
             df, coordinate_cols, frame_col, validate_frame
         )
         if connected_edges is not None:
-            connected_edges = [
+            connected_edges2 = [
                 (frame_index[i1], frame_index[i2]) for i1, i2 in connected_edges
             ]
         else:
-            connected_edges = None
-        tree = self.predict(coords, connected_edges=connected_edges)
+            connected_edges2 = None
+        tree = self.predict(coords, connected_edges=connected_edges2)
         if only_coordinate_cols:
             track_df, split_df, merge_df = convert_tree_to_dataframe(tree, coords)
             track_df = track_df.rename(

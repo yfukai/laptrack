@@ -266,11 +266,11 @@ def test_connected_edges(tracker_class) -> None:
             "x": [10, 11, 10, 11],
         }
     )
-    connected_edges = [(0, 3)]
+    connected_edges2 = [(0, 3)]
     track_df, _split_df, _merge_df = lt.predict_dataframe(
         coords_df,
         coordinate_cols=["y", "x"],
-        connected_edges=connected_edges,
+        connected_edges=connected_edges2,
         only_coordinate_cols=False,
     )
     assert set(
@@ -301,11 +301,11 @@ def test_connected_edges_splitting(tracker_class) -> None:
             "x": [10, 11, 12, 10, 11, 15],
         }
     )
-    connected_edges = [(0, 4), (0, 5)]
+    connected_edges2 = [(0, 4), (0, 5)]
     track_df, split_df, _merge_df = lt.predict_dataframe(
         coords_df,
         coordinate_cols=["y", "x"],
-        connected_edges=connected_edges,
+        connected_edges=connected_edges2,
         only_coordinate_cols=False,
     )
     assert set(
@@ -324,8 +324,8 @@ def test_connected_edges_splitting(tracker_class) -> None:
                 ),
             )
         )
-    track_pairs = set(track_pairs)
-    assert track_pairs == {(((10, 10),), ((13, 11),)), (((10, 10),), ((13, 15),))}
+    track_pairs2 = set(track_pairs)
+    assert track_pairs2 == {(((10, 10),), ((13, 11),)), (((10, 10),), ((13, 15),))}
     # ((10,10),(13,11)),((10,10),(13,15)), is the splitted
 
 
