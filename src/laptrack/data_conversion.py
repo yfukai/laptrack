@@ -53,7 +53,7 @@ def convert_dataframe_to_coords_frame_index(
     validate_frame: bool = True,
 ) -> Tuple[List[NumArray], List[Tuple[int, int]]]:
     """
-    Convert a track dataframe to a list of coordinates for input.
+    Convert a track dataframe to a list of coordinates for input with (frame,index) list.
 
     Parameters
     ----------
