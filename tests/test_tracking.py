@@ -242,6 +242,10 @@ def test_no_accepting_wrong_argments() -> None:
         lt = LapTrack(fugafuga=True)
 
 
+def df_to_tuples(df):
+    return tuple([tuple(map(int, v)) for v in df.values])
+
+
 @pytest.mark.parametrize("tracker_class", [LapTrack, LapTrackMulti])
 def test_connected_edges(tracker_class) -> None:
     coords = [np.array([[10, 10], [12, 11]]), np.array([[10, 10], [13, 11]])]
@@ -254,6 +258,24 @@ def test_connected_edges(tracker_class) -> None:
     track_tree = lt.predict(coords, connected_edges=connected_edges)
     edges = track_tree.edges()
     assert set(edges) == set([((0, 0), (1, 1)), ((0, 1), (1, 0))])
+
+    coords_df = pd.DataFrame(
+        {
+            "frame": [0, 0, 1, 1],
+            "y": [10, 12, 10, 13],
+            "x": [10, 11, 10, 11],
+        }
+    )
+    connected_edges = [(0, 3)]
+    track_df, _split_df, _merge_df = lt.predict_dataframe(
+        coords_df,
+        coordinate_cols=["y", "x"],
+        connected_edges=connected_edges,
+        only_coordinate_cols=False,
+    )
+    assert set(
+        [df_to_tuples(grp[["y", "x"]]) for _, grp in track_df.groupby("track_id")]
+    ) == {((10, 10), (13, 11)), ((12, 11), (10, 10))}
 
 
 @pytest.mark.parametrize("tracker_class", [LapTrack, LapTrackMulti])
@@ -271,6 +293,40 @@ def test_connected_edges_splitting(tracker_class) -> None:
     track_tree = lt.predict(coords, connected_edges=connected_edges)
     edges = track_tree.edges()
     assert set(edges) == set([((0, 0), (1, 1)), ((0, 0), (1, 2)), ((0, 1), (1, 0))])
+
+    coords_df = pd.DataFrame(
+        {
+            "frame": [0, 0, 0, 1, 1, 1],
+            "y": [10, 11, 13, 10, 13, 13],
+            "x": [10, 11, 12, 10, 11, 15],
+        }
+    )
+    connected_edges = [(0, 4), (0, 5)]
+    track_df, split_df, _merge_df = lt.predict_dataframe(
+        coords_df,
+        coordinate_cols=["y", "x"],
+        connected_edges=connected_edges,
+        only_coordinate_cols=False,
+    )
+    assert set(
+        [df_to_tuples(grp[["y", "x"]]) for _, grp in track_df.groupby("track_id")]
+    ) == {((11, 11), (10, 10)), ((13, 12),), ((10, 10),), ((13, 11),), ((13, 15),)}
+
+    track_pairs = []
+    for _, row in split_df.iterrows():
+        track_pairs.append(
+            (
+                df_to_tuples(
+                    track_df[track_df["track_id"] == row["parent_track_id"]][["y", "x"]]
+                ),
+                df_to_tuples(
+                    track_df[track_df["track_id"] == row["child_track_id"]][["y", "x"]]
+                ),
+            )
+        )
+    track_pairs = set(track_pairs)
+    assert track_pairs == {(((10, 10),), ((13, 11),)), (((10, 10),), ((13, 15),))}
+    # ((10,10),(13,11)),((10,10),(13,15)), is the splitted
 
 
 @pytest.mark.parametrize("tracker_class", [LapTrack, LapTrackMulti])

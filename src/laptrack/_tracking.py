@@ -36,6 +36,7 @@ from ._cost_matrix import build_frame_cost_matrix, build_segment_cost_matrix
 from ._optimization import lap_optimization
 from ._typing_utils import NumArray
 from ._typing_utils import Int
+from ._typing_utils import EdgeType
 from ._coo_matrix_builder import coo_matrix_builder
 from .data_conversion import (
     convert_dataframe_to_coords_frame_index,
@@ -534,8 +535,8 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
     def predict(
         self,
         coords: Sequence[NumArray],
-        connected_edges=None,
-        split_merge_validation=True,
+        connected_edges: Optional[EdgeType] = None,
+        split_merge_validation: bool = True,
     ) -> nx.DiGraph:
         """Predict the tracking graph from coordinates.
 
@@ -617,6 +618,7 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
         frame_col: str = "frame",
         validate_frame: bool = True,
         only_coordinate_cols: bool = True,
+        connected_edges: Optional[List[Tuple[Int, Int]]] = None,
     ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         """Shorthand for the tracking with the dataframe input / output.
 
@@ -632,6 +634,10 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
             Whether to validate the frame. Defaults to True.
         only_coordinate_cols : bool, optional
             Whether to use only coordinate columns. Defaults to True.
+        connected_edges : Optional[List[Tuple[Int,Int]]]
+            The edges that is known to be connected.
+            Must be list of tuple of the row numbers (not index, but iloc).
+            If None, no edges are assumed to be connected.
 
         Returns
         -------
@@ -654,7 +660,13 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
         coords, frame_index = convert_dataframe_to_coords_frame_index(
             df, coordinate_cols, frame_col, validate_frame
         )
-        tree = self.predict(coords)
+        if connected_edges is not None:
+            connected_edges = [
+                (frame_index[i1], frame_index[i2]) for i1, i2 in connected_edges
+            ]
+        else:
+            connected_edges = None
+        tree = self.predict(coords, connected_edges=connected_edges)
         if only_coordinate_cols:
             track_df, split_df, merge_df = convert_tree_to_dataframe(tree, coords)
             track_df = track_df.rename(
