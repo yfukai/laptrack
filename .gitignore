@@ -15,4 +15,4 @@ docs/examples/bright_spots_data/brownian_particles_images_with_noise.npz
 docs/examples/bright_spots_data/brownian_particles_images.npy
 docs/examples/bright_spots_data/brownian_particles.gif
 docs/examples/bright_spots_data/brownian_particles.npy
-docs/examples/segmentation_data/data.npz
+docs/examples/cell_segmentation_data/data.npz
