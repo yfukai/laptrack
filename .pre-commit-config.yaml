@@ -36,4 +36,4 @@ repos:
     hooks:
       - id: pydocstyle
         args: ["--convention=numpy"]
-        exclude: tests/|examples/
+        exclude: tests/|examples/|misc/

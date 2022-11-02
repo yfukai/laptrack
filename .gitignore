@@ -11,8 +11,8 @@ __pycache__/
 .ipynb_checkpoints/
 .vscode/settings.json
 Untitled.ipynb
-examples/bright_spots/data/brownian_particles.gif
-examples/bright_spots/data/brownian_particles.npy
-examples/bright_spots/data/brownian_particles_images.npy
-examples/bright_spots/data/brownian_particles_images_with_noise.npz
-examples/segmentation/data/data.npz
+docs/examples/bright_spots_data/brownian_particles_images_with_noise.npz
+docs/examples/bright_spots_data/brownian_particles_images.npy
+docs/examples/bright_spots_data/brownian_particles.gif
+docs/examples/bright_spots_data/brownian_particles.npy
+docs/examples/segmentation_data/data.npz
