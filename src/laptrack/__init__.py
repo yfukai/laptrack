@@ -13,4 +13,5 @@ __all__ = [
     "LapTrackMulti",
     "data_conversion",
     "scores",
+    "metric_utils",
 ]
