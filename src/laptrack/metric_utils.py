@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from skimage.measure import regionprops_table
 
+from ._typing_utils import Float
 from ._typing_utils import Int
 from ._typing_utils import IntArray
 
@@ -52,7 +53,7 @@ class LabelOverlap:
 
     def calc_overlap(
         self, frame1: Int, label1: Int, frame2: Int, label2: Int
-    ) -> Tuple[float, float, float, float]:
+    ) -> Tuple[Int, Float, Float, Float]:
         """Calculate the overlap properties of the labeled regions.
 
         Parameters

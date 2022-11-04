@@ -25,9 +25,10 @@ def test_label_overlap() -> None:
             union = np.sum(b1 | b2)
             r1 = np.sum(b1)
             r2 = np.sum(b2)
+            res = lo.calc_overlap(f1, l1, f2, l2)
             assert (
                 intersect,
                 (intersect / union),
                 (intersect / r1),
                 (intersect / r2),
-            ) == lo.calc_overlap(f1, l1, f2, l2)
+            ) == res
