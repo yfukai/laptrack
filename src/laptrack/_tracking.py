@@ -60,7 +60,7 @@ def _get_segment_df(coords, track_tree):
     Returns
     -------
     pd.DataFrame
-        the segment dataframe, with columns "segment", "first_frame", "first_index",
+        the segment dataframe, with the columns "segment", "first_frame", "first_index",
         "first_frame_coords", "last_frame", "last_index", "last_frame_coords"
 
     """
@@ -105,7 +105,7 @@ def _get_segment_end_connecting_matrix(
     Parameters
     ----------
     segments_df : pd.DataFrame
-        must have columns "first_frame", "first_index", "first_crame_coords", "last_frame", "last_index", "last_frame_coords"
+        must have the columns "first_frame", "first_index", "first_crame_coords", "last_frame", "last_index", "last_frame_coords"
     max_frame_count : int
         connecting cost is set to infinity if the distance between the two ends is larger than this value
     dist_metric :
@@ -287,25 +287,25 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
 
     track_dist_metric: Union[str, Callable] = Field(
         "sqeuclidean",
-        description="The metric for calculating track linking cost, "
+        description="The metric for calculating track linking cost. "
         + "See documentation for `scipy.spatial.distance.cdist` for accepted values.",
     )
     track_cost_cutoff: float = Field(
         15**2,
-        description="The cost cutoff for the connected points in the track."
-        + "For default cases with `dist_metric='sqeuclidean'`,"
+        description="The cost cutoff for the connected points in the track. "
+        + "For default cases with `dist_metric='sqeuclidean'`, "
         + "this value should be squared maximum distance.",
     )
     gap_closing_dist_metric: Union[str, Callable] = Field(
         "sqeuclidean",
-        description="The metric for calculating gap closing cost, "
+        description="The metric for calculating gap closing cost. "
         + "See documentation for `scipy.spatial.distance.cdist` for accepted values.",
     )
     gap_closing_cost_cutoff: Union[Literal[False], float] = Field(
         15**2,
-        description="The cost cutoff for gap closing."
-        + "For default cases with `dist_metric='sqeuclidean'`,"
-        + "this value should be squared maximum distance."
+        description="The cost cutoff for gap closing. "
+        + "For default cases with `dist_metric='sqeuclidean'`, "
+        + "this value should be squared maximum distance. "
         + "If False, no gap closing is allowed.",
     )
     gap_closing_max_frame_count: int = Field(
@@ -314,46 +314,46 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
 
     splitting_dist_metric: Union[str, Callable] = Field(
         "sqeuclidean",
-        description="The metric for calculating splitting cost."
-        + "See `track_dist_metric`",
+        description="The metric for calculating splitting cost. "
+        + "See `track_dist_metric`.",
     )
     splitting_cost_cutoff: Union[Literal[False], float] = Field(
         False,
-        description="The cost cutoff for splitting."
-        + "See `gap_closing_cost_cutoff`."
+        description="The cost cutoff for splitting. "
+        + "See `gap_closing_cost_cutoff`. "
         + "If False, no splitting is allowed.",
     )
     merging_dist_metric: Union[str, Callable] = Field(
         "sqeuclidean",
-        description="The metric for calculating merging cost."
+        description="The metric for calculating merging cost. "
         + "See `track_dist_metric`",
     )
     merging_cost_cutoff: Union[Literal[False], float] = Field(
         False,
-        description="The cost cutoff for merging."
-        + "See `gap_closing_cost_cutoff`."
+        description="The cost cutoff for merging. "
+        + "See `gap_closing_cost_cutoff`. "
         + "If False, no merging is allowed.",
     )
 
     track_start_cost: Optional[float] = Field(
         None,  # b in Jaqaman et al 2008 NMeth.
-        description="The cost for starting the track (b in Jaqaman et al 2008 NMeth),"
-        + "if None, automatically estimated",
+        description="The cost for starting the track (b in Jaqaman et al 2008 NMeth) "
+        + "If None, automatically estimated.",
     )
     track_end_cost: Optional[float] = Field(
         None,  # b in Jaqaman et al 2008 NMeth.
-        description="The cost for ending the track (b in Jaqaman et al 2008 NMeth),"
-        + "if None, automatically estimated",
+        description="The cost for ending the track (d in Jaqaman et al 2008 NMeth). "
+        + "If None, automatically estimated.",
     )
     segment_start_cost: Optional[float] = Field(
         None,  # b in Jaqaman et al 2008 NMeth for segment connection
-        description="The cost for starting the segment (b in Jaqaman et al 2008 NMeth),"
-        + "if None, automatically estimated",
+        description="The cost for starting the segment (b in Jaqaman et al 2008 NMeth). "
+        + "If None, automatically estimated.",
     )
     segment_end_cost: Optional[float] = Field(
         None,  # b in Jaqaman et al 2008 NMeth for segment connection
-        description="The cost for ending the segment (b in Jaqaman et al 2008 NMeth),"
-        + "if None, automatically estimated",
+        description="The cost for ending the segment (d in Jaqaman et al 2008 NMeth). "
+        + "If None, automatically estimated.",
     )
     no_splitting_cost: Optional[float] = Field(
         None,  # d' in Jaqaman et al 2008 NMeth.
@@ -366,18 +366,15 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
 
     alternative_cost_factor: float = Field(
         1.05,
-        description="The factor to calculate the alternative costs"
-        + "(b,d,b',d' in Jaqaman et al 2008 NMeth)",
+        description="The factor to calculate the alternative costs "
+        + "(b,d,b',d' in Jaqaman et al 2008 NMeth).",
     )
     alternative_cost_percentile: float = Field(
-        90,
-        description="The percentile to calculate the alternative costs"
-        + "(b,d,b',d' in Jaqaman et al 2008 NMeth)",
+        90, description="The percentile to calculate the alternative costs."
     )
     alternative_cost_percentile_interpolation: str = Field(
         "lower",
-        description="The percentile interpolation to calculate the alternative costs"
-        + "(b,d,b',d' in Jaqaman et al 2008 NMeth)."
+        description="The percentile interpolation to calculate the alternative costs. "
         + "See `numpy.percentile` for accepted values.",
     )
 
@@ -398,7 +395,7 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
 
         Returns
         -------
-            nx.Graph: the resulted tree
+            nx.Graph: The resulted tree.
 
         """
         # initialize tree
@@ -544,22 +541,23 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
         ----------
             coords : Sequence[NumArray]
                 The list of coordinates of point for each frame.
-                The array index means (sample, dimension).
+                The array index means `(sample, dimension)`.
             connected_edges : Optional[EdgeType]
                 The edges that is known to be connected.
                 If None, no edges are assumed to be connected.
             split_merge_validation : bool
-                If true, check if the split/merge edges are two.
+                If true, check if the split/merge edges are two-fold.
 
 
         Raises
         ------
-            ValueError: raised for invalid coordinate formats.
+            ValueError: Raised for invalid coordinate formats.
 
         Returns
         -------
-            nx.DiGraph: The graph for the tracks, whose nodes are (frame, index).
-                        The edge direction represents the time order.
+            track_tree : nx.DiGraph
+                The graph for the tracks, whose nodes are `(frame, index)`.
+                The edge direction represents the time order.
         """
         if any(list(map(lambda coord: coord.ndim != 2, coords))):
             raise ValueError("the elements in coords must be 2-dim.")
@@ -625,37 +623,40 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
         Parameters
         ----------
         df : pd.DataFrame
-            The input dataframe
+            The input dataframe.
         coordinate_cols : List[str]
-            The list of columns to use for coordinates
+            The list of the columns to use for coordinates.
         frame_col : str, optional
             The column name to use for the frame index. Defaults to "frame".
         validate_frame : bool, optional
             Whether to validate the frame. Defaults to True.
         only_coordinate_cols : bool, optional
-            Whether to use only coordinate columns. Defaults to True.
+            Whether to use only the coordinate columns. Defaults to True.
         connected_edges : Optional[List[Tuple[Int,Int]]]
             The edges that is known to be connected.
-            Must be list of tuple of the row numbers (not index, but iloc).
+            Must be a list of the tuples of the row numbers (not index, but `iloc`).
             If None, no edges are assumed to be connected.
 
         Returns
         -------
         track_df : pd.DataFrame
-            the track dataframe, with the following columns:
-            - "frame" : the frame index
-            - "index" : the coordinate index
-            - "track_id" : the track id
-            - "tree_id" : the tree id
-            - other columns : the coordinate values.
+            The track dataframe, with the following columns:
+
+            - "frame" : The frame index.
+            - "index" : The coordinate index.
+            - "track_id" : The track id.
+            - "tree_id" : The tree id.
+            - the other columns : The coordinate values.
         split_df : pd.DataFrame
-            the splitting dataframe, with the following columns:
-            - "parent_track_id" : the track id of the parent
-            - "child_track_id" : the track id of the parent
+            The splitting dataframe, with the following columns:
+
+            - "parent_track_id" : The track id of the parent.
+            - "child_track_id" : The track id of the child.
         merge_df : pd.DataFrame
-            the splitting dataframe, with the following columns:
-            - "parent_track_id" : the track id of the parent
-            - "child_track_id" : the track id of the parent
+            The merging dataframe, with the following columns:
+
+            - "parent_track_id" : The track id of the parent.
+            - "child_track_id" : The track id of the child.
         """
         coords, frame_index = convert_dataframe_to_coords_frame_index(
             df, coordinate_cols, frame_col, validate_frame
@@ -750,17 +751,18 @@ class LapTrackMulti(LapTrackBase):
 
     segment_connecting_metric: Union[str, Callable] = Field(
         "sqeuclidean",
-        description="The metric for calculating cost to connect segment ends."
+        description="The metric for calculating cost to connect segment ends. "
         + "See `track_dist_metric`.",
     )
     segment_connecting_cost_cutoff: float = Field(
         False,
-        description="The cost cutoff for splitting." + "See `gap_closing_cost_cutoff`.",
+        description="The cost cutoff for splitting. "
+        + "See `gap_closing_cost_cutoff`.",
     )
 
     remove_no_split_merge_links: bool = Field(
         False,
-        description="if True, remove segment connections if splitting did not happen.",
+        description="If True, remove segment connections if splitting did not happen.",
     )
 
     def _get_segment_connecting_matrix(
