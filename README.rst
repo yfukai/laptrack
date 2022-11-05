@@ -65,7 +65,7 @@ In Google Colaboratory, try
 
 .. code:: console
 
-   $ pip install --upgrade laptrack spacy flask
+   $ pip install --upgrade laptrack spacy flask matplotlib
 
 to update the pre-installed packages.
 
