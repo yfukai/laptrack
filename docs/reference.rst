@@ -34,3 +34,9 @@ score calculation utilities
 
 .. automodule:: laptrack.scores
    :members:
+
+metric utilities
+-------------------------------
+
+.. automodule:: laptrack.metric_utils
+   :members:
