@@ -9,8 +9,3 @@ Gallery for example usages.
     :glob:
 
     examples/*
-
-Example usage: manual-annotation-aware tracking
-
-
-see `examples/napari_interactive_example.ipynb`

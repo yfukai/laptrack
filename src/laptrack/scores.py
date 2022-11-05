@@ -58,38 +58,39 @@ def calc_scores(
     predicted_edges: EdgeType,
     exclude_true_edges: EdgeType = [],
     include_frames: Optional[Sequence[Int]] = None,
-    track_scores=True,
+    track_scores: bool = True,
 ) -> Dict[str, float]:
-    """
+    r"""
     Calculate track prediction scores.
 
     Parameters
     ----------
     true_edges : EdgeType
-        the list of true edges. assumes ((frame1,index1), (frame2,index2)) for each edge
+        The list of true edges. Assumes ((frame1,index1), (frame2,index2)) for each edge.
 
     predicted_edges : EdgeType
-        the list of predicted edges. see `true_edges` for format
+        The list of predicted edges. See `true_edges` for the format.
 
     exclude_true_edges : EdgeType, default []
-        the list of true edges to be excluded from "*_ratio". see `true_edges` for format
+        The list of true edges to be excluded from "\*_ratio". See `true_edges` for the format.
 
     include_frames : Optional[List[Int]], default None
-        the list of frames to include in the score calculation. if None, all frames are included.
+        The list of frames to include in the score calculation. If None, all the frames are included.
 
     track_scores : bool, default True
-        if True, calculate track_purity, target_effectiveness and mitotic_branching_correctness
+        If True, the function calculates track_purity, target_effectiveness and mitotic_branching_correctness.
 
     Returns
     -------
-    Dict[str,float]
-        the scores. keys are:
-        "Jaccard_index": (number of TP edges) / (number of TP edges + number of FP edges + number of FN edges)
-        "true_positive_rate": (number of TP edges) / (number of TP edges + number of FN edges)
-        "precision": (number of TP edges) / (number of TP edges + number of FP edges)
-        "track_purity" : the track purity.
-        "target_effectiveness" : the target effectiveness.
-        "mitotic_branching_correctness" : the number of divisions that were correctly predicted.
+    score_dict : Dict[str,float]
+        The scores in the dict form. The keys are:
+
+        - "Jaccard_index": (number of TP edges) / (number of TP edges + number of FP edges + number of FN edges)
+        - "true_positive_rate": (number of TP edges) / (number of TP edges + number of FN edges)
+        - "precision": (number of TP edges) / (number of TP edges + number of FP edges)
+        - "track_purity" : the track purity.
+        - "target_effectiveness" : the target effectiveness.
+        - "mitotic_branching_correctness" : the number of divisions that were correctly predicted.
     """
     # return the count o
 
