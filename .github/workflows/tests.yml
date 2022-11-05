@@ -34,6 +34,10 @@ jobs:
       - name: Check out the repository
         uses: actions/checkout@v3.1.0
 
+      - name: Set up packages
+        if: matrix.session == 'docs-build'
+        run: sudo apt-get install pandoc
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4.3.0
         with:
