@@ -98,7 +98,7 @@ The example notebooks are provided in `docs/examples <https://github.com/yfukai/
 .. _overlap_tracking.ipynb:       https://github.com/yfukai/laptrack/tree/main/docs/examples/overlap_tracking.ipynb
 
 .. |colab| image:: https://colab.research.google.com/assets/colab-badge.svg
-           :target: https://colab.research.google.com/github/yfukai/laptrack/blob/docs/docs/examples/api_example.ipynb
+           :target: https://colab.research.google.com/github/yfukai/laptrack/blob/main/docs/examples/api_example.ipynb
 
 The `API reference <https://laptrack.readthedocs.io/en/latest/reference.html>`_ covers the main classes and functions provided by LapTrack.
 
