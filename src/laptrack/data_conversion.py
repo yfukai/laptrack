@@ -26,18 +26,18 @@ def convert_dataframe_to_coords(
     Parameters
     ----------
     df : pd.DataFrame
-        the input dataframe
+        The input dataframe.
     coordinate_cols : List[str]
-        the list of columns to use for coordinates
-    frame_col : str, optional
-        The column name to use for the frame index. Defaults to "frame".
-    validate_frame : bool, optional
-        Whether to validate the frame. Defaults to True.
+        The list of columns to use for coordinates.
+    frame_col : str, default "frame"
+        The column name to use for the frame index.
+    validate_frame : bool, default True
+        Whether to validate the frame.
 
     Returns
     -------
     coords : List[np.ndarray]
-        the list of coordinates
+        The list of the coordinates.
     """
     grps = list(df.groupby(frame_col, sort=True))
     if validate_frame:
@@ -58,20 +58,20 @@ def convert_dataframe_to_coords_frame_index(
     Parameters
     ----------
     df : pd.DataFrame
-        the input dataframe
+        The input dataframe.
     coordinate_cols : List[str]
-        the list of columns to use for coordinates
-    frame_col : str, optional
-        The column name to use for the frame index. Defaults to "frame".
-    validate_frame : bool, optional
-        Whether to validate the frame. Defaults to True.
+        The list of columns to use for coordinates.
+    frame_col : str, default "frame"
+        The column name to use for the frame index.
+    validate_frame : bool, default True
+        Whether to validate the frame.
 
     Returns
     -------
     coords : List[np.ndarray]
-        the list of coordinates
+        The list of coordinates.
     frame_index : List[Tuple[int, int]]
-        the (frame, index) list for the original iloc of the dataframe.
+        The (frame, index) list for the original iloc of the dataframe.
     """
     assert "iloc__" not in df.columns
     df = df.copy()
@@ -109,31 +109,34 @@ def convert_tree_to_dataframe(
     Parameters
     ----------
     tree : nx.Graph
-        The track tree, resulted from the traking
-    coords : Optional[Sequence[NumArray]]
+        The track tree, resulted from the traking.
+    coords : Optional[Sequence[NumArray]], default None
         The coordinate values. If None, no coordinate values are appended to the dataframe.
-    dataframe : Optional[pd.DataFrame]
-        The dataframe. If not None, `frame_index` should also exist. Ignored if `coords` is not None.
-    frame_index : Optional[List[Tuple[int, int]]]
+    dataframe : Optional[pd.DataFrame], default None
+        The dataframe. If not None, `frame_index` should also exist. Ignored if the parameter `coords` is not None.
+    frame_index : Optional[List[Tuple[int, int]]], default None
         the inverse map to map (frame, index) to the original iloc of the dataframe.
 
     Returns
     -------
     track_df : pd.DataFrame
-        the track dataframe, with the following columns:
-        - "frame" : the frame index
-        - "index" : the coordinate index
-        - "track_id" : the track id
-        - "tree_id" : the tree id
-        - "coord-0", "coord-1", ... : the coordinate values. Exists if coords is not None.
+        The track dataframe, with the following columns:
+
+        - "frame" : The frame index.
+        - "index" : The coordinate index.
+        - "track_id" : The track id.
+        - "tree_id" : The tree id.
+        - "coord-0", "coord-1", ... : The coordinate values. Exists if coords is not None.
     split_df : pd.DataFrame
-        the splitting dataframe, with the following columns:
-        - "parent_track_id" : the track id of the parent
-        - "child_track_id" : the track id of the parent
+        The splitting dataframe, with the following columns:
+
+        - "parent_track_id" : The track id of the parent.
+        - "child_track_id" : The track id of the parent.
     merge_df : pd.DataFrame
-        the splitting dataframe, with the following columns:
-        - "parent_track_id" : the track id of the parent
-        - "child_track_id" : the track id of the parent
+        The merging dataframe, with the following columns:
+
+        - "parent_track_id" : The track id of the parent.
+        - "child_track_id" : The track id of the parent.
     """
     df_data = []
     node_values = np.array(list(tree.nodes))
