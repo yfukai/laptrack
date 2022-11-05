@@ -76,19 +76,22 @@ Usage
 Please see the Usage_ for details.
 The example notebooks are provided in `docs/examples <https://github.com/yfukai/laptrack/tree/docs/docs/examples>`_.
 
-+================================+
-| notebook name                  |
-+================================+
-| `api_example.ipynb`            |
-+--------------------------------+
-| `bright_spots.ipynb`           |
-+--------------------------------+
-| `cell_segmentation.ipynb`      |
-+--------------------------------+
-| `napari_interactive_fix.ipynb` |
-+--------------------------------+
-| `overlap_tracking.ipynb`       |
-+================================+
+
++--------------------------+--------------------------------------------------+---------------------+
+| notebook name            | short description                                | Google Colaboratory |
++==========================+==================================================+=====================+
+| `api_example.ipynb`      | Introducing the package API by a simple example. | ...                 |
++--------------------------+--------------------------------------------------+---------------------+
+|| `bright_spots.ipynb`    || Application example: detecting bright spots by  ||                    |
+||                         || scikit-image `blob_log` and tracking them.      ||                    |
++--------------------------+--------------------------------------------------+---------------------+
+|| `bright_spots.ipynb`    || Application example: tracking centroids of the  ||                    |
+||                         || segmented C2C12 cells undergoing divisions.     ||                    |
++--------------------------+--------------------------------------------------+---------------------+
+| ...                      | ...                                              |                     |
++--------------------------+--------------------------------------------------+---------------------+
+| `overlap_tracking.ipynb` | ...                                              | ...                 |
++--------------------------+--------------------------------------------------+---------------------+
 
 The `API reference <https://laptrack.readthedocs.io/en/latest/reference.html>`_ covers the main classes and functions provided by LapTrack.
 
