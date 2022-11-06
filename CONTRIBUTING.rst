@@ -56,12 +56,11 @@ Install the package with development requirements:
 
    $ poetry install
 
-You can now run an interactive Python session,
-or the command-line interface:
+You can now run an interactive shell session:
 
 .. code:: console
 
-   $ poetry run python
+   $ poetry shell
 
 .. _Poetry: https://python-poetry.org/
 .. _Nox: https://nox.thea.codes/
