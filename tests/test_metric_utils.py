@@ -3,6 +3,7 @@ from typing import List
 from typing import Union
 
 import numpy as np
+import pytest
 
 from laptrack._typing_utils import IntArray
 from laptrack.metric_utils import LabelOverlap
@@ -39,3 +40,5 @@ def test_label_overlap() -> None:
                     (intersect / r1),
                     (intersect / r2),
                 ) == res
+    with pytest.raises(ValueError):
+        LabelOverlap(np.array([[1, 2], [0, 1]]))
