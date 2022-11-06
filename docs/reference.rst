@@ -40,3 +40,4 @@ metric utilities
 
 .. automodule:: laptrack.metric_utils
    :members:
+   :special-members: __init__

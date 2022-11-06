@@ -38,7 +38,7 @@ class LabelOverlap:
         Parameters
         ----------
         label_images : IntArray
-            The labeled images. The first dimension is interpreted as the time dimension.
+            The labeled images. The first dimension is interpreted as the frame dimension.
         """
         self.label_images = label_images
         self.ndim = label_images.ndim - 1
