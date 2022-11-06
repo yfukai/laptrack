@@ -15,3 +15,5 @@ __all__ = [
     "scores",
     "metric_utils",
 ]
+
+__version__ = "0.9.1"

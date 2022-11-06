@@ -40,6 +40,9 @@ class LabelOverlap:
         label_images : IntArray
             The labeled images. The first dimension is interpreted as the frame dimension.
         """
+        label_images = np.array(label_images)
+        if label_images.ndim < 3:
+            raise ValueError("label_images dimension must be >=3.")
         self.label_images = label_images
         self.ndim = label_images.ndim - 1
         dfs = []
