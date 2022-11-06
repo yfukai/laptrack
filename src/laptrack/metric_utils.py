@@ -1,5 +1,7 @@
 """Utilities for metric calculation."""
+from typing import List
 from typing import Tuple
+from typing import Union
 
 import numpy as np
 import pandas as pd
@@ -32,14 +34,18 @@ class LabelOverlap:
             bbox.append((y0, y1))
         return bbox
 
-    def __init__(self, label_images: IntArray):
+    def __init__(self, label_images: Union[IntArray, List[IntArray]]):
         """Summarise the segmentation properties and initialize the object.
 
         Parameters
         ----------
-        label_images : IntArray
-            The labeled images. The first dimension is interpreted as the time dimension.
+        label_images : Union[IntArray,List[IntArray]]
+            The labeled images. The first dimension is interpreted as the frame dimension.
         """
+        if not isinstance(label_images, np.ndarray):
+            label_images = np.array(label_images)
+        if label_images.ndim < 3:
+            raise ValueError("label_images dimension must be >=3.")
         self.label_images = label_images
         self.ndim = label_images.ndim - 1
         dfs = []

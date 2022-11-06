@@ -48,6 +48,7 @@ You need Python 3.8+ and the following tools:
 - Poetry_
 - Nox_
 - nox-poetry_
+- poetry-bumpversion_
 
 Install the package with development requirements:
 
@@ -55,17 +56,16 @@ Install the package with development requirements:
 
    $ poetry install
 
-You can now run an interactive Python session,
-or the command-line interface:
+You can now run an interactive shell session:
 
 .. code:: console
 
-   $ poetry run python
-   $ poetry run laptrack
+   $ poetry shell
 
 .. _Poetry: https://python-poetry.org/
 .. _Nox: https://nox.thea.codes/
 .. _nox-poetry: https://nox-poetry.readthedocs.io/
+.. _poetry-bumpversion: https://github.com/monim67/poetry-bumpversion
 
 
 How to test the project
