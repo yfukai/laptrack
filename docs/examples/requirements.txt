@@ -1,4 +1,4 @@
-laptrack==0.8.0
+laptrack==0.9.1
 napari[all]
 pandas
 numpy==1.22.4
