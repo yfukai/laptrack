@@ -164,7 +164,7 @@ If you use this program for your research, please cite it and help us build more
    }
 
 .. _preprint: https://www.biorxiv.org/content/10.1101/2022.10.05.511038v1
-.. _associated repository: https://github.com/NoneqPhysLivingMatterLab/laptrack-optimization
+.. _associated repository: https://github.com/NoneqPhysLivingMatterLab/laptrack-optimisation
 .. _Ray-Tune: https://www.ray.io/ray-tune
 
 .. _K. Jaqaman et al. (2008): https://www.nature.com/articles/nmeth.1237
