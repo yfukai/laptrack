@@ -12,3 +12,5 @@ updates:
     directory: "/docs"
     schedule:
       interval: monthly
+    ignore:
+      - dependency-name: "sphinx-gallery"
