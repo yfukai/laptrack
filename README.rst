@@ -43,7 +43,7 @@ Features
 
 Provides a robust particle tracking algorithm using the Linear Assignment Problem, with various cost functions for linking.
 
-See the `preprint`_ and `associated repository`_ for the algorithm and parameter optimization by `Ray-Tune`_.
+See the `publication`_ and `associated repository`_ for the algorithm and parameter optimization by `Ray-Tune`_.
 
 Requirements
 ------------
@@ -146,16 +146,18 @@ If you use this program for your research, please cite it and help us build more
 
 .. code-block:: bib
 
-   @misc{fukai_2022,
-     title = {{{LapTrack}}: {{Linear}} Assignment Particle Tracking with Tunable Metrics},
+   @article{fukai_2022,
+     title = {{{LapTrack}}: Linear Assignment Particle Tracking with Tunable Metrics},
      shorttitle = {{{LapTrack}}},
-     author = {Fukai, Yohsuke T. and Kawaguchi, Kyogo},
+     author = {Fukai, Yohsuke T and Kawaguchi, Kyogo},
      year = {2022},
-     month = oct,
-     pages = {2022.10.05.511038},
-     publisher = {{bioRxiv}},
-     doi = {10.1101/2022.10.05.511038},
+     month = dec,
+     journal = {Bioinformatics},
+     pages = {btac799},
+     issn = {1367-4803},
+     doi = {10.1093/bioinformatics/btac799},
    }
+
    @misc{laptrack,
       author = {Yohsuke T. Fukai},
       title = {laptrack},
@@ -163,7 +165,7 @@ If you use this program for your research, please cite it and help us build more
       url   = {https://doi.org/10.5281/zenodo.5519537},
    }
 
-.. _preprint: https://www.biorxiv.org/content/10.1101/2022.10.05.511038v1
+.. _publication: https://doi.org/10.1093/bioinformatics/btac799
 .. _associated repository: https://github.com/NoneqPhysLivingMatterLab/laptrack-optimisation
 .. _Ray-Tune: https://www.ray.io/ray-tune
 
