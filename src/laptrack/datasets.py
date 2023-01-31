@@ -71,7 +71,7 @@ def simple_tracks() -> pd.DataFrame:
     Returns
     -------
     data: pd.DataFrame
-        The result data.
+        The dataset.
     """
     return fetch("simple_tracks")
 
@@ -81,8 +81,8 @@ def bright_brownian_particles() -> FloatArray:
 
     Returns
     -------
-    data: pd.DataFrame
-        The result data.
+    data: FloatArray
+        The images.
     """
     return fetch("bright_brownian_particles")["images"]
 
@@ -94,8 +94,8 @@ def cell_segmentation() -> Tuple[FloatArray, IntArray]:
 
     Returns
     -------
-    data: pd.DataFrame
-        The result data.
+    data: Tuple[FloatArray, IntArray]
+        The images and labels.
     """
     d = fetch("cell_segmentation")
     return d["images"], d["labels"]
@@ -110,6 +110,6 @@ def mouse_epidermis() -> IntArray:
     Returns
     -------
     data: pd.DataFrame
-        The result data.
+        The labels.
     """
     return fetch("mouse_epidermis")
