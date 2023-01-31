@@ -1,11 +1,9 @@
 LapTrack
 ========
 
-|PyPI| |Status| |Python Version| |License|
+|PyPI| |Status| |Python Version| |License| |Read the Docs| |Tests| |Codecov| |pre-commit| |Black| 
 
-|Read the Docs| |Tests| |Codecov|
-
-|pre-commit| |Black| |Zenodo|
+|Publication| |Preprint| |Zenodo|
 
 .. |PyPI| image:: https://img.shields.io/pypi/v/laptrack.svg
    :target: https://pypi.org/project/laptrack/
@@ -37,7 +35,7 @@ LapTrack
 .. |Zenodo| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.5519537.svg
    :target: https://doi.org/10.5281/zenodo.5519537
    :alt: Zenodo
-.. |Publication| image:: https://img.shields.io/badge/doi-10.1093%2Fbioinformatics%2Fbtac799-167DA4
+.. |Publication| image:: https://img.shields.io/badge/DOI-10.1093%2Fbioinformatics%2Fbtac799-167DA4
    :target: https://doi.org/10.1093/bioinformatics/btac799
    :alt: Bioinformatics 
 .. |Preprint| image:: https://img.shields.io/badge/bioRxiv-10.1101%2F2022.10.05.511038-bd2736
