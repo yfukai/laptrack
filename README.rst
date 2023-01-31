@@ -34,9 +34,15 @@ LapTrack
 .. |Black| image:: https://img.shields.io/badge/code%20style-black-000000.svg
    :target: https://github.com/psf/black
    :alt: Black
-.. |Zenodo| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.5519538.svg
-   :target: https://doi.org/10.5281/zenodo.5519538
+.. |Zenodo| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.5519537.svg
+   :target: https://doi.org/10.5281/zenodo.5519537
    :alt: Zenodo
+.. |Publication| image:: https://img.shields.io/badge/doi-10.1093%2Fbioinformatics%2Fbtac799-167DA4
+   :target: https://doi.org/10.1093/bioinformatics/btac799
+   :alt: Bioinformatics 
+.. |Preprint| image:: https://img.shields.io/badge/bioRxiv-10.1101%2F2022.10.05.511038-bd2736
+   :target: https://doi.org/10.1101/2022.10.05.511038
+   :alt: bioRxiv
 
 Features
 --------
