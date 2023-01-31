@@ -59,7 +59,7 @@ def fetch(data_name: str):
         raise ValueError(f"{data_name} is not a valid test data name")
     file_name = TEST_DATA_PROPS[data_name]["filename"]
     test_file_path = POOCH.fetch(file_name)
-    if path.splitext(file_name)[1] == ".csv":
+    if path.splitext(test_file_path)[1] == ".csv":
         return pd.read_csv(test_file_path)
     else:
         return np.load(test_file_path)

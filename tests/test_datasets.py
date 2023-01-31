@@ -11,5 +11,5 @@ def test_fetch() -> None:
     im, label = datasets.cell_segmentation()
     assert im.ndim == 3
     assert label.ndim == 3
-    im = datasets.mouse_epidermis()
-    assert im.ndim == 3
+    label = datasets.mouse_epidermis()
+    assert label.ndim == 3
