@@ -12,19 +12,19 @@ from ._typing_utils import IntArray
 TEST_DATA_PROPS = {
     "simple_tracks": {
         "filename": "sample_data.csv",
-        "hash": None,  # "sha256:44c78a369da8aaa53e6a53c10766d0f4451b54e9e8c84ff27bf47ac2cd2037a6",
+        "hash": "md5:c3029c5e93157aa49a6716e864e979bd",
     },
     "bright_brownian_particles": {
         "filename": "bright_spots_data/brownian_particles_images_with_noise_small.npz",
-        "hash": None,  # "sha256:1ae73102d586a6ccf2d603c81316359bf35ea490ddf146ac37ac2e671ce45111",
+        "hash": "md5:a93742566635fbc5dde7f3a653e638c1",
     },
     "cell_segmentation": {
         "filename": "cell_segmentation_data/data_small.npz",
-        "hash": None,  # "sha256:48040529876dcc9142c5b1b0448c8773c1657d2b14a2807b32ea911e8362f3e9",
+        "hash": "md5:be37bfb4da12f47b6e3146d22fb80290",
     },
     "mouse_epidermis": {
         "filename": "overlap_tracking_data/labels.npy",
-        "hash": None,  # "sha256:b04d0f38a99ce09e5202bf844cb768eca3919f6728c36b01b94c7fab9c2344b2",
+        "hash": "md5:a1b12b0d08c894b804d5440010cef77e",
     },
 }
 
