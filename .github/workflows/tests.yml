@@ -76,7 +76,7 @@ jobs:
           os.environ["GITHUB_OUTPUT"] = "result={}".format(result)
 
       - name: Restore pre-commit cache
-        uses: actions/cache@v3.2.2
+        uses: actions/cache@v3.2.4
         if: matrix.session == 'pre-commit'
         with:
           path: ~/.cache/pre-commit
