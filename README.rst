@@ -1,7 +1,9 @@
 LapTrack
 ========
 
-|PyPI| |Status| |Python Version| |License| |Read the Docs| |Tests| |Codecov| |pre-commit| |Black| 
+|PyPI| |Status| |Python Version| |License|
+
+|Read the Docs| |Tests| |Codecov| |pre-commit| |Black|
 
 |Publication| |Preprint| |Zenodo|
 
@@ -37,7 +39,7 @@ LapTrack
    :alt: Zenodo
 .. |Publication| image:: https://img.shields.io/badge/DOI-10.1093%2Fbioinformatics%2Fbtac799-167DA4
    :target: https://doi.org/10.1093/bioinformatics/btac799
-   :alt: Bioinformatics 
+   :alt: Bioinformatics
 .. |Preprint| image:: https://img.shields.io/badge/bioRxiv-10.1101%2F2022.10.05.511038-bd2736
    :target: https://doi.org/10.1101/2022.10.05.511038
    :alt: bioRxiv
