@@ -41,3 +41,9 @@ metric utilities
 .. automodule:: laptrack.metric_utils
    :members:
    :special-members: __init__
+
+sample datasets
+-------------------------------
+
+.. automodule:: laptrack.datasets
+   :members:
