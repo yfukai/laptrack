@@ -109,7 +109,7 @@ def mouse_epidermis() -> IntArray:
 
     Returns
     -------
-    data: pd.DataFrame
+    data: IntArray
         The labels.
     """
     return fetch("mouse_epidermis")
