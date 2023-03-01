@@ -4,4 +4,4 @@ sphinx-rtd-theme==1.2.0
 autodoc_pydantic==1.8.0
 sphinx-gallery==0.10.1
 nbsphinx==0.8.12
-ipykernel==6.20.2
+ipykernel==6.21.2
