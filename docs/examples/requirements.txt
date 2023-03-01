@@ -1,6 +1,6 @@
 laptrack==0.9.1
 napari[all]
 pandas
-numpy==1.24.1
+numpy==1.24.2
 scikit-image
 jupyter
