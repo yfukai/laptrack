@@ -1129,6 +1129,7 @@ python-versions = ">=3.8"
 numpy = [
     {version = ">=1.20.3", markers = "python_version < \"3.10\""},
     {version = ">=1.21.0", markers = "python_version >= \"3.10\""},
+    {version = ">=1.23.2", markers = "python_version >= \"3.11\""},
 ]
 python-dateutil = ">=2.8.1"
 pytz = ">=2020.1"
@@ -2142,8 +2143,8 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 
 [metadata]
 lock-version = "1.1"
-python-versions = "^3.8,<3.11"
-content-hash = "56ce248a0cf6313e76feb6c1723915310fdb0f0fc67750a8a0289bc0e5fd082c"
+python-versions = "^3.8,<3.12"
+content-hash = "da35e819a2a73f096ad5361599de4fd719c8ba1510cbce610d1f92325df4c911"
 
 [metadata.files]
 alabaster = [

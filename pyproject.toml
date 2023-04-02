@@ -14,10 +14,10 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "Natural Language :: English",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "License :: OSI Approved :: BSD License",
 ]
 
@@ -25,7 +25,7 @@ classifiers = [
 Changelog = "https://github.com/yfukai/laptrack/releases"
 
 [tool.poetry.dependencies]
-python = "^3.8,<3.11"
+python = "^3.8,<3.12"
 click = "^8.0.1"
 numpy = "^1.21.0"
 scipy = "^1.7.0"
