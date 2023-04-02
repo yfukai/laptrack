@@ -25,7 +25,7 @@ classifiers = [
 Changelog = "https://github.com/yfukai/laptrack/releases"
 
 [tool.poetry.dependencies]
-python = "^3.7.11,<3.11"
+python = "^3.8,<3.11"
 click = "^8.0.1"
 numpy = "^1.21.0"
 scipy = "^1.7.0"
@@ -52,7 +52,8 @@ sphinx-autobuild = "^2021.3.14"
 sphinx-rtd-theme = "^1.1.0"
 sphinx-click = "^4.3.0"
 pygments = "^2.13.0"
-jupyter = "^1.0.0"
+jupyter = ">=1.0.0"
+ipython = ">=8.10.0"
 xmltodict = "^0.13.0"
 sphinxcontrib-napoleon = "^0.7"
 autodoc-pydantic = "^1.8.0"
