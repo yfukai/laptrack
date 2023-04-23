@@ -54,8 +54,8 @@ See the `publication`_ and `associated repository`_ for the algorithm and parame
 Requirements
 ------------
 
-Python >= 3.7.11 is supported.
-The software is tested against Python 3.7-3.10 in Ubuntu, and 3.10 in MacOS and Windows environments,
+Python >= 3.8 is supported.
+The software is tested against Python 3.8-3.10 in Ubuntu, and 3.10 in MacOS and Windows environments,
 but the other combinations should also be fine. Please `file an issue`_ if you encounter any problem.
 
 Installation
