@@ -4,7 +4,7 @@ __author__ = """Yohsuke T. Fukai"""
 __email__ = "ysk@yfukai.net"
 
 from ._tracking import laptrack, LapTrack, LapTrackMulti, LapTrackBase
-from . import data_conversion, scores
+from . import data_conversion, scores, metric_utils, datasets
 
 __all__ = [
     "laptrack",
@@ -14,6 +14,7 @@ __all__ = [
     "data_conversion",
     "scores",
     "metric_utils",
+    "datasets",
 ]
 
-__version__ = "0.10.0"
+__version__ = "0.11.1"
