@@ -392,44 +392,6 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
         exclude=True,
     )
 
-    def _link_single_frame(
-        self,
-        frame: int,
-        coord1: np.ndarray,
-        coord2: np.ndarray,
-        edges_list: List[EdgeType],
-    ) -> List[EdgeType]:
-        force_end_indices = [e[0][1] for e in edges_list if e[0][0] == frame]
-        force_start_indices = [e[1][1] for e in edges_list if e[1][0] == frame + 1]
-        dist_matrix = cdist(coord1, coord2, metric=self.track_dist_metric)
-        dist_matrix[force_end_indices, :] = np.inf
-        dist_matrix[:, force_start_indices] = np.inf
-
-        ind = np.where(dist_matrix < self.track_cost_cutoff)
-        dist_matrix = coo_matrix_builder(
-            dist_matrix.shape,
-            row=ind[0],
-            col=ind[1],
-            data=dist_matrix[(*ind,)],
-            dtype=dist_matrix.dtype,
-        )
-
-        cost_matrix = build_frame_cost_matrix(
-            dist_matrix,
-            track_start_cost=self.track_start_cost,
-            track_end_cost=self.track_end_cost,
-        )
-        xs, _ = lap_optimization(cost_matrix)
-
-        count1 = dist_matrix.shape[0]
-        count2 = dist_matrix.shape[1]
-        connections = [(i, xs[i]) for i in range(count1) if xs[i] < count2]
-        edges: List[EdgeType] = [
-            ((frame, connection[0]), (frame + 1, connection[1]))
-            for connection in connections
-        ]
-        return edges
-
     def _link_frames(
         self, coords, segment_connected_edges, split_merge_edges
     ) -> nx.Graph:
@@ -460,10 +422,46 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
 
         edges_list = list(segment_connected_edges) + list(split_merge_edges)
 
+        def _link_single_frame(
+            frame: int,
+            coord1: np.ndarray,
+            coord2: np.ndarray,
+        ) -> List[EdgeType]:
+            force_end_indices = [e[0][1] for e in edges_list if e[0][0] == frame]
+            force_start_indices = [e[1][1] for e in edges_list if e[1][0] == frame + 1]
+            dist_matrix = cdist(coord1, coord2, metric=self.track_dist_metric)
+            dist_matrix[force_end_indices, :] = np.inf
+            dist_matrix[:, force_start_indices] = np.inf
+
+            ind = np.where(dist_matrix < self.track_cost_cutoff)
+            dist_matrix = coo_matrix_builder(
+                dist_matrix.shape,
+                row=ind[0],
+                col=ind[1],
+                data=dist_matrix[(*ind,)],
+                dtype=dist_matrix.dtype,
+            )
+
+            cost_matrix = build_frame_cost_matrix(
+                dist_matrix,
+                track_start_cost=self.track_start_cost,
+                track_end_cost=self.track_end_cost,
+            )
+            xs, _ = lap_optimization(cost_matrix)
+
+            count1 = dist_matrix.shape[0]
+            count2 = dist_matrix.shape[1]
+            connections = [(i, xs[i]) for i in range(count1) if xs[i] < count2]
+            edges: List[EdgeType] = [
+                ((frame, connection[0]), (frame + 1, connection[1]))
+                for connection in connections
+            ]
+            return edges
+
         if self.parallelize_strategy == ParallelizeStrategy.serial:
             all_edges = []
             for frame, (coord1, coord2) in enumerate(zip(coords[:-1], coords[1:])):
-                edges = self._link_single_frame(frame, coord1, coord2, edges_list)
+                edges = _link_single_frame(frame, coord1, coord2)
                 all_edges.extend(edges)
         elif self.parallelize_strategy == ParallelizeStrategy.ray:
             try:
@@ -472,9 +470,9 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
                 raise ImportError(
                     "Please install `ray` to use `ParallelizeStrategy.ray`."
                 )
-            remote_func = ray.remote(self._link_single_frame)
+            remote_func = ray.remote(_link_single_frame)
             res = [
-                remote_func(frame, coord1, coord2, edges_list)
+                remote_func.remote(frame, coord1, coord2)
                 for frame, (coord1, coord2) in enumerate(zip(coords[:-1], coords[1:]))
             ]
             all_edges = sum(ray.get(res), [])
