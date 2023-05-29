@@ -47,7 +47,7 @@ from .data_conversion import (
 logger = logging.getLogger(__name__)
 
 
-class ParallelizeStrategy(str, Enum):
+class ParallelBackend(str, Enum):
     """Parallelization strategy for computation."""
 
     serial = "serial"
@@ -385,10 +385,10 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
         description="The percentile interpolation to calculate the alternative costs. "
         + "See `numpy.percentile` for accepted values.",
     )
-    parallelize_strategy: ParallelizeStrategy = Field(
+    parallel_backend: ParallelBackend = Field(
         "serial",
         description="The parallelization strategy. "
-        + f"Must be one of {', '.join([ps.name for ps in ParallelizeStrategy])}.",
+        + f"Must be one of {', '.join([ps.name for ps in ParallelBackend])}.",
         exclude=True,
     )
 
@@ -458,18 +458,16 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
             ]
             return edges
 
-        if self.parallelize_strategy == ParallelizeStrategy.serial:
+        if self.parallel_backend == ParallelBackend.serial:
             all_edges = []
             for frame, (coord1, coord2) in enumerate(zip(coords[:-1], coords[1:])):
                 edges = _link_single_frame(frame, coord1, coord2)
                 all_edges.extend(edges)
-        elif self.parallelize_strategy == ParallelizeStrategy.ray:
+        elif self.parallel_backend == ParallelBackend.ray:
             try:
                 import ray
             except ImportError:
-                raise ImportError(
-                    "Please install `ray` to use `ParallelizeStrategy.ray`."
-                )
+                raise ImportError("Please install `ray` to use `ParallelBackend.ray`.")
             remote_func = ray.remote(_link_single_frame)
             res = [
                 remote_func.remote(frame, coord1, coord2)
