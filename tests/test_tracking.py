@@ -104,8 +104,10 @@ def testdata(request, shared_datadir: str):
 
 
 @pytest.mark.parametrize("tracker_class", [LapTrack, LapTrackMulti])
-def test_reproducing_trackmate(testdata, tracker_class) -> None:
+@pytest.mark.parametrize("parallelize_strategy", ["serial", "ray"])
+def test_reproducing_trackmate(testdata, tracker_class, parallelize_strategy) -> None:
     params, coords, edges_set = testdata
+    params["parallelize_strategy"] = parallelize_strategy
     lt = tracker_class(**params)
     track_tree = lt.predict(coords)
     assert edges_set == set(track_tree.edges)
