@@ -405,6 +405,7 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
                 track_tree.add_node((frame, j))
 
         # linking between frames
+        # TODO: parallelize
         edges_list = list(segment_connected_edges) + list(split_merge_edges)
         for frame, (coord1, coord2) in enumerate(zip(coords[:-1], coords[1:])):
             force_end_indices = [e[0][1] for e in edges_list if e[0][0] == frame]
