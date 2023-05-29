@@ -389,6 +389,7 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
         "serial",
         description="The parallelization strategy. "
         + f"Must be one of {', '.join([ps.name for ps in ParallelizeStrategy])}.",
+        exclude=True,
     )
 
     def _link_single_frame(
@@ -423,7 +424,7 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
         count1 = dist_matrix.shape[0]
         count2 = dist_matrix.shape[1]
         connections = [(i, xs[i]) for i in range(count1) if xs[i] < count2]
-        edges = [
+        edges: List[EdgeType] = [
             ((frame, connection[0]), (frame + 1, connection[1]))
             for connection in connections
         ]
@@ -457,7 +458,6 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
 
         # linking between frames
 
-        # TODO: parallelize
         edges_list = list(segment_connected_edges) + list(split_merge_edges)
 
         if self.parallelize_strategy == ParallelizeStrategy.serial:
@@ -465,6 +465,20 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
             for frame, (coord1, coord2) in enumerate(zip(coords[:-1], coords[1:])):
                 edges = self._link_single_frame(frame, coord1, coord2, edges_list)
                 all_edges.extend(edges)
+        elif self.parallelize_strategy == ParallelizeStrategy.ray:
+            try:
+                import ray
+            except ImportError:
+                raise ImportError(
+                    "Please install `ray` to use `ParallelizeStrategy.ray`."
+                )
+            remote_func = ray.remote(self._link_single_frame)
+            res = [
+                remote_func(frame, coord1, coord2, edges_list)
+                for frame, (coord1, coord2) in enumerate(zip(coords[:-1], coords[1:]))
+            ]
+            all_edges = sum(ray.get(res), [])
+
         track_tree.add_edges_from(all_edges)
         track_tree.add_edges_from(segment_connected_edges)
         return track_tree
