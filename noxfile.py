@@ -84,7 +84,7 @@ def mypy(session: Session) -> None:
 def tests(session: Session) -> None:
     """Run the test suite."""
     session.install(".")
-    session.install("coverage[toml]", "pytest", "pytest-datadir", "pygments")
+    session.install("coverage[toml]", "pytest", "pytest-datadir", "pygments", "ray")
     try:
         session.run("coverage", "run", "--parallel", "-m", "pytest", *session.posargs)
     finally:
@@ -109,7 +109,7 @@ def coverage(session: Session) -> None:
 def typeguard(session: Session) -> None:
     """Runtime type checking using Typeguard."""
     session.install(".")
-    session.install("pytest", "pytest-datadir", "typeguard", "pygments")
+    session.install("pytest", "pytest-datadir", "typeguard", "pygments", "ray")
     session.run("pytest", f"--typeguard-packages={package}", *session.posargs)
 
 

@@ -3,6 +3,7 @@ import logging
 import warnings
 from abc import ABC
 from abc import abstractmethod
+from enum import Enum
 from inspect import Parameter
 from inspect import signature
 from typing import Callable
@@ -44,6 +45,13 @@ from .data_conversion import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+class ParallelBackend(str, Enum):
+    """Parallelization strategy for computation."""
+
+    serial = "serial"
+    ray = "ray"
 
 
 def _get_segment_df(coords, track_tree):
@@ -377,6 +385,12 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
         description="The percentile interpolation to calculate the alternative costs. "
         + "See `numpy.percentile` for accepted values.",
     )
+    parallel_backend: ParallelBackend = Field(
+        "serial",
+        description="The parallelization strategy. "
+        + f"Must be one of {', '.join([ps.name for ps in ParallelBackend])}.",
+        exclude=True,
+    )
 
     def _link_frames(
         self, coords, segment_connected_edges, split_merge_edges
@@ -405,8 +419,14 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
                 track_tree.add_node((frame, j))
 
         # linking between frames
+
         edges_list = list(segment_connected_edges) + list(split_merge_edges)
-        for frame, (coord1, coord2) in enumerate(zip(coords[:-1], coords[1:])):
+
+        def _link_single_frame(
+            frame: int,
+            coord1: np.ndarray,
+            coord2: np.ndarray,
+        ) -> List[EdgeType]:
             force_end_indices = [e[0][1] for e in edges_list if e[0][0] == frame]
             force_start_indices = [e[1][1] for e in edges_list if e[1][0] == frame + 1]
             dist_matrix = cdist(coord1, coord2, metric=self.track_dist_metric)
@@ -432,10 +452,30 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
             count1 = dist_matrix.shape[0]
             count2 = dist_matrix.shape[1]
             connections = [(i, xs[i]) for i in range(count1) if xs[i] < count2]
-            # track_start=[i for i in range(count1) if xs[i]>count2]
-            # track_end=[i for i in range(count2) if ys[i]>count1]
-            for connection in connections:
-                track_tree.add_edge((frame, connection[0]), (frame + 1, connection[1]))
+            edges: List[EdgeType] = [
+                ((frame, connection[0]), (frame + 1, connection[1]))
+                for connection in connections
+            ]
+            return edges
+
+        if self.parallel_backend == ParallelBackend.serial:
+            all_edges = []
+            for frame, (coord1, coord2) in enumerate(zip(coords[:-1], coords[1:])):
+                edges = _link_single_frame(frame, coord1, coord2)
+                all_edges.extend(edges)
+        elif self.parallel_backend == ParallelBackend.ray:
+            try:
+                import ray
+            except ImportError:
+                raise ImportError("Please install `ray` to use `ParallelBackend.ray`.")
+            remote_func = ray.remote(_link_single_frame)
+            res = [
+                remote_func.remote(frame, coord1, coord2)
+                for frame, (coord1, coord2) in enumerate(zip(coords[:-1], coords[1:]))
+            ]
+            all_edges = sum(ray.get(res), [])
+
+        track_tree.add_edges_from(all_edges)
         track_tree.add_edges_from(segment_connected_edges)
         return track_tree
 
