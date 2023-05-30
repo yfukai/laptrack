@@ -118,7 +118,7 @@ def mouse_epidermis() -> IntArray:
     return fetch("mouse_epidermis")
 
 
-def HL60_3D_synthesized() -> IntArray:
+def HL60_3D_synthesized() -> Tuple[FloatArray, IntArray]:
     """Return the "HL60 3D synthesized" dataset.
 
     Data source: rescaling dataset 1 in
