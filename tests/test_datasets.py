@@ -3,8 +3,6 @@ from laptrack import datasets
 
 def test_fetch() -> None:
     for k in datasets.TEST_DATA_PROPS.keys():
-        if k == "HL60_3D_synthesized":
-            continue
         datasets.fetch(k)
     df = datasets.simple_tracks()
     assert set(df.keys()) == {"frame", "position_x", "position_y"}
@@ -15,3 +13,6 @@ def test_fetch() -> None:
     assert label.ndim == 3
     label = datasets.mouse_epidermis()
     assert label.ndim == 3
+    im, label = datasets.HL60_3D_synthesized()
+    assert im.ndim == 4
+    assert label.ndim == 4

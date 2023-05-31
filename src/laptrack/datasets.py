@@ -28,14 +28,14 @@ TEST_DATA_PROPS = {
     },
     "HL60_3D_synthesized": {
         "filename": "3D_tracking_data/HL60_3D_synthesized_data.npz",
-        "hash": "md5:3d6536400398464d9b0bdc88878115deb",
+        "hash": "md5:3d6536400398464d9b0bdc88878115de",
     },
 }
 
 POOCH = pooch.create(
     path=pooch.os_cache("laptrack"),
     # Use the Zenodo DOI
-    base_url="https://raw.githubusercontent.com/yfukai/laptrack/9819adef1490b1fd7270e252c589933fe9b435cb/docs/examples/",
+    base_url="https://raw.githubusercontent.com/yfukai/laptrack/97943e8b61a5fa6e9cdabf2968037c4b1f8cbf32/docs/examples/",
     registry={v["filename"]: v["hash"] for v in TEST_DATA_PROPS.values()},
 )
 
