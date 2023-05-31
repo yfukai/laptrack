@@ -28,7 +28,7 @@ TEST_DATA_PROPS = {
     },
     "HL60_3D_synthesized": {
         "filename": "3D_tracking_data/HL60_3D_synthesized_data.npz",
-        "hash": "md5:3d6536400398464d9b0bdc88878115deb",
+        "hash": "md5:3d6536400398464d9b0bdc88878115de",
     },
 }
 
