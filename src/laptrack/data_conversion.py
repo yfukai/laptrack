@@ -1,4 +1,5 @@
 """Data conversion utilities for tracking."""
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Sequence
@@ -249,3 +250,39 @@ def convert_tree_to_dataframe(
     merge_df = pd.DataFrame.from_records(merge_df_data).astype(int)
 
     return track_df, split_df, merge_df
+
+
+def convert_split_merge_df_to_napari_graph(
+    split_df: pd.DataFrame, merge_df: pd.DataFrame
+) -> Dict[int, List[int]]:
+    """Convert the split and merge dataframes to a dictionary of parent to children for napari visualization.
+
+    Parameters
+    ----------
+    split_df : pd.DataFrame
+        The splitting dataframe.
+    merge_df : pd.DataFrame
+        The merging dataframe.
+
+    Returns
+    -------
+    split_merge_graph : Dict[int,List[int]]
+        Dictionary defines the mapping between a track ID and the parents of the track.
+
+    """
+    split_merge_graph = {}
+    if not split_df.empty:
+        split_merge_graph.update(
+            {
+                int(row["child_track_id"]): [int(row["parent_track_id"])]
+                for _, row in split_df.iterrows()
+            }
+        )
+    if not merge_df.empty:
+        split_merge_graph.update(
+            {
+                int(c_id): [int(p_id) for p_id in grp["parent_track_id"]]
+                for c_id, grp in merge_df.groupby("child_track_id")
+            }
+        )
+    return split_merge_graph

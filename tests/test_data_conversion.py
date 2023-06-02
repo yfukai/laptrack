@@ -78,6 +78,7 @@ def test_trees():
     ]
     clones = [segments[:3], segments[3:6], segments[6:]]
 
+    # test track graph shape (int .. coordinate index)
     # 0-0-0-0-0-0
     #      |
     #      -1-1-1
@@ -226,3 +227,49 @@ def test_integration(track_class):
     lt = track_class()
     tree = lt.predict(coords)
     data_conversion.convert_tree_to_dataframe(tree)
+
+
+def test_convert_split_merge_df_to_napari_graph(test_trees):
+    tree, segments, clones, coords = test_trees
+    track_df, split_df, merge_df = data_conversion.convert_tree_to_dataframe(
+        tree, coords
+    )
+    graph = data_conversion.convert_split_merge_df_to_napari_graph(split_df, merge_df)
+
+    # test track graph shape (int .. coordinate index)
+    # 0-0-0-0-0-0
+    #      |
+    #      -1-1-1
+    #   2-2-2-2
+    #    |
+    #   3-
+    #
+    # 4
+
+    # check splitting
+    track_id_2_0 = track_df.loc[(2, 0), "track_id"]
+    track_id_3_0 = track_df.loc[(3, 0), "track_id"]
+    track_id_3_1 = track_df.loc[(3, 1), "track_id"]
+
+    assert graph[track_id_3_0] == [track_id_2_0]
+    assert graph[track_id_3_1] == [track_id_2_0]
+
+    # check merging
+    track_id_1_2 = track_df.loc[(1, 2), "track_id"]
+    track_id_1_3 = track_df.loc[(1, 3), "track_id"]
+    track_id_2_2 = track_df.loc[(2, 2), "track_id"]
+
+    assert graph[track_id_2_2] == [track_id_1_2, track_id_1_3]
+
+    # only split
+    graph = data_conversion.convert_split_merge_df_to_napari_graph(
+        split_df, pd.DataFrame()
+    )
+    assert graph[track_id_3_0] == [track_id_2_0]
+    assert graph[track_id_3_1] == [track_id_2_0]
+
+    # only merge
+    graph = data_conversion.convert_split_merge_df_to_napari_graph(
+        pd.DataFrame(), merge_df
+    )
+    assert graph[track_id_2_2] == [track_id_1_2, track_id_1_3]
