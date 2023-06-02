@@ -260,3 +260,16 @@ def test_convert_split_merge_df_to_napari_graph(test_trees):
     track_id_2_2 = track_df.loc[(2, 2), "track_id"]
 
     assert graph[track_id_2_2] == [track_id_1_2, track_id_1_3]
+
+    # only split
+    graph = data_conversion.convert_split_merge_df_to_napari_graph(
+        split_df, pd.DataFrame()
+    )
+    assert graph[track_id_3_0] == [track_id_2_0]
+    assert graph[track_id_3_1] == [track_id_2_0]
+
+    # only merge
+    graph = data_conversion.convert_split_merge_df_to_napari_graph(
+        pd.DataFrame(), merge_df
+    )
+    assert graph[track_id_2_2] == [track_id_1_2, track_id_1_3]
