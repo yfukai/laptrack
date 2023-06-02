@@ -274,14 +274,14 @@ def convert_split_merge_df_to_napari_graph(
     if not split_df.empty:
         split_merge_graph.update(
             {
-                row["child_track_id"]: [row["parent_track_id"]]
+                int(row["child_track_id"]): [int(row["parent_track_id"])]
                 for _, row in split_df.iterrows()
             }
         )
     if not merge_df.empty:
         split_merge_graph.update(
             {
-                c_id: grp["parent_track_id"].to_list()
+                int(c_id): [int(p_id) for p_id in grp["parent_track_id"]]
                 for c_id, grp in merge_df.groupby("child_track_id")
             }
         )
