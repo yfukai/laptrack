@@ -267,7 +267,7 @@ def convert_split_merge_df_to_napari_graph(
     Returns
     -------
     split_merge_graph : Dict[int,List[int]]
-        The dictionary of parent to children.
+        Dictionary defines the mapping between a track ID and the parents of the track.
 
     """
     split_merge_graph = {}
