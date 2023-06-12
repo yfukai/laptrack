@@ -137,6 +137,28 @@ def test_reproducing_trackmate(testdata, tracker_class, parallel_backend) -> Non
     assert all(split_df == split_df2)
     assert all(merge_df == merge_df2)
 
+    # check index offset
+    track_df3, split_df3, merge_df3 = lt.predict_dataframe(
+        df, ["x", "y"], index_offset=2
+    )
+    assert min(track_df3["track_id"]) == 2
+    assert min(track_df3["tree_id"]) == 2
+
+    track_df4 = track_df2.copy()
+    split_df4 = split_df2.copy()
+    merge_df4 = merge_df2.copy()
+    track_df4["track_id"] = track_df4["track_id"] + 2
+    track_df4["tree_id"] = track_df4["tree_id"] + 2
+    if not split_df4.empty:
+        split_df4["parent_track_id"] = split_df4["parent_track_id"] + 2
+        split_df4["child_track_id"] = split_df4["child_track_id"] + 2
+    if not merge_df4.empty:
+        merge_df4["parent_track_id"] = merge_df4["parent_track_id"] + 2
+        merge_df4["child_track_id"] = merge_df4["child_track_id"] + 2
+    assert all(track_df3 == track_df2)
+    assert all(split_df3 == split_df2)
+    assert all(merge_df3 == merge_df2)
+
     track_df, split_df, merge_df = lt.predict_dataframe(
         df, ["x", "y"], only_coordinate_cols=False
     )
