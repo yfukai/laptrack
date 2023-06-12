@@ -657,6 +657,7 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
         validate_frame: bool = True,
         only_coordinate_cols: bool = True,
         connected_edges: Optional[List[Tuple[Int, Int]]] = None,
+        index_offset: Int = 0,
     ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         """Shorthand for the tracking with the dataframe input / output.
 
@@ -676,6 +677,8 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
             The edges that is known to be connected.
             Must be a list of the tuples of the row numbers (not index, but `iloc`).
             If None, no edges are assumed to be connected.
+        index_offset : Int
+            The offset to add to the track and tree index.
 
         Returns
         -------
@@ -721,6 +724,16 @@ class LapTrackBase(BaseModel, ABC, extra=Extra.forbid):
             track_df, split_df, merge_df = convert_tree_to_dataframe(
                 tree, dataframe=df, frame_index=frame_index
             )
+
+        track_df["track_id"] = track_df["track_id"] + index_offset
+        track_df["tree_id"] = track_df["tree_id"] + index_offset
+        if not split_df.empty:
+            split_df["parent_track_id"] = split_df["parent_track_id"] + index_offset
+            split_df["child_track_id"] = split_df["child_track_id"] + index_offset
+        if not merge_df.empty:
+            merge_df["parent_track_id"] = merge_df["parent_track_id"] + index_offset
+            merge_df["child_track_id"] = merge_df["child_track_id"] + index_offset
+
         return track_df, split_df, merge_df
 
 
