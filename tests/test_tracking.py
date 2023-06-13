@@ -237,6 +237,11 @@ def test_no_accepting_wrong_argments() -> None:
         lt = LapTrack(fugafuga=True)
 
 
+def test_no_accepting_wrong_backend() -> None:
+    with pytest.raises(ValidationError):
+        lt = LapTrack(parallel_backend="hogehoge")
+
+
 def df_to_tuples(df):
     return tuple([tuple(map(int, v)) for v in df.values])
 
