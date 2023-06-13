@@ -3,14 +3,13 @@
 __author__ = """Yohsuke T. Fukai"""
 __email__ = "ysk@yfukai.net"
 
-from ._tracking import laptrack, LapTrack, LapTrackMulti, LapTrackBase
+from ._tracking import laptrack, LapTrack, ParallelBackend
 from . import data_conversion, scores, metric_utils, datasets
 
 __all__ = [
     "laptrack",
-    "LapTrackBase",
     "LapTrack",
-    "LapTrackMulti",
+    "ParallelBackend",
     "data_conversion",
     "scores",
     "metric_utils",

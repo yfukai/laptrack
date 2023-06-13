@@ -12,7 +12,6 @@ from pydantic import ValidationError
 
 from laptrack import LapTrack
 from laptrack import laptrack
-from laptrack import LapTrackMulti
 from laptrack.data_conversion import convert_tree_to_dataframe
 
 warnings.simplefilter("ignore", FutureWarning)
@@ -103,12 +102,11 @@ def testdata(request, shared_datadir: str):
     return params, coords, edges_set
 
 
-@pytest.mark.parametrize("tracker_class", [LapTrack, LapTrackMulti])
 @pytest.mark.parametrize("parallel_backend", ["serial", "ray"])
-def test_reproducing_trackmate(testdata, tracker_class, parallel_backend) -> None:
+def test_reproducing_trackmate(testdata, parallel_backend) -> None:
     params, coords, edges_set = testdata
     params["parallel_backend"] = parallel_backend
-    lt = tracker_class(**params)
+    lt = LapTrack(**params)
     track_tree = lt.predict(coords)
     assert edges_set == set(track_tree.edges)
     for n in track_tree.nodes():
@@ -128,7 +126,9 @@ def test_reproducing_trackmate(testdata, tracker_class, parallel_backend) -> Non
             )
         )
     df = pd.concat(data)
-    track_df, split_df, merge_df = lt.predict_dataframe(df, ["x", "y"])
+    track_df, split_df, merge_df = lt.predict_dataframe(
+        df, ["x", "y"], only_coordinate_cols=True
+    )
     assert not any(split_df.duplicated())
     assert not any(merge_df.duplicated())
     track_df2, split_df2, merge_df2 = convert_tree_to_dataframe(track_tree, coords)
@@ -139,7 +139,7 @@ def test_reproducing_trackmate(testdata, tracker_class, parallel_backend) -> Non
 
     # check index offset
     track_df3, split_df3, merge_df3 = lt.predict_dataframe(
-        df, ["x", "y"], index_offset=2
+        df, ["x", "y"], index_offset=2, only_coordinate_cols=True
     )
     assert min(track_df3["track_id"]) == 2
     assert min(track_df3["tree_id"]) == 2
@@ -177,35 +177,6 @@ def dist_metric(request):
         return lambda c1, c2, _1: np.linalg.norm(c1 - c2) ** 2
     elif request.param == 4:
         return lambda c1, c2, _1, _2: np.linalg.norm(c1 - c2) ** 2
-
-
-def test_multi_algorithm_reproducing_trackmate_lambda(testdata, dist_metric) -> None:
-    params, coords, edges_set = testdata
-    params = params.copy()
-    params.update(
-        dict(
-            track_dist_metric=lambda c1, c2: np.linalg.norm(c1 - c2) ** 2,
-            splitting_dist_metric=dist_metric,
-            merging_dist_metric=dist_metric,
-        )
-    )
-    lt = LapTrackMulti(**params)
-    track_tree = lt.predict(coords)
-    assert edges_set == set(track_tree.edges)
-
-
-def test_multi_algorithm_reproducing_trackmate_3_arg_lambda(testdata) -> None:
-    params, coords, edges_set = testdata
-    lt = LapTrackMulti(**params)
-    track_tree = lt.predict(coords)
-    assert edges_set == set(track_tree.edges)
-
-
-def test_multi_algorithm_reproducing_trackmate_4_arg_lambda(testdata) -> None:
-    params, coords, edges_set = testdata
-    lt = LapTrackMulti(**params)
-    track_tree = lt.predict(coords)
-    assert edges_set == set(track_tree.edges)
 
 
 def test_laptrack_function_shortcut(testdata) -> None:
@@ -266,11 +237,16 @@ def test_no_accepting_wrong_argments() -> None:
         lt = LapTrack(fugafuga=True)
 
 
+def test_no_accepting_wrong_backend() -> None:
+    with pytest.raises(ValidationError):
+        lt = LapTrack(parallel_backend="hogehoge")
+
+
 def df_to_tuples(df):
     return tuple([tuple(map(int, v)) for v in df.values])
 
 
-@pytest.mark.parametrize("tracker_class", [LapTrack, LapTrackMulti])
+@pytest.mark.parametrize("tracker_class", [LapTrack])
 def test_connected_edges(tracker_class) -> None:
     coords = [np.array([[10, 10], [12, 11]]), np.array([[10, 10], [13, 11]])]
     lt = tracker_class(
@@ -302,7 +278,7 @@ def test_connected_edges(tracker_class) -> None:
     ) == {((10, 10), (13, 11)), ((12, 11), (10, 10))}
 
 
-@pytest.mark.parametrize("tracker_class", [LapTrack, LapTrackMulti])
+@pytest.mark.parametrize("tracker_class", [LapTrack])
 def test_connected_edges_splitting(tracker_class) -> None:
     coords = [
         np.array([[10, 10], [11, 11], [13, 12]]),
@@ -353,7 +329,7 @@ def test_connected_edges_splitting(tracker_class) -> None:
     # ((10,10),(13,11)),((10,10),(13,15)), is the splitted
 
 
-@pytest.mark.parametrize("tracker_class", [LapTrack, LapTrackMulti])
+@pytest.mark.parametrize("tracker_class", [LapTrack])
 def test_no_connected_node(tracker_class) -> None:
     coords = [np.array([[10, 10], [12, 11]]), np.array([[10, 10], [100, 11]])]
     lt = tracker_class(
