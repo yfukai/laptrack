@@ -5,7 +5,6 @@ import pytest
 
 from laptrack import data_conversion
 from laptrack import LapTrack
-from laptrack import LapTrackMulti
 
 
 def test_convert_dataframe_to_coords():
@@ -189,7 +188,12 @@ def test_convert_tree_to_dataframe(test_trees):
     )
 
 
-@pytest.mark.parametrize("track_class", [LapTrack, LapTrackMulti])
+@pytest.mark.parametrize(
+    "track_class",
+    [
+        LapTrack,
+    ],
+)
 def test_convert_tree_to_dataframe_frame_index(track_class):
     df = pd.DataFrame(
         {
@@ -213,7 +217,7 @@ def test_convert_tree_to_dataframe_frame_index(track_class):
     assert len(np.unique(df["tree_id"])) > 1
 
 
-@pytest.mark.parametrize("track_class", [LapTrack, LapTrackMulti])
+@pytest.mark.parametrize("track_class", [LapTrack])
 def test_integration(track_class):
     df = pd.DataFrame(
         {
