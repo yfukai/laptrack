@@ -93,182 +93,6 @@ def _get_segment_df(coords, track_tree):
     return segments_df
 
 
-def _get_segment_end_connecting_matrix(
-    segments_df,
-    max_frame_count,
-    dist_metric,
-    cost_cutoff,
-    *,
-    force_end_nodes=[],
-    force_start_nodes=[],
-):
-    """
-    Generate the cost matrix for connecting segment ends.
-
-    Parameters
-    ----------
-    segments_df : pd.DataFrame
-        must have the columns "first_frame", "first_index", "first_crame_coords", "last_frame", "last_index", "last_frame_coords"
-    max_frame_count : int
-        connecting cost is set to infinity if the distance between the two ends is larger than this value
-    dist_metric :
-        the distance metric
-    cost_cutoff : float
-        the cutoff value for the cost
-    force_end_nodes : list of int
-        the indices of the segments_df that is forced to be end for future connection
-    force_start_nodes : list of int
-        the indices of the segments_df that is forced to be start for future connection
-
-    Returns
-    -------
-    segments_df: pd.DataFrame
-        the segments dataframe with additional column "gap_closing_candidates"
-        (index of the candidate row of segments_df, the associated costs)
-
-    """
-    if cost_cutoff:
-
-        def to_gap_closing_candidates(row):
-            # if the index is in force_end_indices, do not add to gap closing candidates
-            if (row["last_frame"], row["last_index"]) in force_end_nodes:
-                return [], []
-
-            target_coord = row["last_frame_coords"]
-            frame_diff = segments_df["first_frame"] - row["last_frame"]
-
-            # only take the elements that are within the frame difference range.
-            # segments in df is later than the candidate segment (row)
-            indices = (1 <= frame_diff) & (frame_diff <= max_frame_count)
-            df = segments_df[indices]
-            force_start = df.apply(
-                lambda row: (row["first_frame"], row["first_index"])
-                in force_start_nodes,
-                axis=1,
-            )
-            df = df[~force_start]
-            # do not connect to the segments that is forced to be start
-            # note: can use KDTree if metric is distance,
-            # but might not be appropriate for general metrics
-            # https://stackoverflow.com/questions/35459306/find-points-within-cutoff-distance-of-other-points-with-scipy # noqa
-            # TrackMate also uses this (trivial) implementation.
-            if len(df) > 0:
-                target_dist_matrix = cdist(
-                    [target_coord],
-                    np.stack(df["first_frame_coords"].values),
-                    metric=dist_metric,
-                )
-                assert target_dist_matrix.shape[0] == 1
-                indices2 = np.where(target_dist_matrix[0] < cost_cutoff)[0]
-                return (
-                    df.index[indices2].values,
-                    target_dist_matrix[0][indices2],
-                )
-            else:
-                return [], []
-
-        segments_df["gap_closing_candidates"] = segments_df.apply(
-            to_gap_closing_candidates, axis=1
-        )
-    else:
-        segments_df["gap_closing_candidates"] = [([], [])] * len(segments_df)
-
-    N_segments = len(segments_df)
-    gap_closing_dist_matrix = coo_matrix_builder(
-        (N_segments, N_segments), dtype=np.float32
-    )
-    for ind, row in segments_df.iterrows():
-        candidate_inds = row["gap_closing_candidates"][0]
-        candidate_costs = row["gap_closing_candidates"][1]
-        # row ... track end, col ... track start
-        gap_closing_dist_matrix[(int(cast(int, ind)), candidate_inds)] = candidate_costs
-
-    return segments_df, gap_closing_dist_matrix
-
-
-def _get_splitting_merging_candidates(
-    segments_df,
-    coords,
-    cutoff,
-    prefix,
-    dist_metric,
-    *,
-    force_end_nodes=[],
-    force_start_nodes=[],
-):
-    if cutoff:
-
-        def to_candidates(row):
-            # if the prefix is first, this means the row is the track start, and the target is the track end
-            other_frame = row[f"{prefix}_frame"] + (-1 if prefix == "first" else 1)
-            target_coord = row[f"{prefix}_frame_coords"]
-            row_no_connection_nodes = (
-                force_start_nodes if prefix == "first" else force_end_nodes
-            )
-            other_no_connection_nodes = (
-                force_end_nodes if prefix == "first" else force_start_nodes
-            )
-            other_no_connection_indices = [
-                n[1] for n in other_no_connection_nodes if n[0] == other_frame
-            ]
-
-            if (
-                row[f"{prefix}_frame"],
-                row[f"{prefix}_index"],
-            ) in row_no_connection_nodes:
-                return (
-                    [],
-                    [],
-                )  # do not connect to the segments that is forced to be start or end
-            # note: can use KDTree if metric is distance,
-            # but might not be appropriate for general metrics
-            # https://stackoverflow.com/questions/35459306/find-points-within-cutoff-distance-of-other-points-with-scipy # noqa
-            if other_frame < 0 or len(coords) <= other_frame:
-                return [], []
-            target_dist_matrix = cdist(
-                [target_coord], coords[other_frame], metric=dist_metric
-            )
-            assert target_dist_matrix.shape[0] == 1
-            target_dist_matrix[
-                0, other_no_connection_indices
-            ] = (
-                np.inf
-            )  # do not connect to the segments that is forced to be start or end
-            indices = np.where(target_dist_matrix[0] < cutoff)[0]
-            return [(other_frame, index) for index in indices], target_dist_matrix[0][
-                indices
-            ]
-
-        segments_df[f"{prefix}_candidates"] = segments_df.apply(to_candidates, axis=1)
-    else:
-        segments_df[f"{prefix}_candidates"] = [([], [])] * len(segments_df)
-
-    middle_point_candidates = np.unique(
-        sum(
-            segments_df[f"{prefix}_candidates"].apply(lambda x: list(x[0])),
-            [],
-        ),
-        axis=0,
-    )
-
-    N_segments = len(segments_df)
-    N_middle = len(middle_point_candidates)
-    dist_matrix = coo_matrix_builder((N_segments, N_middle), dtype=np.float32)
-
-    middle_point_candidates_dict = {
-        tuple(val): i for i, val in enumerate(middle_point_candidates)
-    }
-    for ind, row in segments_df.iterrows():
-        candidate_frame_indices = row[f"{prefix}_candidates"][0]
-        candidate_inds = [
-            middle_point_candidates_dict[tuple(fi)] for fi in candidate_frame_indices
-        ]
-        candidate_costs = row[f"{prefix}_candidates"][1]
-        dist_matrix[(int(cast(Int, ind)), candidate_inds)] = candidate_costs
-
-    return segments_df, dist_matrix, middle_point_candidates
-
-
 class LapTrack(BaseModel, extra=Extra.forbid):
     """Tracking class for LAP tracker with parameters."""
 
@@ -371,7 +195,7 @@ class LapTrack(BaseModel, extra=Extra.forbid):
         exclude=True,
     )
 
-    def _link_frames(
+    def _predict_links(
         self, coords, segment_connected_edges, split_merge_edges
     ) -> nx.Graph:
         """
@@ -401,7 +225,7 @@ class LapTrack(BaseModel, extra=Extra.forbid):
 
         edges_list = list(segment_connected_edges) + list(split_merge_edges)
 
-        def _link_single_frame(
+        def _predict_link_single_frame(
             frame: int,
             coord1: np.ndarray,
             coord2: np.ndarray,
@@ -440,14 +264,14 @@ class LapTrack(BaseModel, extra=Extra.forbid):
         if self.parallel_backend == ParallelBackend.serial:
             all_edges = []
             for frame, (coord1, coord2) in enumerate(zip(coords[:-1], coords[1:])):
-                edges = _link_single_frame(frame, coord1, coord2)
+                edges = _predict_link_single_frame(frame, coord1, coord2)
                 all_edges.extend(edges)
         elif self.parallel_backend == ParallelBackend.ray:
             try:
                 import ray
             except ImportError:
                 raise ImportError("Please install `ray` to use `ParallelBackend.ray`.")
-            remote_func = ray.remote(_link_single_frame)
+            remote_func = ray.remote(_predict_link_single_frame)
             res = [
                 remote_func.remote(frame, coord1, coord2)
                 for frame, (coord1, coord2) in enumerate(zip(coords[:-1], coords[1:]))
@@ -461,14 +285,176 @@ class LapTrack(BaseModel, extra=Extra.forbid):
     def _get_gap_closing_matrix(
         self, segments_df, *, force_end_nodes=[], force_start_nodes=[]
     ):
-        return _get_segment_end_connecting_matrix(
-            segments_df,
-            self.gap_closing_max_frame_count,
-            self.gap_closing_dist_metric,
-            self.gap_closing_cost_cutoff,
-            force_end_nodes=force_end_nodes,
-            force_start_nodes=force_start_nodes,
+        """
+        Generate the cost matrix for connecting segment ends.
+
+        Parameters
+        ----------
+        segments_df : pd.DataFrame
+            must have the columns "first_frame", "first_index", "first_crame_coords", "last_frame", "last_index", "last_frame_coords"
+        force_end_nodes : list of int
+            the indices of the segments_df that is forced to be end for future connection
+        force_start_nodes : list of int
+            the indices of the segments_df that is forced to be start for future connection
+
+        Returns
+        -------
+        segments_df: pd.DataFrame
+            the segments dataframe with additional column "gap_closing_candidates"
+            (index of the candidate row of segments_df, the associated costs)
+         gap_closing_dist_matrix: coo_matrix_builder
+            the cost matrix for gap closing candidates
+
+        """
+        if self.gap_closing_cost_cutoff:
+
+            def to_gap_closing_candidates(row):
+                # if the index is in force_end_indices, do not add to gap closing candidates
+                if (row["last_frame"], row["last_index"]) in force_end_nodes:
+                    return [], []
+
+                target_coord = row["last_frame_coords"]
+                frame_diff = segments_df["first_frame"] - row["last_frame"]
+
+                # only take the elements that are within the frame difference range.
+                # segments in df is later than the candidate segment (row)
+                indices = (1 <= frame_diff) & (
+                    frame_diff <= self.gap_closing_max_frame_count
+                )
+                df = segments_df[indices]
+                force_start = df.apply(
+                    lambda row: (row["first_frame"], row["first_index"])
+                    in force_start_nodes,
+                    axis=1,
+                )
+                df = df[~force_start]
+                # do not connect to the segments that is forced to be start
+                # note: can use KDTree if metric is distance,
+                # but might not be appropriate for general metrics
+                # https://stackoverflow.com/questions/35459306/find-points-within-cutoff-distance-of-other-points-with-scipy # noqa
+                # TrackMate also uses this (trivial) implementation.
+                if len(df) > 0:
+                    target_dist_matrix = cdist(
+                        [target_coord],
+                        np.stack(df["first_frame_coords"].values),
+                        metric=self.gap_closing_dist_metric,
+                    )
+                    assert target_dist_matrix.shape[0] == 1
+                    indices2 = np.where(
+                        target_dist_matrix[0] < self.gap_closing_cost_cutoff
+                    )[0]
+                    return (
+                        df.index[indices2].values,
+                        target_dist_matrix[0][indices2],
+                    )
+                else:
+                    return [], []
+
+            segments_df["gap_closing_candidates"] = segments_df.apply(
+                to_gap_closing_candidates, axis=1
+            )
+        else:
+            segments_df["gap_closing_candidates"] = [([], [])] * len(segments_df)
+
+        N_segments = len(segments_df)
+        gap_closing_dist_matrix = coo_matrix_builder(
+            (N_segments, N_segments), dtype=np.float32
         )
+        for ind, row in segments_df.iterrows():
+            candidate_inds = row["gap_closing_candidates"][0]
+            candidate_costs = row["gap_closing_candidates"][1]
+            # row ... track end, col ... track start
+            gap_closing_dist_matrix[
+                (int(cast(int, ind)), candidate_inds)
+            ] = candidate_costs
+
+        return segments_df, gap_closing_dist_matrix
+
+    def _get_splitting_merging_candidates(
+        self,
+        segments_df,
+        coords,
+        cutoff,
+        prefix,
+        dist_metric,
+        *,
+        force_end_nodes=[],
+        force_start_nodes=[],
+    ):
+        if cutoff:
+
+            def to_candidates(row):
+                # if the prefix is first, this means the row is the track start, and the target is the track end
+                other_frame = row[f"{prefix}_frame"] + (-1 if prefix == "first" else 1)
+                target_coord = row[f"{prefix}_frame_coords"]
+                row_no_connection_nodes = (
+                    force_start_nodes if prefix == "first" else force_end_nodes
+                )
+                other_no_connection_nodes = (
+                    force_end_nodes if prefix == "first" else force_start_nodes
+                )
+                other_no_connection_indices = [
+                    n[1] for n in other_no_connection_nodes if n[0] == other_frame
+                ]
+
+                if (
+                    row[f"{prefix}_frame"],
+                    row[f"{prefix}_index"],
+                ) in row_no_connection_nodes:
+                    return (
+                        [],
+                        [],
+                    )  # do not connect to the segments that is forced to be start or end
+                # note: can use KDTree if metric is distance,
+                # but might not be appropriate for general metrics
+                # https://stackoverflow.com/questions/35459306/find-points-within-cutoff-distance-of-other-points-with-scipy # noqa
+                if other_frame < 0 or len(coords) <= other_frame:
+                    return [], []
+                target_dist_matrix = cdist(
+                    [target_coord], coords[other_frame], metric=dist_metric
+                )
+                assert target_dist_matrix.shape[0] == 1
+                target_dist_matrix[
+                    0, other_no_connection_indices
+                ] = (
+                    np.inf
+                )  # do not connect to the segments that is forced to be start or end
+                indices = np.where(target_dist_matrix[0] < cutoff)[0]
+                return [(other_frame, index) for index in indices], target_dist_matrix[
+                    0
+                ][indices]
+
+            segments_df[f"{prefix}_candidates"] = segments_df.apply(
+                to_candidates, axis=1
+            )
+        else:
+            segments_df[f"{prefix}_candidates"] = [([], [])] * len(segments_df)
+
+        middle_point_candidates = np.unique(
+            sum(
+                segments_df[f"{prefix}_candidates"].apply(lambda x: list(x[0])),
+                [],
+            ),
+            axis=0,
+        )
+
+        N_segments = len(segments_df)
+        N_middle = len(middle_point_candidates)
+        dist_matrix = coo_matrix_builder((N_segments, N_middle), dtype=np.float32)
+
+        middle_point_candidates_dict = {
+            tuple(val): i for i, val in enumerate(middle_point_candidates)
+        }
+        for ind, row in segments_df.iterrows():
+            candidate_frame_indices = row[f"{prefix}_candidates"][0]
+            candidate_inds = [
+                middle_point_candidates_dict[tuple(fi)]
+                for fi in candidate_frame_indices
+            ]
+            candidate_costs = row[f"{prefix}_candidates"][1]
+            dist_matrix[(int(cast(Int, ind)), candidate_inds)] = candidate_costs
+
+        return segments_df, dist_matrix, middle_point_candidates
 
     def _link_gap_split_merge_from_matrix(
         self,
@@ -524,6 +510,82 @@ class LapTrack(BaseModel, extra=Extra.forbid):
                         tuple(splitting_all_candidates[row_ind - M]),
                     )
 
+        return track_tree
+
+    def _predict_gap_split_merge(self, coords, track_tree, split_edges, merge_edges):
+        """
+        Perform gap-closing and splitting/merging prediction.
+
+        Parameters
+        ----------
+             coords : Sequence[NumArray]
+                 The list of coordinates of point for each frame.
+                 The array index means (sample, dimension).
+             track_tree : nx.Graph
+                 the track tree
+             connected_edges_list (List[List[Tuple[Tuple[int, int],Tuple[int, int]]]]):
+                 the connected edges list
+
+        Returns
+        -------
+             track_tree : nx.Graph
+                 the updated track tree
+        """
+        edges = list(split_edges) + list(merge_edges)
+        if (
+            self.gap_closing_cost_cutoff
+            or self.splitting_cost_cutoff
+            or self.merging_cost_cutoff
+        ):
+            segments_df = _get_segment_df(coords, track_tree)
+            force_end_nodes = [tuple(map(int, e[0])) for e in edges]
+            force_start_nodes = [tuple(map(int, e[1])) for e in edges]
+
+            # compute candidate for gap closing
+            segments_df, gap_closing_dist_matrix = self._get_gap_closing_matrix(
+                segments_df,
+                force_end_nodes=force_end_nodes,
+                force_start_nodes=force_start_nodes,
+            )
+
+            middle_points: Dict = {}
+            dist_matrices: Dict = {}
+
+            # compute candidate for splitting and merging
+            for prefix, cutoff, dist_metric in zip(
+                ["first", "last"],
+                [self.splitting_cost_cutoff, self.merging_cost_cutoff],
+                [self.splitting_dist_metric, self.merging_dist_metric],
+            ):
+                (
+                    segments_df,
+                    dist_matrices[prefix],
+                    middle_points[prefix],
+                ) = self._get_splitting_merging_candidates(
+                    segments_df,
+                    coords,
+                    cutoff,
+                    prefix,
+                    dist_metric,
+                    force_end_nodes=force_end_nodes,
+                    force_start_nodes=force_start_nodes,
+                )
+
+            splitting_dist_matrix = dist_matrices["first"]
+            merging_dist_matrix = dist_matrices["last"]
+            splitting_all_candidates = middle_points["first"]
+            merging_all_candidates = middle_points["last"]
+
+            track_tree = self._link_gap_split_merge_from_matrix(
+                segments_df,
+                track_tree,
+                gap_closing_dist_matrix,
+                splitting_dist_matrix,
+                merging_dist_matrix,
+                splitting_all_candidates,
+                merging_all_candidates,
+            )
+        track_tree.add_edges_from(edges)
         return track_tree
 
     def predict(
@@ -589,7 +651,7 @@ class LapTrack(BaseModel, extra=Extra.forbid):
             merge_edges = []
 
         ####### Particle-particle tracking #######
-        track_tree = self._link_frames(
+        track_tree = self._predict_links(
             coords, segment_connected_edges, list(split_edges) + list(merge_edges)
         )
         track_tree = self._predict_gap_split_merge(
@@ -692,82 +754,6 @@ class LapTrack(BaseModel, extra=Extra.forbid):
             merge_df["child_track_id"] = merge_df["child_track_id"] + index_offset
 
         return track_df, split_df, merge_df
-
-    def _predict_gap_split_merge(self, coords, track_tree, split_edges, merge_edges):
-        """
-        Perform gap-closing and splitting/merging prediction.
-
-        Parameters
-        ----------
-             coords : Sequence[NumArray]
-                 The list of coordinates of point for each frame.
-                 The array index means (sample, dimension).
-             track_tree : nx.Graph
-                 the track tree
-             connected_edges_list (List[List[Tuple[Tuple[int, int],Tuple[int, int]]]]):
-                 the connected edges list
-
-        Returns
-        -------
-             track_tree : nx.Graph
-                 the updated track tree
-        """
-        edges = list(split_edges) + list(merge_edges)
-        if (
-            self.gap_closing_cost_cutoff
-            or self.splitting_cost_cutoff
-            or self.merging_cost_cutoff
-        ):
-            segments_df = _get_segment_df(coords, track_tree)
-            force_end_nodes = [tuple(map(int, e[0])) for e in edges]
-            force_start_nodes = [tuple(map(int, e[1])) for e in edges]
-
-            # compute candidate for gap closing
-            segments_df, gap_closing_dist_matrix = self._get_gap_closing_matrix(
-                segments_df,
-                force_end_nodes=force_end_nodes,
-                force_start_nodes=force_start_nodes,
-            )
-
-            middle_points: Dict = {}
-            dist_matrices: Dict = {}
-
-            # compute candidate for splitting and merging
-            for prefix, cutoff, dist_metric in zip(
-                ["first", "last"],
-                [self.splitting_cost_cutoff, self.merging_cost_cutoff],
-                [self.splitting_dist_metric, self.merging_dist_metric],
-            ):
-                (
-                    segments_df,
-                    dist_matrices[prefix],
-                    middle_points[prefix],
-                ) = _get_splitting_merging_candidates(
-                    segments_df,
-                    coords,
-                    cutoff,
-                    prefix,
-                    dist_metric,
-                    force_end_nodes=force_end_nodes,
-                    force_start_nodes=force_start_nodes,
-                )
-
-            splitting_dist_matrix = dist_matrices["first"]
-            merging_dist_matrix = dist_matrices["last"]
-            splitting_all_candidates = middle_points["first"]
-            merging_all_candidates = middle_points["last"]
-
-            track_tree = self._link_gap_split_merge_from_matrix(
-                segments_df,
-                track_tree,
-                gap_closing_dist_matrix,
-                splitting_dist_matrix,
-                merging_dist_matrix,
-                splitting_all_candidates,
-                merging_all_candidates,
-            )
-        track_tree.add_edges_from(edges)
-        return track_tree
 
 
 def laptrack(coords: Sequence[NumArray], **kwargs) -> nx.Graph:
