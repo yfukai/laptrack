@@ -277,6 +277,11 @@ class LapTrack(BaseModel, extra=Extra.forbid):
                 for frame, (coord1, coord2) in enumerate(zip(coords[:-1], coords[1:]))
             ]
             all_edges = sum(ray.get(res), [])
+        else:
+            raise ValueError(
+                f"Unknown parallel backend {self.parallel_backend}. "
+                + f"Must be one of {', '.join([ps.name for ps in ParallelBackend])}."
+            )
 
         track_tree.add_edges_from(all_edges)
         track_tree.add_edges_from(segment_connected_edges)
@@ -350,9 +355,22 @@ class LapTrack(BaseModel, extra=Extra.forbid):
                 else:
                     return [], []
 
-            segments_df["gap_closing_candidates"] = segments_df.apply(
-                to_gap_closing_candidates, axis=1
-            )
+            if self.parallel_backend == ParallelBackend.serial:
+                segments_df["gap_closing_candidates"] = segments_df.apply(
+                    to_gap_closing_candidates, axis=1
+                )
+            elif self.parallel_backend == ParallelBackend.ray:
+                try:
+                    import ray
+                except ImportError:
+                    raise ImportError(
+                        "Please install `ray` to use `ParallelBackend.ray`."
+                    )
+                remote_func = ray.remote(to_gap_closing_candidates)
+                res = [remote_func.remote(row) for _, row in segments_df.iterrows()]
+                segments_df["gap_closing_candidates"] = ray.get(res)
+            else:
+                raise ValueError(f"Unknown parallel_backend {self.parallel_backend}. ")
         else:
             segments_df["gap_closing_candidates"] = [([], [])] * len(segments_df)
 
@@ -424,9 +442,22 @@ class LapTrack(BaseModel, extra=Extra.forbid):
                     0
                 ][indices]
 
-            segments_df[f"{prefix}_candidates"] = segments_df.apply(
-                to_candidates, axis=1
-            )
+            if self.parallel_backend == ParallelBackend.serial:
+                segments_df[f"{prefix}_candidates"] = segments_df.apply(
+                    to_candidates, axis=1
+                )
+            elif self.parallel_backend == ParallelBackend.ray:
+                try:
+                    import ray
+                except ImportError:
+                    raise ImportError(
+                        "Please install `ray` to use `ParallelBackend.ray`."
+                    )
+                remote_func = ray.remote(to_candidates)
+                res = [remote_func.remote(row) for _, row in segments_df.iterrows()]
+                segments_df[f"{prefix}_candidates"] = ray.get(res)
+            else:
+                raise ValueError(f"Unknown parallel_backend {self.parallel_backend}. ")
         else:
             segments_df[f"{prefix}_candidates"] = [([], [])] * len(segments_df)
 
