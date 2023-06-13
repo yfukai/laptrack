@@ -2,32 +2,6 @@ import networkx as nx
 import numpy as np
 
 from laptrack._tracking import _get_segment_df
-from laptrack._tracking import _remove_no_split_merge_links
-
-
-def test_remove_no_split_merge_links() -> None:
-    test_tree = nx.Graph()
-    test_tree.add_edges_from(
-        [
-            ((0, 0), (1, 0)),
-            ((1, 0), (2, 0)),
-            ((2, 0), (3, 0)),
-            ((3, 0), (4, 0)),
-            ((1, 0), (2, 1)),
-            ((2, 1), (3, 1)),
-        ]
-    )
-    segment_connected_edges = [
-        ((1, 0), (2, 0)),
-        ((2, 0), (3, 0)),
-        ((2, 1), (3, 1)),
-    ]
-    removed_edges = [
-        ((2, 0), (3, 0)),
-        ((2, 1), (3, 1)),
-    ]
-    res_tree = _remove_no_split_merge_links(test_tree.copy(), segment_connected_edges)
-    assert set(test_tree.edges) - set(res_tree.edges) == set(removed_edges)
 
 
 def test_get_segment_df() -> None:
