@@ -2,6 +2,7 @@
 import logging
 import warnings
 from enum import Enum
+from functools import partial
 from typing import Callable
 from typing import cast
 from typing import Dict
@@ -313,7 +314,7 @@ class LapTrack(BaseModel, extra=Extra.forbid):
         """
         if self.gap_closing_cost_cutoff:
 
-            def to_gap_closing_candidates(row):
+            def to_gap_closing_candidates(row, segments_df):
                 # if the index is in force_end_indices, do not add to gap closing candidates
                 if (row["last_frame"], row["last_index"]) in force_end_nodes:
                     return [], []
@@ -357,7 +358,7 @@ class LapTrack(BaseModel, extra=Extra.forbid):
 
             if self.parallel_backend == ParallelBackend.serial:
                 segments_df["gap_closing_candidates"] = segments_df.apply(
-                    to_gap_closing_candidates, axis=1
+                    partial(to_gap_closing_candidates, segments_df=segments_df), axis=1
                 )
             elif self.parallel_backend == ParallelBackend.ray:
                 try:
@@ -367,7 +368,11 @@ class LapTrack(BaseModel, extra=Extra.forbid):
                         "Please install `ray` to use `ParallelBackend.ray`."
                     )
                 remote_func = ray.remote(to_gap_closing_candidates)
-                res = [remote_func.remote(row) for _, row in segments_df.iterrows()]
+                segments_df_id = ray.put(segments_df)
+                res = [
+                    remote_func.remote(row, segments_df_id)
+                    for _, row in segments_df.iterrows()
+                ]
                 segments_df["gap_closing_candidates"] = ray.get(res)
             else:
                 raise ValueError(f"Unknown parallel_backend {self.parallel_backend}. ")
@@ -401,7 +406,7 @@ class LapTrack(BaseModel, extra=Extra.forbid):
     ):
         if cutoff:
 
-            def to_candidates(row):
+            def to_candidates(row, coords):
                 # if the prefix is first, this means the row is the track start, and the target is the track end
                 other_frame = row[f"{prefix}_frame"] + (-1 if prefix == "first" else 1)
                 target_coord = row[f"{prefix}_frame_coords"]
@@ -444,7 +449,7 @@ class LapTrack(BaseModel, extra=Extra.forbid):
 
             if self.parallel_backend == ParallelBackend.serial:
                 segments_df[f"{prefix}_candidates"] = segments_df.apply(
-                    to_candidates, axis=1
+                    partial(to_candidates, coords=coords), axis=1
                 )
             elif self.parallel_backend == ParallelBackend.ray:
                 try:
@@ -454,7 +459,11 @@ class LapTrack(BaseModel, extra=Extra.forbid):
                         "Please install `ray` to use `ParallelBackend.ray`."
                     )
                 remote_func = ray.remote(to_candidates)
-                res = [remote_func.remote(row) for _, row in segments_df.iterrows()]
+                coords_id = ray.put(coords)
+                res = [
+                    remote_func.remote(row, coords_id)
+                    for _, row in segments_df.iterrows()
+                ]
                 segments_df[f"{prefix}_candidates"] = ray.get(res)
             else:
                 raise ValueError(f"Unknown parallel_backend {self.parallel_backend}. ")
