@@ -9,17 +9,9 @@ API Reference
 laptrack
 -----------------
 
-.. autopydantic_model:: laptrack.LapTrackBase
+.. autopydantic_model:: laptrack.LapTrack
     :model-summary-list-order: bysource
     :member-order: bysource
-
-.. autopydantic_model:: laptrack.LapTrack
-    :model-show-field-summary: false
-    :members: false
-
-.. autopydantic_model:: laptrack.LapTrackMulti
-   :model-summary-list-order: bysource
-   :member-order: bysource
 
 .. autofunction:: laptrack.laptrack
 
