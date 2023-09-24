@@ -6,6 +6,7 @@ from typing import Union
 import numpy as np
 import pandas as pd
 from skimage.measure import regionprops_table
+from sklearn.metrics import confusion_matrix
 
 from ._typing_utils import Float
 from ._typing_utils import Int
@@ -13,6 +14,86 @@ from ._typing_utils import IntArray
 
 
 class LabelOverlap:
+    """Calculate label overlap from label images."""
+
+    def __init__(self, label_images: Union[IntArray, List[IntArray]]):
+        """Summarise the segmentation properties and initialize the object.
+
+        Parameters
+        ----------
+        label_images : Union[IntArray,List[IntArray]]
+            The labeled images. The first dimension is interpreted as the frame dimension.
+        """
+        if not isinstance(label_images, np.ndarray):
+            label_images = np.array(label_images)
+        if label_images.ndim < 3:
+            raise ValueError("label_images dimension must be >=3.")
+        self.label_images = label_images
+        self.ndim = label_images.ndim - 1
+        self.unique_labels = []
+
+        # TODO parallelize
+        # Calculate unique labels for each frame
+        for frame in range(label_images.shape[0]):
+            self.unique_labels.append(np.trim_zeros(np.unique(label_images[frame])))
+
+        self.overlap_matrices = []
+        self.unique_labels_combineds = []
+        for frame in range(label_images.shape[0] - 1):
+            label1 = label_images[frame]
+            label2 = label_images[frame + 1]
+            unique_labels1 = self.unique_labels[frame]
+            unique_labels2 = self.unique_labels[frame + 1]
+            self.unique_labels_combineds.append(
+                np.union1d(unique_labels1, unique_labels2)
+            )
+            self.overlap_matrices.append(confusion_matrix(label1, label2))
+
+    def calc_overlap(
+        self, frame1: Int, label1: Int, frame2: Int, label2: Int
+    ) -> Tuple[Int, Float, Float, Float]:
+        """Calculate the overlap properties of the labeled regions.
+
+        Parameters
+        ----------
+        frame1 : Int
+            the frame of the first object
+        label1 : Int
+            the label of the first object
+        frame2 : Int
+            the frame of the second object
+        label2 : Int
+            the label of the second object
+
+        Returns
+        -------
+        overlap : float
+            overlap of the labeled regions
+        iou : float
+            overlap over intersection of the labeled regions
+        ratio_1 : float
+            overlap over the area of the first object of the labeled regions
+        ratio_2 : float
+            overlap over the area of the second object of the labeled regions
+        """
+        assert (
+            frame2 == frame1 + 1
+        ), "frame2 must be frame1+1. For other values, please use `LabelOverlapOld`."
+
+        overlap_matrix = self.overlap_matrices[frame1]
+        index_1 = self.unique_labels_combineds[frame1].index(label1)
+        index_2 = self.unique_labels_combineds[frame1].index(label2)
+
+        overlap = overlap_matrix[index_1, index_2]
+        if overlap == 0:
+            return 0.0, 0.0, 0.0, 0.0
+        b1_sum = np.sum(overlap_matrix[index_1, :])
+        b2_sum = np.sum(overlap_matrix[:, index_2])
+        union = b1_sum + b2_sum - overlap
+        return overlap, overlap / union, overlap / b1_sum, overlap / b2_sum
+
+
+class LabelOverlapOld:
     """Utility object to calculate overlap of segmentation labels between frames."""
 
     def _intersect_bbox(self, r1, r2):

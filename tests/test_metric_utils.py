@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 
 from laptrack._typing_utils import IntArray
+from laptrack.metric_utils import get_label_overlap_metric
 from laptrack.metric_utils import LabelOverlap
 
 
@@ -42,3 +43,12 @@ def test_label_overlap() -> None:
                 ) == res
     with pytest.raises(ValueError):
         LabelOverlap(np.array([[1, 2], [0, 1]]))
+
+
+def test_label_tracking() -> None:
+    labels = [
+        [[[0, 1, 1, 1, 0], [0, 1, 2, 2, 2]], [[0, 1, 2, 2, 2], [3, 3, 3, 1, 0]]],
+        [[[0, 1, 1, 1, 2], [0, 4, 1, 2, 2]], [[0, 4, 4, 4, 4], [0, 4, 4, 4, 4]]],
+        [[[0, 1, 1, 1, 0], [5, 5, 5, 5, 5]], [[0, 1, 1, 1, 0], [0, 1, 1, 1, 0]]],
+    ]
+    label_df, label_metric = get_label_overlap_metric(labels)
