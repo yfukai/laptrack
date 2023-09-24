@@ -1,4 +1,5 @@
 """Utilities for metric calculation."""
+from functools import cache
 from typing import List
 from typing import Tuple
 from typing import Union
@@ -37,17 +38,15 @@ class LabelOverlap:
         for frame in range(label_images.shape[0]):
             self.unique_labels.append(np.trim_zeros(np.unique(label_images[frame])))
 
-        self.overlap_matrices = []
-        self.unique_labels_combineds = []
-        for frame in range(label_images.shape[0] - 1):
-            label1 = label_images[frame]
-            label2 = label_images[frame + 1]
-            unique_labels1 = self.unique_labels[frame]
-            unique_labels2 = self.unique_labels[frame + 1]
-            self.unique_labels_combineds.append(
-                np.union1d(unique_labels1, unique_labels2)
-            )
-            self.overlap_matrices.append(confusion_matrix(label1, label2))
+    @cache
+    def _overlap_matrix(self, frame1, frame2):
+        label1 = self.label_images[frame1]
+        label2 = self.label_images[frame2]
+        unique_labels1 = self.unique_labels[frame1]
+        unique_labels2 = self.unique_labels[frame2]
+        unique_labels_combined = np.union1d(unique_labels1, unique_labels2)
+        overlap_matrix = confusion_matrix(label1, label2)
+        return overlap_matrix, unique_labels_combined
 
     def calc_overlap(
         self, frame1: Int, label1: Int, frame2: Int, label2: Int
@@ -76,13 +75,9 @@ class LabelOverlap:
         ratio_2 : float
             overlap over the area of the second object of the labeled regions
         """
-        assert (
-            frame2 == frame1 + 1
-        ), "frame2 must be frame1+1. For other values, please use `LabelOverlapOld`."
-
-        overlap_matrix = self.overlap_matrices[frame1]
-        index_1 = self.unique_labels_combineds[frame1].index(label1)
-        index_2 = self.unique_labels_combineds[frame1].index(label2)
+        overlap_matrix, unique_labels_combined = self._overlap_matrix(frame1, frame2)
+        index_1 = unique_labels_combined.index(label1)
+        index_2 = unique_labels_combined.index(label2)
 
         overlap = overlap_matrix[index_1, index_2]
         if overlap == 0:
