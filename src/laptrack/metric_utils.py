@@ -15,7 +15,7 @@ from ._typing_utils import IntArray
 
 
 class LabelOverlap:
-    """Calculate label overlap from label images."""
+    """Utility object to calculate overlap of segmentation labels between frames."""
 
     def __init__(self, label_images: Union[IntArray, List[IntArray]]):
         """Summarise the segmentation properties and initialize the object.
@@ -96,7 +96,7 @@ class LabelOverlap:
 
 
 class LabelOverlapOld:
-    """Utility object to calculate overlap of segmentation labels between frames."""
+    """Utility object to calculate overlap of segmentation labels between frames (Old implementation using regionoprops)."""
 
     def _intersect_bbox(self, r1, r2):
         bbox = []
