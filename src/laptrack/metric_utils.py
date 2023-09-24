@@ -36,7 +36,7 @@ class LabelOverlap:
         # TODO parallelize
         # Calculate unique labels for each frame
         for frame in range(label_images.shape[0]):
-            self.unique_labels.append(np.trim_zeros(np.unique(label_images[frame])))
+            self.unique_labels.append(np.unique(label_images[frame]))
 
     @cache
     def _overlap_matrix(self, frame1, frame2):
@@ -45,8 +45,13 @@ class LabelOverlap:
         unique_labels1 = self.unique_labels[frame1]
         unique_labels2 = self.unique_labels[frame2]
         unique_labels_combined = np.union1d(unique_labels1, unique_labels2)
-        overlap_matrix = confusion_matrix(label1, label2)
-        return overlap_matrix, unique_labels_combined
+        unique_labels_combined_dict = dict(
+            zip(unique_labels_combined, np.arange(len(unique_labels_combined)))
+        )
+        overlap_matrix = confusion_matrix(
+            label1.ravel(), label2.ravel(), labels=unique_labels_combined
+        )
+        return overlap_matrix, unique_labels_combined_dict
 
     def calc_overlap(
         self, frame1: Int, label1: Int, frame2: Int, label2: Int
@@ -75,9 +80,11 @@ class LabelOverlap:
         ratio_2 : float
             overlap over the area of the second object of the labeled regions
         """
-        overlap_matrix, unique_labels_combined = self._overlap_matrix(frame1, frame2)
-        index_1 = unique_labels_combined.index(label1)
-        index_2 = unique_labels_combined.index(label2)
+        overlap_matrix, unique_labels_combined_dict = self._overlap_matrix(
+            frame1, frame2
+        )
+        index_1 = unique_labels_combined_dict[label1]
+        index_2 = unique_labels_combined_dict[label2]
 
         overlap = overlap_matrix[index_1, index_2]
         if overlap == 0:
