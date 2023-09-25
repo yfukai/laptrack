@@ -130,8 +130,9 @@ def test_overlap_tracking(
 
 
 def test_overlap_tracking_error() -> None:
-    olt = OverLapTrack()
+    lt = LapTrack()
+    olt = OverLapTrack()  # type: ignore
     with pytest.raises(AttributeError):
         olt.predict_dataframe(pd.DataFrame(), coordinate_cols=["frame", "label"])
     with pytest.raises(AttributeError):
-        olt.predict([[1, 2, 3], [4, 5, 6]])
+        olt.predict([np.array([1, 2, 3]), np.array([4, 5, 6])])
