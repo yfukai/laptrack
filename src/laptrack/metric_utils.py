@@ -96,7 +96,7 @@ class LabelOverlap:
 
         overlap = overlap_matrix[index_1, index_2]
         if overlap == 0:
-            return 0.0, 0.0, 0.0, 0.0
+            return 0, 0.0, 0.0, 0.0
         b1_sum = np.sum(overlap_matrix[index_1, :])
         b2_sum = np.sum(overlap_matrix[:, index_2])
         union = b1_sum + b2_sum - overlap
