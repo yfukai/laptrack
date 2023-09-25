@@ -3,6 +3,7 @@ from typing import List
 from typing import Union
 
 import numpy as np
+import pandas as pd
 import pytest
 
 from laptrack._typing_utils import IntArray
@@ -24,6 +25,17 @@ def test_label_overlap(overlap_class) -> None:
 
     for _labels in labelss:
         lo = overlap_class(_labels)
+
+        _dfs = []
+        for frame, _label in enumerate(_labels):
+            _dfs.append(
+                pd.DataFrame(dict(label=np.trim_zeros(np.unique(_label)))).assign(
+                    frame=frame
+                )
+            )
+
+        lo.frame_label_df == pd.concat(_dfs)[["frame", "label"]]
+
         frame_labels = [np.unique(label) for label in _labels]
         frame_labels = [x[x > 0] for x in frame_labels]
         for f1, f2 in [(0, 0), (0, 1), (1, 2), (0, 2)]:
@@ -43,4 +55,4 @@ def test_label_overlap(overlap_class) -> None:
                     (intersect / r2),
                 ) == res
     with pytest.raises(ValueError):
-        LabelOverlap(np.array([[1, 2], [0, 1]]))
+        overlap_class(np.array([[1, 2], [0, 1]]))

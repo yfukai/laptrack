@@ -35,8 +35,16 @@ class LabelOverlap:
 
         # TODO parallelize
         # Calculate unique labels for each frame
+        dfs = []
         for frame in range(label_images.shape[0]):
-            self.unique_labels.append(np.unique(label_images[frame]))
+            unique_labels = np.unique(label_images[frame])
+            self.unique_labels.append(unique_labels)
+            dfs.append(
+                pd.DataFrame(dict(label=np.trim_zeros(unique_labels))).assign(
+                    frame=frame
+                )
+            )
+        self.frame_label_df = pd.concat(dfs)[["frame", "label"]]
 
     @cache
     def _overlap_matrix(self, frame1, frame2):
@@ -138,7 +146,9 @@ class LabelOverlapOld:
             )
             df["frame"] = frame
             dfs.append(df)
-        self.regionprops_df = pd.concat(dfs).set_index(["frame", "label"])
+        df = pd.concat(dfs)
+        self.regionprops_df = df.set_index(["frame", "label"])
+        self.frame_label_df = df[["frame", "label"]]
 
     def calc_overlap(
         self, frame1: Int, label1: Int, frame2: Int, label2: Int

@@ -107,6 +107,6 @@ class OverLapTrack(LapTrack):
             metric, params=self.merging_dist_metric_coefs
         )
 
-        res = self.predict_dataframe(lo.regionprops_df, ["frame", "label"])
+        res = self.predict_dataframe(lo.frame_label_df, ["frame", "label"])
         _calc_overlap.cache_clear()
         return res
