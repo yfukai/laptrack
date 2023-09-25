@@ -34,7 +34,7 @@ def test_label_overlap(overlap_class) -> None:
                 )
             )
 
-        lo.frame_label_df == pd.concat(_dfs)[["frame", "label"]]
+        assert all(lo.frame_label_df == pd.concat(_dfs)[["frame", "label"]])
 
         frame_labels = [np.unique(label) for label in _labels]
         frame_labels = [x[x > 0] for x in frame_labels]
