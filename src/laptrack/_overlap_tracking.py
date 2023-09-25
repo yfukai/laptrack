@@ -1,4 +1,4 @@
-from functools import cache
+# from functools import cache
 from functools import partial
 from typing import List
 from typing import Tuple
@@ -72,18 +72,19 @@ class OverLapTrack(LapTrack):
         """
         lo = LabelOverlap(labels)
 
-        @cache
+        #        @cache
+        # XXX Caching does not work with ray
         def _calc_overlap(frame1, label1, frame2, label2):
             return lo.calc_overlap(frame1, label1, frame2, label2)
 
         def metric(c1, c2, params):
             (frame1, label1), (frame2, label2) = c1, c2
             offset, overlap_coef, iou_coef, ratio_1_coef, ratio_2_coef = params
-            if frame1 == frame2 + 1:
+            if frame1 > frame2:
                 tmp = (frame1, label1)
                 (frame1, label1) = (frame2, label2)
                 (frame2, label2) = tmp
-            assert frame1 + 1 == frame2
+            assert frame1 < frame2
             overlap, iou, ratio_1, ratio_2 = _calc_overlap(
                 frame1, label1, frame2, label2
             )
@@ -108,5 +109,5 @@ class OverLapTrack(LapTrack):
         )
 
         res = self.predict_dataframe(lo.frame_label_df, ["frame", "label"])
-        _calc_overlap.cache_clear()
+        # _calc_overlap.cache_clear()
         return res

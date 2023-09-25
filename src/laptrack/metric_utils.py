@@ -110,6 +110,10 @@ class LabelOverlap:
         union = b1_sum + b2_sum - overlap
         return overlap, overlap / union, overlap / b1_sum, overlap / b2_sum
 
+    def __del__(self):
+        """Destructor."""
+        self._overlap_matrix.cache_clear()
+
 
 class LabelOverlapOld:
     """Utility object to calculate overlap of segmentation labels between frames (Old implementation using regionoprops)."""
