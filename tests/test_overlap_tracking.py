@@ -79,8 +79,8 @@ def test_overlap_tracking(dataset, parallel_backend) -> None:
         track_dist_metric=metric,
         gap_closing_dist_metric=metric,
         splitting_dist_metric=metric,
-        **params
-    )  # type: ignore
+        **params  # type: ignore
+    )
     track_df1, split_df1, merge_df1 = lt.predict_dataframe(
         coordinate_df, coordinate_cols=["frame", "label"], only_coordinate_cols=False
     )
