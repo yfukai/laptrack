@@ -1,3 +1,4 @@
+from functools import partial
 from itertools import product
 
 import numpy as np
@@ -15,7 +16,23 @@ from laptrack.metric_utils import LabelOverlapOld
     "dataset", ["cell_segmentation", "mouse_epidermis", "HL60_3D_synthesized"]
 )
 @pytest.mark.parametrize("parallel_backend", ["serial", "ray"])
-def test_overlap_tracking(dataset, parallel_backend) -> None:
+@pytest.mark.parametrize("splitting_cost_cutoff", [False, 0.9])
+@pytest.mark.parametrize("merging_cost_cutoff", [False, 0.9])
+@pytest.mark.parametrize(
+    "track_overlap_coefs", [(1.0, 0.0, 0.0, 0.0, -1.0), (2.0, -0.5, -0.5, -0.5, -0.5)]
+)
+@pytest.mark.parametrize(
+    "splitting_overlap_coefs",
+    [(1.0, 0.0, 0.0, 0.0, -1.0), (2.0, -0.5, -0.5, -0.5, -0.5)],
+)
+def test_overlap_tracking(
+    dataset,
+    parallel_backend,
+    splitting_cost_cutoff,
+    merging_cost_cutoff,
+    track_overlap_coefs,
+    splitting_overlap_coefs,
+) -> None:
     if dataset == "mouse_epidermis":
         labels = fetch(dataset)
     else:
@@ -55,7 +72,8 @@ def test_overlap_tracking(dataset, parallel_backend) -> None:
         dfs.append(df)
     coordinate_df = pd.concat(dfs)
 
-    def metric(c1, c2):
+    def metric(c1, c2, params):
+        offset, overlap_coef, iou_coef, ratio_1_coef, ratio_2_coef = params
         (frame1, label1), (frame2, label2) = c1, c2
         if frame1 > frame2:
             tmp = (frame1, label1)
@@ -64,21 +82,30 @@ def test_overlap_tracking(dataset, parallel_backend) -> None:
         assert frame1 < frame2
         ind = (frame1, label1, label2)
         if ind in overlap_df.index:
-            ratio_2 = overlap_df.loc[ind]["ratio_2"]
-            return 1 - ratio_2
+            row = overlap_df.loc[ind]
+            distance = (
+                offset
+                + overlap_coef * row["overlap"]
+                + iou_coef * row["iou"]
+                + ratio_1_coef * row["ratio_1"]
+                + ratio_2_coef * row["ratio_2"]
+            )
+            return distance
         else:
-            return 1
+            return offset
 
     params = dict(
         track_cost_cutoff=0.9,
         gap_closing_max_frame_count=1,
-        splitting_cost_cutoff=0.9,
+        splitting_cost_cutoff=splitting_cost_cutoff,
+        merging_cost_cutoff=merging_cost_cutoff,
     )
 
     lt = LapTrack(
-        track_dist_metric=metric,
-        gap_closing_dist_metric=metric,
-        splitting_dist_metric=metric,
+        track_dist_metric=partial(metric, params=track_overlap_coefs),
+        gap_closing_dist_metric=partial(metric, params=track_overlap_coefs),
+        splitting_dist_metric=partial(metric, params=splitting_overlap_coefs),
+        merging_dist_metric=partial(metric, params=splitting_overlap_coefs),
         **params  # type: ignore
     )
     track_df1, split_df1, merge_df1 = lt.predict_dataframe(
@@ -86,7 +113,14 @@ def test_overlap_tracking(dataset, parallel_backend) -> None:
     )
 
     # New tracking
-    olt = OverLapTrack(parallel_backend=parallel_backend, **params)  # type: ignore
+    olt = OverLapTrack(
+        parallel_backend=parallel_backend,
+        track_dist_metric_coefs=track_overlap_coefs,
+        gap_closing_dist_metric_coefs=track_overlap_coefs,
+        splitting_dist_metric_coefs=splitting_overlap_coefs,
+        merging_dist_metric_coefs=splitting_overlap_coefs,
+        **params
+    )  # type: ignore
 
     track_df2, split_df2, merge_df2 = olt.predict_overlap_dataframe(labels)
 
