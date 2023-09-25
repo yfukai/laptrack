@@ -106,7 +106,7 @@ def test_overlap_tracking(
         gap_closing_dist_metric=partial(metric, params=track_overlap_coefs),
         splitting_dist_metric=partial(metric, params=splitting_overlap_coefs),
         merging_dist_metric=partial(metric, params=splitting_overlap_coefs),
-        **params  # type: ignore
+        **params
     )
     track_df1, split_df1, merge_df1 = lt.predict_dataframe(
         coordinate_df, coordinate_cols=["frame", "label"], only_coordinate_cols=False
@@ -120,7 +120,7 @@ def test_overlap_tracking(
         splitting_dist_metric_coefs=splitting_overlap_coefs,
         merging_dist_metric_coefs=splitting_overlap_coefs,
         **params
-    )  # type: ignore
+    )
 
     track_df2, split_df2, merge_df2 = olt.predict_overlap_dataframe(labels)
 
@@ -130,8 +130,8 @@ def test_overlap_tracking(
 
 
 def test_overlap_tracking_error() -> None:
-    lt = LapTrack()  # type: ignore
-    olt = OverLapTrack()  # type: ignore
+    lt = LapTrack()
+    olt = OverLapTrack()
     with pytest.raises(AttributeError):
         olt.predict_dataframe(pd.DataFrame(), coordinate_cols=["frame", "label"])
     with pytest.raises(AttributeError):
