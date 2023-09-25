@@ -80,13 +80,13 @@ def test_overlap_tracking(dataset, parallel_backend) -> None:
         gap_closing_dist_metric=metric,
         splitting_dist_metric=metric,
         **params
-    )
+    )  # type: ignore
     track_df1, split_df1, merge_df1 = lt.predict_dataframe(
         coordinate_df, coordinate_cols=["frame", "label"], only_coordinate_cols=False
     )
 
     # New tracking
-    olt = OverLapTrack(parallel_backend=parallel_backend, **params)
+    olt = OverLapTrack(parallel_backend=parallel_backend, **params)  # type: ignore
 
     track_df2, split_df2, merge_df2 = olt.predict_overlap_dataframe(labels)
 
