@@ -127,3 +127,11 @@ def test_overlap_tracking(
     assert all(track_df1[["tree_id", "track_id"]] == track_df2[["tree_id", "track_id"]])
     assert all(split_df1 == split_df2)
     assert all(merge_df1 == merge_df2)
+
+
+def test_overlap_tracking_error() -> None:
+    olt = OverLapTrack()
+    with pytest.raises(AttributeError):
+        olt.predict_dataframe(pd.DataFrame(), coordinate_cols=["frame", "label"])
+    with pytest.raises(AttributeError):
+        olt.predict([[1, 2, 3], [4, 5, 6]])

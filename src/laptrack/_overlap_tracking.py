@@ -1,14 +1,21 @@
 # from functools import cache
 from functools import partial
 from typing import List
+from typing import Optional
+from typing import Sequence
 from typing import Tuple
 from typing import Union
 
+import networkx as nx
+import pandas as pd
 from pydantic import Field
 
 from ._tracking import LapTrack
+from ._typing_utils import EdgeType
 from ._typing_utils import IntArray
+from ._typing_utils import NumArray
 from .metric_utils import LabelOverlap
+from laptrack._typing_utils import Int
 
 CoefType = Tuple[
     float, float, float, float, float
@@ -40,6 +47,32 @@ class OverLapTrack(LapTrack):
         description="The coefficients to calculate the distance for the overlapping labels."
         + "See `track_dist_metric_coefs` for details.",
     )
+
+    def predict(
+        self,
+        coords: Sequence[NumArray],
+        connected_edges: Optional[EdgeType] = None,
+        split_merge_validation: bool = True,
+    ) -> nx.DiGraph:
+        """`predict` is not supported in `OverLapTrack`. Use `predict_overlap_dataframe` instead."""
+        raise AttributeError(
+            "`predict` is not supported in `OverLapTrack`. Use `predict_overlap_dataframe` instead."
+        )
+
+    def predict_dataframe(
+        self,
+        df: pd.DataFrame,
+        coordinate_cols: List[str],
+        frame_col: str = "frame",
+        validate_frame: bool = True,
+        only_coordinate_cols: bool = True,
+        connected_edges: Optional[List[Tuple[Int, Int]]] = None,
+        index_offset: Int = 0,
+    ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+        """`predict_dataframe` is not supported in `OverLapTrack`. Use `predict_overlap_dataframe` instead."""
+        raise AttributeError(
+            "`predict_dataframe` is not supported in `OverLapTrack`. Use `predict_overlap_dataframe` instead."
+        )
 
     def predict_overlap_dataframe(self, labels: Union[IntArray, List[IntArray]]):
         """Predicts tracks with label overlaps.
