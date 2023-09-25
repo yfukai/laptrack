@@ -1,10 +1,13 @@
 """Utilities for metric calculation."""
-try:
+import sys
+
+if sys.version_info >= (3, 9):
     from functools import cache
-except ImportError:  # for 3.8
+else:
     from functools import lru_cache
 
     cache = lru_cache(maxsize=None)
+
 from typing import List
 from typing import Tuple
 from typing import Union
