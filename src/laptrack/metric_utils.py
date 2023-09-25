@@ -1,5 +1,10 @@
 """Utilities for metric calculation."""
-from functools import cache
+try:
+    from functools import cache
+except ImportError:  # for 3.8
+    from functools import lru_cache, partial
+
+    cache = partial(lru_cache, maxsize=None)
 from typing import List
 from typing import Tuple
 from typing import Union
