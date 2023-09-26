@@ -88,9 +88,9 @@ class LabelOverlap:
         Returns
         -------
         overlap : float
-            overlap of the labeled regions
+            overlap (intersection) of the labeled regions
         iou : float
-            overlap over intersection of the labeled regions
+            overlap over the union of the labeled regions
         ratio_1 : float
             overlap over the area of the first object of the labeled regions
         ratio_2 : float
