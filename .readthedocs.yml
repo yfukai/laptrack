@@ -1,11 +1,19 @@
 version: 2
+
+# taken from https://browniebroke.com/blog/specify-docs-dependency-groups-with-poetry-and-read-the-docs/
+build:
+  os: ubuntu-20.04
+  tools:
+    python: "3.10"
+  jobs:
+    post_create_environment:
+      # Install poetry
+      - pip install poetry
+      # Tell poetry to not use a virtual environment
+      - poetry config virtualenvs.create false
+    post_install:
+      # Install dependencies
+      - poetry install --with dev
+
 sphinx:
   configuration: docs/conf.py
-formats: all
-python:
-  version: 3.9
-  install:
-    - requirements: docs/requirements.txt
-    - path: .
-build:
-  image: testing
