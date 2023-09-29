@@ -29,11 +29,22 @@ nox.options.sessions = (
     "mypy",
     "tests",
     "typeguard",
-    "xdoctest",
     "docs-build",
     "docs",
 )
 # nox.options.reuse_existing_virtualenvs = True
+
+doc_build_packages = [
+    "sphinx",
+    "sphinx-autobuild",
+    "sphinx-click",
+    "sphinx-rtd-theme",
+    "autodoc_pydantic",
+    "sphinx-gallery",
+    "nbsphinx",
+    "matplotlib",
+    "ipykernel",
+]
 
 
 @session(name="pre-commit", python="3.9")
@@ -106,7 +117,7 @@ def typeguard(session: Session) -> None:
 def docs_build(session: Session) -> None:
     """Build the documentation."""
     args = session.posargs or ["docs", "docs/_build"]
-    session.install(".")
+    session.install(".", *doc_build_packages)
 
     build_dir = Path("docs", "_build")
     if build_dir.exists():
@@ -119,7 +130,7 @@ def docs_build(session: Session) -> None:
 def docs(session: Session) -> None:
     """Build and serve the documentation with live reloading on file changes."""
     args = session.posargs or ["--open-browser", "docs", "docs/_build"]
-    session.install(".")
+    session.install(".", *doc_build_packages)
 
     build_dir = Path("docs", "_build")
     if build_dir.exists():
