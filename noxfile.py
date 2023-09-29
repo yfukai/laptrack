@@ -29,8 +29,8 @@ nox.options.sessions = (
     "mypy",
     "tests",
     "typeguard",
-    "xdoctest",
     "docs-build",
+    "docs",
 )
 # nox.options.reuse_existing_virtualenvs = True
 
@@ -113,21 +113,11 @@ def typeguard(session: Session) -> None:
     session.run("pytest", f"--typeguard-packages={package}", *session.posargs)
 
 
-@session(python=python_versions)
-def xdoctest(session: Session) -> None:
-    """Run examples with xdoctest."""
-    args = session.posargs or ["all"]
-    session.install(".")
-    session.install("xdoctest[colors]")
-    session.run("python", "-m", "xdoctest", package, *args)
-
-
-@session(name="docs-build", python="3.8")
+@session(name="docs-build", python="3.10")
 def docs_build(session: Session) -> None:
     """Build the documentation."""
     args = session.posargs or ["docs", "docs/_build"]
-    session.install(".")
-    session.install(*doc_build_packages)
+    session.install(".", *doc_build_packages)
 
     build_dir = Path("docs", "_build")
     if build_dir.exists():
@@ -140,8 +130,7 @@ def docs_build(session: Session) -> None:
 def docs(session: Session) -> None:
     """Build and serve the documentation with live reloading on file changes."""
     args = session.posargs or ["--open-browser", "docs", "docs/_build"]
-    session.install(".")
-    session.install(*doc_build_packages)
+    session.install(".", *doc_build_packages)
 
     build_dir = Path("docs", "_build")
     if build_dir.exists():

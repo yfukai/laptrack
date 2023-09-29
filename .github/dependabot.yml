@@ -8,9 +8,3 @@ updates:
     directory: "/.github/workflows"
     schedule:
       interval: monthly
-  - package-ecosystem: pip
-    directory: "/docs"
-    schedule:
-      interval: monthly
-    ignore:
-      - dependency-name: "sphinx-gallery"
