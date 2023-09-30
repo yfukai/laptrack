@@ -133,9 +133,9 @@ def test_reproducing_trackmate(testdata, parallel_backend) -> None:
     assert not any(merge_df.duplicated())
     track_df2, split_df2, merge_df2 = convert_tree_to_dataframe(track_tree, coords)
     track_df2 = track_df2.rename(columns={"coord-0": "x", "coord-1": "y"})
-    assert all(track_df == track_df2)
-    assert all(split_df == split_df2)
-    assert all(merge_df == merge_df2)
+    assert (track_df == track_df2).all().all()
+    assert (split_df == split_df2).all().all()
+    assert (merge_df == merge_df2).all().all()
 
     # check index offset
     track_df3, split_df3, merge_df3 = lt.predict_dataframe(
@@ -155,18 +155,18 @@ def test_reproducing_trackmate(testdata, parallel_backend) -> None:
     if not merge_df4.empty:
         merge_df4["parent_track_id"] = merge_df4["parent_track_id"] + 2
         merge_df4["child_track_id"] = merge_df4["child_track_id"] + 2
-    assert all(track_df3 == track_df2)
-    assert all(split_df3 == split_df2)
-    assert all(merge_df3 == merge_df2)
+    assert (track_df3 == track_df4).all().all()
+    assert (split_df3 == split_df4).all().all()
+    assert (merge_df3 == merge_df4).all().all()
 
     track_df, split_df, merge_df = lt.predict_dataframe(
         df, ["x", "y"], only_coordinate_cols=False
     )
     assert all(track_df["frame_y"] == track_df2.index.get_level_values("frame"))
     track_df = track_df.drop(columns=["frame_y"])
-    assert all(track_df == track_df2)
-    assert all(split_df == split_df2)
-    assert all(merge_df == merge_df2)
+    assert (track_df == track_df2).all().all()
+    assert (split_df == split_df2).all().all()
+    assert (merge_df == merge_df2).all().all()
 
 
 @pytest.fixture(params=[2, 3, 4])
@@ -197,6 +197,37 @@ def test_tracking_zero_distance() -> None:
     track_tree = lt.predict(coords)
     edges = track_tree.edges()
     assert set(edges) == set([((0, 0), (1, 0)), ((0, 1), (1, 1))])
+
+
+def test_tracking_zero_distance2(shared_datadir: str) -> None:
+    data = pd.read_csv(path.join(shared_datadir, "same_position_example.csv"))
+    lt = LapTrack(
+        track_cost_cutoff=15**2,
+        splitting_cost_cutoff=15**2,
+        merging_cost_cutoff=15**2,
+    )
+
+    track_df1, split_df1, merge_df1 = lt.predict_dataframe(
+        data,
+        coordinate_cols=["h"],
+        frame_col="seconds",
+        only_coordinate_cols=False,
+    )
+
+    data2 = data.copy()
+    data2["h"] += np.random.random(len(data2)) * 1e-2
+    track_df2, split_df2, merge_df2 = lt.predict_dataframe(
+        data2,
+        coordinate_cols=["h"],
+        frame_col="seconds",
+        only_coordinate_cols=False,
+    )
+
+    assert (
+        (track_df1[["track_id", "tree_id"]] == track_df2[["track_id", "tree_id"]])
+        .all()
+        .all()
+    )
 
 
 def test_tracking_not_connected() -> None:

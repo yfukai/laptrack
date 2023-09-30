@@ -43,12 +43,20 @@ def build_frame_cost_matrix(
 
     if track_start_cost is None:
         if len(C.data) > 0:
-            track_start_cost = np.max(C.data) * 1.05
+            max_val = np.max(C.data)
+            if max_val > 0:
+                track_start_cost = max_val * 1.05
+            else:
+                track_start_cost = EPSILON
         else:
             track_start_cost = 1.05
     if track_end_cost is None:
         if len(C.data) > 0:
-            track_end_cost = np.max(C.data) * 1.05
+            max_val = np.max(C.data)
+            if max_val > 0:
+                track_end_cost = max_val * 1.05
+            else:
+                track_end_cost = EPSILON
         else:
             track_end_cost = 1.05
 
@@ -159,6 +167,8 @@ def build_segment_cost_matrix(
             )
             * alternative_cost_factor
         )
+        if alternative_cost == 0:
+            alternative_cost = EPSILON
         if track_start_cost is None:
             track_start_cost = alternative_cost
         if track_end_cost is None:
