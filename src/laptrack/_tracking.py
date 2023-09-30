@@ -190,7 +190,7 @@ class LapTrack(BaseModel, extra=Extra.forbid):
         + "See `numpy.percentile` for accepted values.",
     )
     parallel_backend: ParallelBackend = Field(
-        "serial",
+        ParallelBackend.serial,
         description="The parallelization strategy. "
         + f"Must be one of {', '.join([ps.name for ps in ParallelBackend])}.",
         exclude=True,

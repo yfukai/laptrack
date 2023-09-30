@@ -193,7 +193,7 @@ def test_tracking_zero_distance() -> None:
         gap_closing_cost_cutoff=False,
         splitting_cost_cutoff=False,
         merging_cost_cutoff=False,
-    )  # type: ignore
+    )
     track_tree = lt.predict(coords)
     edges = track_tree.edges()
     assert set(edges) == set([((0, 0), (1, 0)), ((0, 1), (1, 1))])
@@ -237,7 +237,7 @@ def test_tracking_not_connected() -> None:
         gap_closing_cost_cutoff=False,
         splitting_cost_cutoff=False,
         merging_cost_cutoff=False,
-    )  # type: ignore
+    )
     track_tree = lt.predict(coords)
     edges = track_tree.edges()
     assert set(edges) == set()
@@ -254,7 +254,7 @@ def test_gap_closing(shared_datadir: str) -> None:
         track_cost_cutoff=15**2,
         splitting_cost_cutoff=False,
         merging_cost_cutoff=False,
-    )  # type: ignore
+    )
     track_tree = lt.predict(coords)
     for track in nx.connected_components(nx.Graph(track_tree)):
         frames, _ = zip(*track)
@@ -284,7 +284,7 @@ def test_connected_edges(tracker_class) -> None:
         gap_closing_cost_cutoff=100,
         splitting_cost_cutoff=100,
         merging_cost_cutoff=100,
-    )  # type: ignore
+    )
     connected_edges = [((0, 0), (1, 1))]
     track_tree = lt.predict(coords, connected_edges=connected_edges)
     edges = track_tree.edges()
@@ -319,7 +319,7 @@ def test_connected_edges_splitting(tracker_class) -> None:
         gap_closing_cost_cutoff=100,
         splitting_cost_cutoff=100,
         merging_cost_cutoff=False,
-    )  # type: ignore
+    )
     connected_edges = [((0, 0), (1, 1)), ((0, 0), (1, 2))]
     track_tree = lt.predict(coords, connected_edges=connected_edges)
     edges = track_tree.edges()
@@ -365,7 +365,7 @@ def test_no_connected_node(tracker_class) -> None:
     coords = [np.array([[10, 10], [12, 11]]), np.array([[10, 10], [100, 11]])]
     lt = tracker_class(
         gap_closing_cost_cutoff=1,
-    )  # type: ignore
+    )
     track_tree = lt.predict(coords)
     for frame, index in product([0, 1], [0, 1]):
         assert (frame, index) in track_tree.nodes()

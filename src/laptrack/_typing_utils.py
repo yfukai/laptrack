@@ -12,7 +12,7 @@ NumArray = npt.NDArray[Union[np.float_, np.int_]]
 FloatArray = npt.NDArray[np.float_]
 IntArray = npt.NDArray[np.int_]
 
-Int = Union[int, np.int_]
+Int = Union[int, np.int_, np.uint8, np.uint16, np.uint32, np.uint64]
 Float = Union[float, np.float_]
 
 Matrix = Union[FloatArray, coo_matrix, lil_matrix]
