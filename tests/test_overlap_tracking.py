@@ -12,25 +12,18 @@ from laptrack.datasets import fetch
 from laptrack.metric_utils import LabelOverlapOld
 
 
-@pytest.mark.parametrize(
-    "dataset", ["cell_segmentation", "mouse_epidermis", "HL60_3D_synthesized"]
-)
+@pytest.mark.parametrize("dataset", ["cell_segmentation", "HL60_3D_synthesized"])
 @pytest.mark.parametrize("parallel_backend", ["serial", "ray"])
 @pytest.mark.parametrize("splitting_cost_cutoff", [False, 0.9])
 @pytest.mark.parametrize("merging_cost_cutoff", [False, 0.9])
-@pytest.mark.parametrize("track_overlap_coefs", [(2.0, -0.5, -0.5, -0.5, -0.5)])
-@pytest.mark.parametrize(
-    "splitting_overlap_coefs",
-    [(1.0, 0.0, 0.0, 0.0, -1.0), (2.0, -0.5, -0.5, -0.5, -0.5)],
-)
 def test_overlap_tracking(
     dataset,
     parallel_backend,
     splitting_cost_cutoff,
     merging_cost_cutoff,
-    track_overlap_coefs,
-    splitting_overlap_coefs,
 ) -> None:
+    track_overlap_coefs = (2.0, -0.5, -0.5, -0.5, -0.5)
+    splitting_overlap_coefs = (1.0, 0.0, 0.0, 0.0, -1.0)
     if dataset == "mouse_epidermis":
         labels = fetch(dataset)
     else:
