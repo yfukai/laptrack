@@ -12,6 +12,7 @@ from pydantic import ValidationError
 
 from laptrack import LapTrack
 from laptrack import laptrack
+from laptrack import ParallelBackend
 from laptrack.data_conversion import convert_tree_to_dataframe
 
 warnings.simplefilter("ignore", FutureWarning)
@@ -102,7 +103,7 @@ def testdata(request, shared_datadir: str):
     return params, coords, edges_set
 
 
-@pytest.mark.parametrize("parallel_backend", ["serial", "ray"])
+@pytest.mark.parametrize("parallel_backend", [p for p in ParallelBackend])
 def test_reproducing_trackmate(testdata, parallel_backend) -> None:
     params, coords, edges_set = testdata
     params["parallel_backend"] = parallel_backend

@@ -8,12 +8,13 @@ from skimage.measure import regionprops_table
 
 from laptrack import LapTrack
 from laptrack import OverLapTrack
+from laptrack import ParallelBackend
 from laptrack.datasets import fetch
 from laptrack.metric_utils import LabelOverlapOld
 
 
 @pytest.mark.parametrize("dataset", ["cell_segmentation", "HL60_3D_synthesized"])
-@pytest.mark.parametrize("parallel_backend", ["serial", "ray"])
+@pytest.mark.parametrize("parallel_backend", [p for p in ParallelBackend])
 @pytest.mark.parametrize("splitting_cost_cutoff", [False, 0.9])
 @pytest.mark.parametrize("merging_cost_cutoff", [False, 0.9])
 def test_overlap_tracking(

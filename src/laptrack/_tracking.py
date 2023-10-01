@@ -47,6 +47,8 @@ class ParallelBackend(str, Enum):
     """Parallelization strategy for computation."""
 
     serial = "serial"
+    multiprocessing = "multiprocessing"
+    joblib = "joblib"
     ray = "ray"
 
 
@@ -267,6 +269,21 @@ class LapTrack(BaseModel, extra=Extra.forbid):
             for frame, (coord1, coord2) in enumerate(zip(coords[:-1], coords[1:])):
                 edges = _predict_link_single_frame(frame, coord1, coord2)
                 all_edges.extend(edges)
+        elif self.parallel_backend == ParallelBackend.multiprocessing:
+            raise NotImplementedError()
+        elif self.parallel_backend == ParallelBackend.joblib:
+            try:
+                from joblib import Parallel, delayed
+            except ImportError:
+                raise ImportError(
+                    "Please install `joblib` to use `ParallelBackend.joblib`."
+                )
+            remote_func = delayed(_predict_link_single_frame)
+            res = Parallel(n_jobs=-1)(
+                remote_func(frame, coord1, coord2)
+                for frame, (coord1, coord2) in enumerate(zip(coords[:-1], coords[1:]))
+            )
+            all_edges = sum(res, [])
         elif self.parallel_backend == ParallelBackend.ray:
             try:
                 import ray
@@ -360,6 +377,21 @@ class LapTrack(BaseModel, extra=Extra.forbid):
                 segments_df["gap_closing_candidates"] = segments_df.apply(
                     partial(to_gap_closing_candidates, segments_df=segments_df), axis=1
                 )
+            elif self.parallel_backend == ParallelBackend.multiprocessing:
+                raise NotImplementedError()
+            elif self.parallel_backend == ParallelBackend.joblib:
+                try:
+                    from joblib import Parallel, delayed
+                except ImportError:
+                    raise ImportError(
+                        "Please install `joblib` to use `ParallelBackend.joblib`."
+                    )
+                remote_func = delayed(to_gap_closing_candidates)
+                res = Parallel(n_jobs=-1)(
+                    remote_func(row, segments_df) for _, row in segments_df.iterrows()
+                )
+                segments_df["gap_closing_candidates"] = res
+
             elif self.parallel_backend == ParallelBackend.ray:
                 try:
                     import ray
@@ -451,6 +483,19 @@ class LapTrack(BaseModel, extra=Extra.forbid):
                 segments_df[f"{prefix}_candidates"] = segments_df.apply(
                     partial(to_candidates, coords=coords), axis=1
                 )
+            elif self.parallel_backend == ParallelBackend.joblib:
+                try:
+                    from joblib import Parallel, delayed
+                except ImportError:
+                    raise ImportError(
+                        "Please install `joblib` to use `ParallelBackend.joblib`."
+                    )
+                remote_func = delayed(to_candidates)
+                res = Parallel(n_jobs=-1)(
+                    remote_func(row, coords) for _, row in segments_df.iterrows()
+                )
+                segments_df[f"{prefix}_candidates"] = res
+
             elif self.parallel_backend == ParallelBackend.ray:
                 try:
                     import ray
