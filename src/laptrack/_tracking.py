@@ -47,7 +47,6 @@ class ParallelBackend(str, Enum):
     """Parallelization strategy for computation."""
 
     serial = "serial"
-    multiprocessing = "multiprocessing"
     joblib = "joblib"
     ray = "ray"
 
@@ -269,8 +268,6 @@ class LapTrack(BaseModel, extra=Extra.forbid):
             for frame, (coord1, coord2) in enumerate(zip(coords[:-1], coords[1:])):
                 edges = _predict_link_single_frame(frame, coord1, coord2)
                 all_edges.extend(edges)
-        elif self.parallel_backend == ParallelBackend.multiprocessing:
-            raise NotImplementedError()
         elif self.parallel_backend == ParallelBackend.joblib:
             try:
                 from joblib import Parallel, delayed
@@ -377,8 +374,6 @@ class LapTrack(BaseModel, extra=Extra.forbid):
                 segments_df["gap_closing_candidates"] = segments_df.apply(
                     partial(to_gap_closing_candidates, segments_df=segments_df), axis=1
                 )
-            elif self.parallel_backend == ParallelBackend.multiprocessing:
-                raise NotImplementedError()
             elif self.parallel_backend == ParallelBackend.joblib:
                 try:
                     from joblib import Parallel, delayed
