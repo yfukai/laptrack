@@ -18,4 +18,4 @@ __all__ = [
     "datasets",
 ]
 
-__version__ = "0.15.1"
+__version__ = "0.16.0"
