@@ -11,6 +11,7 @@ Gallery for example usages.
     examples/api_example.ipynb
     examples/bright_spots.ipynb
     examples/cell_segmentation.ipynb
+    examples/3D_tracking.ipynb
     examples/overlap_tracking.ipynb
     examples/custom_metric.ipynb
     examples/napari_interactive_fix.ipynb
