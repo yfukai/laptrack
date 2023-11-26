@@ -1,7 +1,7 @@
 LapTrack
 ========
 
-|PyPI| |Status| |Python Version| |License|
+|PyPI| |Status| |Python Version| |License| |Download| 
 
 |Read the Docs| |Tests| |Codecov| |pre-commit| |Black|
 
@@ -19,6 +19,9 @@ LapTrack
 .. |License| image:: https://img.shields.io/pypi/l/laptrack
    :target: https://opensource.org/licenses/BSD-3-Clause
    :alt: License
+.. |Download| image:: https://img.shields.io/pepy/dt/laptrack
+   :target: https://pypi.org/project/laptrack
+   :alt: Total Download
 .. |Read the Docs| image:: https://img.shields.io/readthedocs/laptrack/latest.svg?label=Read%20the%20Docs
    :target: https://laptrack.readthedocs.io/
    :alt: Read the documentation at https://laptrack.readthedocs.io/
