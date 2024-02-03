@@ -11,11 +11,18 @@ from laptrack import OverLapTrack
 from laptrack.datasets import fetch
 from laptrack.metric_utils import LabelOverlapOld
 
+try:
+    import ray  # noqa: F401
+
+    PARALLEL_BACKENDS = ["serial", "ray"]
+except ImportError:
+    PARALLEL_BACKENDS = ["serial"]
+
 
 @pytest.mark.parametrize(
     "dataset", ["cell_segmentation", "mouse_epidermis", "HL60_3D_synthesized"]
 )
-@pytest.mark.parametrize("parallel_backend", ["serial", "ray"])
+@pytest.mark.parametrize("parallel_backend", PARALLEL_BACKENDS)
 @pytest.mark.parametrize("splitting_cost_cutoff", [False, 0.9])
 @pytest.mark.parametrize("merging_cost_cutoff", [False, 0.9])
 @pytest.mark.parametrize("track_overlap_coefs", [(2.0, -0.5, -0.5, -0.5, -0.5)])

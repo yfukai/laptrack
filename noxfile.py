@@ -84,7 +84,12 @@ def mypy(session: Session) -> None:
 def tests(session: Session) -> None:
     """Run the test suite."""
     session.install(".")
-    session.install("coverage[toml]", "pytest", "pytest-datadir", "pygments", "ray")
+    session.install("coverage[toml]", "pytest", "pytest-datadir", "pygments")
+    try:
+        session.install("ray")
+    except nox.command.CommandFailed:
+        session.warn("Ray not installed, skipping ray tests")
+
     try:
         session.run("coverage", "run", "--parallel", "-m", "pytest", *session.posargs)
     finally:
