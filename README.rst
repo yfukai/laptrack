@@ -1,7 +1,7 @@
 LapTrack
 ========
 
-|PyPI| |Status| |Python Version| |License| |Download| 
+|PyPI| |Status| |Python Version| |License| |Download|
 
 |Read the Docs| |Tests| |Codecov| |pre-commit| |Black|
 
