@@ -20,7 +20,7 @@ except ImportError:
 
 
 package = "laptrack"
-python_versions = ["3.11", "3.10", "3.9", "3.8"]
+python_versions = ["3.12", "3.11", "3.10", "3.9", "3.8"]
 safety_ignore = [44717, 44715, 44716, 51457]  # ignore numpy 1.21 CVEs and py 1.11.0
 nox.needs_version = ">= 2021.6.6"
 nox.options.sessions = (
@@ -84,7 +84,12 @@ def mypy(session: Session) -> None:
 def tests(session: Session) -> None:
     """Run the test suite."""
     session.install(".")
-    session.install("coverage[toml]", "pytest", "pytest-datadir", "pygments", "ray")
+    session.install("coverage[toml]", "pytest", "pytest-datadir", "pygments")
+    try:
+        session.install("ray")
+    except nox.command.CommandFailed:
+        session.warn("Ray not installed, skipping ray tests")
+
     try:
         session.run("coverage", "run", "--parallel", "-m", "pytest", *session.posargs)
     finally:
@@ -113,7 +118,7 @@ def typeguard(session: Session) -> None:
     session.run("pytest", f"--typeguard-packages={package}", *session.posargs)
 
 
-@session(name="docs-build", python="3.10")
+@session(name="docs-build", python=python_versions[0])
 def docs_build(session: Session) -> None:
     """Build the documentation."""
     args = session.posargs or ["docs", "docs/_build"]
@@ -126,7 +131,7 @@ def docs_build(session: Session) -> None:
     session.run("sphinx-build", *args)
 
 
-@session(python="3.10")
+@session(python=python_versions[0])
 def docs(session: Session) -> None:
     """Build and serve the documentation with live reloading on file changes."""
     args = session.posargs or ["--open-browser", "docs", "docs/_build"]

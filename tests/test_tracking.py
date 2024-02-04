@@ -104,6 +104,10 @@ def testdata(request, shared_datadir: str):
 
 @pytest.mark.parametrize("parallel_backend", ["serial", "ray"])
 def test_reproducing_trackmate(testdata, parallel_backend) -> None:
+
+    if parallel_backend == "ray":
+        pytest.importorskip("ray")
+
     params, coords, edges_set = testdata
     params["parallel_backend"] = parallel_backend
     lt = LapTrack(**params)
