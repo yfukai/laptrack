@@ -31,6 +31,10 @@ def test_overlap_tracking(
     track_overlap_coefs,
     splitting_overlap_coefs,
 ) -> None:
+
+    if parallel_backend == "ray":
+        pytest.importorskip("ray")
+
     if dataset == "mouse_epidermis":
         labels = fetch(dataset)
     else:
