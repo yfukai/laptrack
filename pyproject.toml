@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "laptrack"
-version = "0.16.0"
+version = "0.16.1"
 description = "LapTrack"
 authors = ["Yohsuke Fukai <ysk@yfukai.net>"]
 license = "BSD-3-Clause"
