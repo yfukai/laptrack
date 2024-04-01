@@ -65,8 +65,6 @@ def convert_dataframe_to_coords_frame_index(
         The list of columns to use for coordinates.
     frame_col : str, default "frame"
         The column name to use for the frame index.
-    validate_frame : bool, default True
-        Whether to validate the frame.
 
     Returns
     -------
