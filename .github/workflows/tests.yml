@@ -34,7 +34,7 @@ jobs:
 
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v4.1.2
 
       - name: Set up packages
         if: matrix.session == 'docs-build'
@@ -109,7 +109,7 @@ jobs:
     needs: tests
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v4.1.2
 
       - name: Set up Python 3.9
         uses: actions/setup-python@v5.1.0
