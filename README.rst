@@ -86,19 +86,19 @@ Please see the Usage_ for details.
 The example notebooks are provided in `docs/examples <https://github.com/yfukai/laptrack/tree/main/docs/examples>`_.
 
 
-================================= ============================================================================================ ======================
- notebook name                     short description                                                                            Google Colaboratory
---------------------------------- -------------------------------------------------------------------------------------------- ----------------------
- `api_example.ipynb`_              Introducing the package API by a simple example.                                               |colab|
---------------------------------- -------------------------------------------------------------------------------------------- ----------------------
- `bright_spots.ipynb`_             Application example: detecting bright spots by scikit-image `blob_log` and tracking them.
---------------------------------- -------------------------------------------------------------------------------------------- ----------------------
- `cell_segmentation.ipynb`_        Application example: tracking centroids of the segmented C2C12 cells undergoing divisions.
---------------------------------- -------------------------------------------------------------------------------------------- ----------------------
- `napari_interactive_fix.ipynb`_   Illustrates the usage of the ground-truth-preserved tracking with `napari`.
---------------------------------- -------------------------------------------------------------------------------------------- ----------------------
- `overlap_tracking.ipynb`_         Illustrates the usage of the custom metric to use segmentation overlaps for tracking.
-================================= ============================================================================================ ======================
++--------------------------------+--------------------------------------------------------------------------------------------+----------------------+
+| notebook name                  | short description                                                                          | Google Colaboratory  |
++================================+============================================================================================+======================+
+| `api_example.ipynb`_           | Introducing the package API by a simple example.                                           ||colab|               |
++--------------------------------+--------------------------------------------------------------------------------------------+----------------------+
+| `bright_spots.ipynb`_          | Application example: detecting bright spots by scikit-image `blob_log` and tracking them.  |                      |
++--------------------------------+--------------------------------------------------------------------------------------------+----------------------+
+| `cell_segmentation.ipynb`_     | Application example: tracking centroids of the segmented C2C12 cells undergoing divisions. |                      |
++--------------------------------+--------------------------------------------------------------------------------------------+----------------------+
+| `napari_interactive_fix.ipynb`_| Illustrates the usage of the ground-truth-preserved tracking with `napari`.                |                      |
++--------------------------------+--------------------------------------------------------------------------------------------+----------------------+
+| `overlap_tracking.ipynb`_      | Illustrates the usage of the custom metric to use segmentation overlaps for tracking.      |                      |
++--------------------------------+--------------------------------------------------------------------------------------------+----------------------+
 
 .. _api_example.ipynb:            https://github.com/yfukai/laptrack/tree/main/docs/examples/api_example.ipynb
 .. _bright_spots.ipynb:           https://github.com/yfukai/laptrack/tree/main/docs/examples/bright_spots.ipynb
@@ -155,7 +155,7 @@ Citation
 
 If you use this program for your research, please cite it and help us build more.
 
-.. code-block:: bib
+.. code-block:: 
 
    @article{fukai_2022,
      title = {{{LapTrack}}: Linear Assignment Particle Tracking with Tunable Metrics},
