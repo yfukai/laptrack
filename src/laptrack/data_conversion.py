@@ -11,6 +11,7 @@ import pandas as pd
 
 from ._typing_utils import Int
 from ._typing_utils import NumArray
+from .utils import _coord_is_empty
 
 IntTuple = Tuple[Int, Int]
 
@@ -19,7 +20,6 @@ def convert_dataframe_to_coords(
     df: pd.DataFrame,
     coordinate_cols: List[str],
     frame_col: str = "frame",
-    validate_frame: bool = True,
 ) -> List[NumArray]:
     """
     Convert a track dataframe to a list of coordinates for input.
@@ -29,21 +29,23 @@ def convert_dataframe_to_coords(
     df : pd.DataFrame
         The input dataframe.
     coordinate_cols : List[str]
-        The list of columns to use for coordinates.
+        The list of columns used for the coordinates.
     frame_col : str, default "frame"
-        The column name to use for the frame index.
-    validate_frame : bool, default True
-        Whether to validate the frame.
+        The column name used for the integer frame index.
 
     Returns
     -------
     coords : List[np.ndarray]
-        The list of the coordinates.
+        The list of the coordinates. Note that the first frame is the minimum frame index.
     """
     grps = list(df.groupby(frame_col, sort=True))
-    if validate_frame:
-        assert np.array_equal(np.arange(df[frame_col].max() + 1), [g[0] for g in grps])
-    coords = [grp[list(coordinate_cols)].values for _frame, grp in grps]
+    coords_dict = {frame: grp[list(coordinate_cols)].values for frame, grp in grps}
+    min_frame = min(coords_dict.keys())
+    max_frame = max(coords_dict.keys())
+    coords = [
+        coords_dict.get(frame, np.array([]))
+        for frame in range(min_frame, max_frame + 1)
+    ]
     return coords
 
 
@@ -51,7 +53,6 @@ def convert_dataframe_to_coords_frame_index(
     df: pd.DataFrame,
     coordinate_cols: List[str],
     frame_col: str = "frame",
-    validate_frame: bool = True,
 ) -> Tuple[List[NumArray], List[Tuple[int, int]]]:
     """
     Convert a track dataframe to a list of coordinates for input with (frame,index) list.
@@ -64,8 +65,6 @@ def convert_dataframe_to_coords_frame_index(
         The list of columns to use for coordinates.
     frame_col : str, default "frame"
         The column name to use for the frame index.
-    validate_frame : bool, default True
-        Whether to validate the frame.
 
     Returns
     -------
@@ -74,19 +73,22 @@ def convert_dataframe_to_coords_frame_index(
     frame_index : List[Tuple[int, int]]
         The (frame, index) list for the original iloc of the dataframe.
     """
-    assert "iloc__" not in df.columns
+    assert (
+        "iloc__" not in df.columns
+    ), 'The column name "iloc__" is reserved and cannot be used.'
     df = df.copy()
     df["iloc__"] = np.arange(len(df), dtype=int)
 
     coords = convert_dataframe_to_coords(
-        df, list(coordinate_cols) + ["iloc__"], frame_col, validate_frame
+        df, list(coordinate_cols) + ["iloc__"], frame_col
     )
 
     inverse_map = dict(
         sum(
             [
-                [(int(c2[-1]), (frame, index)) for index, c2 in enumerate(c)]
-                for frame, c in enumerate(coords)
+                [(int(c[-1]), (frame, index)) for index, c in enumerate(coord)]
+                for frame, coord in enumerate(coords)
+                if not _coord_is_empty(coord)
             ],
             [],
         )
@@ -96,7 +98,10 @@ def convert_dataframe_to_coords_frame_index(
     assert set(inverse_map.keys()) == set(ilocs)
     frame_index = [inverse_map[i] for i in ilocs]
 
-    return [c[:, :-1] for c in coords], frame_index
+    return [
+        coord[:, :-1] if not _coord_is_empty(coord) else np.array([])
+        for coord in coords
+    ], frame_index
 
 
 def convert_tree_to_dataframe(

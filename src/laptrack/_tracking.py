@@ -39,6 +39,7 @@ from .data_conversion import (
     convert_dataframe_to_coords_frame_index,
     convert_tree_to_dataframe,
 )
+from .utils import _coord_is_empty
 
 logger = logging.getLogger(__name__)
 
@@ -219,8 +220,9 @@ class LapTrack(BaseModel, extra=Extra.forbid):
         # initialize tree
         track_tree = nx.Graph()
         for frame, coord in enumerate(coords):
-            for j in range(coord.shape[0]):
-                track_tree.add_node((frame, j))
+            if not _coord_is_empty(coord):
+                for j in range(coord.shape[0]):
+                    track_tree.add_node((frame, j))
 
         # linking between frames
 
@@ -231,6 +233,9 @@ class LapTrack(BaseModel, extra=Extra.forbid):
             coord1: np.ndarray,
             coord2: np.ndarray,
         ) -> List[EdgeType]:
+            if _coord_is_empty(coord1) or _coord_is_empty(coord2):
+                return []
+
             force_end_indices = [e[0][1] for e in edges_list if e[0][0] == frame]
             force_start_indices = [e[1][1] for e in edges_list if e[1][0] == frame + 1]
             dist_matrix = cdist(coord1, coord2, metric=self.track_dist_metric)
@@ -431,7 +436,11 @@ class LapTrack(BaseModel, extra=Extra.forbid):
                 # note: can use KDTree if metric is distance,
                 # but might not be appropriate for general metrics
                 # https://stackoverflow.com/questions/35459306/find-points-within-cutoff-distance-of-other-points-with-scipy # noqa
-                if other_frame < 0 or len(coords) <= other_frame:
+                if (
+                    other_frame < 0
+                    or len(coords) <= other_frame
+                    or _coord_is_empty(coords[other_frame])
+                ):
                     return [], []
                 target_dist_matrix = cdist(
                     [target_coord], coords[other_frame], metric=dist_metric
@@ -658,12 +667,16 @@ class LapTrack(BaseModel, extra=Extra.forbid):
                 The graph for the tracks, whose nodes are `(frame, index)`.
                 The edge direction represents the time order.
         """
-        if any(list(map(lambda coord: coord.ndim != 2, coords))):
-            raise ValueError("the elements in coords must be 2-dim.")
+        ###### Check the input format ######
+        nonempty_coords = [coord for coord in coords if not _coord_is_empty(coord)]
+
+        if any(list(map(lambda coord: coord.ndim != 2, nonempty_coords))):
+            raise ValueError("the elements in coords must be 2-dim or an empty array.")
         coord_dim = coords[0].shape[1]
-        if any(list(map(lambda coord: coord.shape[1] != coord_dim, coords))):
+        if any(list(map(lambda coord: coord.shape[1] != coord_dim, nonempty_coords))):
             raise ValueError("the second dimension in coords must have the same size")
 
+        ###### Check the connected edges format #######
         if connected_edges:
             connected_edges = [
                 (n1, n2) if n1[0] < n2[0] else (n2, n1) for n1, n2 in connected_edges
@@ -690,7 +703,7 @@ class LapTrack(BaseModel, extra=Extra.forbid):
             split_edges = []
             merge_edges = []
 
-        ####### Particle-particle tracking #######
+        ###### Particle-particle tracking ######
         track_tree = self._predict_links(
             coords, segment_connected_edges, list(split_edges) + list(merge_edges)
         )
@@ -698,7 +711,7 @@ class LapTrack(BaseModel, extra=Extra.forbid):
             coords, track_tree, split_edges, merge_edges
         )
 
-        # convert to directed graph
+        # convert the result to directed graph
         edges = [
             (n1, n2) if n1[0] < n2[0] else (n2, n1) for (n1, n2) in track_tree.edges()
         ]
@@ -713,7 +726,6 @@ class LapTrack(BaseModel, extra=Extra.forbid):
         df: pd.DataFrame,
         coordinate_cols: List[str],
         frame_col: str = "frame",
-        validate_frame: bool = True,
         only_coordinate_cols: bool = True,
         connected_edges: Optional[List[Tuple[Int, Int]]] = None,
         index_offset: Int = 0,
@@ -728,8 +740,6 @@ class LapTrack(BaseModel, extra=Extra.forbid):
             The list of the columns to use for coordinates.
         frame_col : str, optional
             The column name to use for the frame index. Defaults to "frame".
-        validate_frame : bool, optional
-            Whether to validate the frame. Defaults to True.
         only_coordinate_cols : bool, optional
             Whether to use only the coordinate columns. Defaults to True.
         connected_edges : Optional[List[Tuple[Int,Int]]]
@@ -761,7 +771,7 @@ class LapTrack(BaseModel, extra=Extra.forbid):
             - "child_track_id" : The track id of the child.
         """
         coords, frame_index = convert_dataframe_to_coords_frame_index(
-            df, coordinate_cols, frame_col, validate_frame
+            df, coordinate_cols, frame_col
         )
         if connected_edges is not None:
             connected_edges2 = [
