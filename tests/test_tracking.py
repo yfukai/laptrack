@@ -234,6 +234,56 @@ def test_tracking_zero_distance2(shared_datadir: str) -> None:
     )
 
 
+@pytest.mark.parametrize("splitting_cost_cutoff", [False, 15**2])
+@pytest.mark.parametrize("merging_cost_cutoff", [False, 15**2])
+def test_allow_frame_without_coords(splitting_cost_cutoff, merging_cost_cutoff) -> None:
+    coords_edges = [
+        ([np.array([[10, 10], [12, 11]]), np.array([])], set()),
+        (
+            [
+                np.array([[10, 10], [12, 11]]),
+                np.array([]),
+                np.array([[10, 10], [12, 11]]),
+                np.array([[10, 10], [13, 11]]),
+            ],
+            set([((2, 0), (3, 0)), ((2, 1), (3, 1))]),
+        ),
+    ]
+
+    lt = LapTrack(
+        track_cost_cutoff=15**2,
+        gap_closing_cost_cutoff=False,
+        splitting_cost_cutoff=splitting_cost_cutoff,
+        merging_cost_cutoff=merging_cost_cutoff,
+    )
+    for coords, target_edges in coords_edges:
+        track_tree = lt.predict(coords)
+        edges = track_tree.edges()
+        assert set(edges) == target_edges
+
+    df = pd.DataFrame(
+        {
+            "x": [10, 12, 10, 12, 9, 11],
+            "y": [10, 11, 10, 11, 9, 12],
+            "frame": [2, 2, 4, 4, 5, 5],
+        }
+    )
+    track_iloc_sets = [{0}, {1}, {2, 4}, {3, 5}]
+    values_sets = [
+        set([tuple(df.iloc[i][["frame", "x", "y"]].to_list()) for i in s])
+        for s in track_iloc_sets
+    ]
+
+    track_df, split_df, merge_df = lt.predict_dataframe(
+        df, ["x", "y"], only_coordinate_cols=False
+    )
+    track_df = track_df.set_index(["frame_y", "x", "y"])
+    assert split_df.empty
+    assert merge_df.empty
+    for _track_id, grp in track_df.groupby("track_id"):
+        assert set(grp.index) in values_sets
+
+
 def test_tracking_not_connected() -> None:
     coords = [np.array([[10, 10], [12, 11]]), np.array([[50, 50], [53, 51]])]
     lt = LapTrack(
