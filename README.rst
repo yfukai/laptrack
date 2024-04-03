@@ -155,7 +155,7 @@ Citation
 
 If you use this program for your research, please cite it and help us build more.
 
-.. code-block:: 
+.. code-block::
 
    @article{fukai_2022,
      title = {{{LapTrack}}: Linear Assignment Particle Tracking with Tunable Metrics},
