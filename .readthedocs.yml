@@ -14,7 +14,8 @@ build:
     post_install:
       - pip uninstall -y sphinx
       # Install dependencies
-      - poetry install --with dev
+      - poetry export -f requirements.txt -o requirements.txt --without-hashes --with dev
+      - pip install -U -r requirements.txt
 
 sphinx:
   configuration: docs/conf.py
