@@ -7,12 +7,12 @@ build:
     python: "3.10"
   jobs:
     post_create_environment:
-      - pip uninstall -y sphinx
       # Install poetry
       - pip install poetry
       # Tell poetry to not use a virtual environment
       - poetry config virtualenvs.create false
     post_install:
+      - pip uninstall -y sphinx
       # Install dependencies
       - poetry install --with dev
 
