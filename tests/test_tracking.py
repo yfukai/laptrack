@@ -317,9 +317,9 @@ def test_gap_closing(shared_datadir: str) -> None:
 
 def test_no_accepting_wrong_argments() -> None:
     with pytest.raises(ValidationError):
-        lt = LapTrack(hogehoge=True)
+        lt = LapTrack(hogehoge=True)  # type: ignore
     with pytest.raises(ValidationError):
-        lt = LapTrack(fugafuga=True)
+        lt = LapTrack(fugafuga=True)  # type: ignore
 
 
 def test_no_accepting_wrong_backend() -> None:
