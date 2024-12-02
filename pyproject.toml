@@ -55,7 +55,6 @@ mypy = "^1.5.1"
 typeguard = "^2.13.3"
 xdoctest = {extras = ["colors"], version = "^1.1.0"}
 
-ipykernel = ">=6.23.0"
 matplotlib = ">=3.7.2"
 sphinx = "6.2.1"
 sphinx-autobuild = ">=2021.3.14"
@@ -67,8 +66,8 @@ nbsphinx = ">=0.8.9"
 autodoc-pydantic = ">=1.9.0"
 
 pygments = "^2.13.0"
-jupyter = ">=1.0.0"
-ipython = ">=8.10.0"
+ipykernel = ">=6.29.5"
+notebook = ">=7.2.2"
 xmltodict = "^0.13.0"
 pre-commit = "^2.20.0"
 nox = "^2022.8.7"
