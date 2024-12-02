@@ -74,6 +74,9 @@ nox = "^2022.8.7"
 nox-poetry = "^1.0.1"
 toml = "^0.10.2"
 
+cryptography = ">=44.0.0"
+virtualenv = ">=20.28.0"
+
 [tool.coverage.paths]
 source = ["src", "*/site-packages"]
 
