@@ -18,6 +18,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "License :: OSI Approved :: BSD License",
 ]
 
@@ -25,7 +26,7 @@ classifiers = [
 Changelog = "https://github.com/yfukai/laptrack/releases"
 
 [tool.poetry.dependencies]
-python = "^3.9.2,<3.13"
+python = "^3.9.2,<3.14"
 click = "^8.0.1"
 numpy = ">=1.26,<3.0.0"
 scipy = "^1.12.0"
@@ -67,8 +68,8 @@ ipykernel = ">=6.29.5"
 notebook = ">=7.2.2"
 xmltodict = "^0.13.0"
 pre-commit = "^2.20.0"
-nox = "^2022.8.7"
-nox-poetry = "^1.0.1"
+nox = "^2024.10.9"
+nox-poetry = "^1.0.3"
 toml = "^0.10.2"
 
 cryptography = ">=43.0.1"
@@ -93,7 +94,7 @@ show_error_codes = true
 show_error_context = true
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
+requires = ["poetry-core>=1.8.4"]
 build-backend = "poetry.core.masonry.api"
 [tool.setuptools_scm]
 

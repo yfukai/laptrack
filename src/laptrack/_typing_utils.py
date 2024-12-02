@@ -8,12 +8,13 @@ import numpy.typing as npt
 from scipy.sparse import coo_matrix
 from scipy.sparse import lil_matrix
 
-NumArray = npt.NDArray[Union[np.float_, np.int_]]
-FloatArray = npt.NDArray[np.float_]
-IntArray = npt.NDArray[np.int_]
-
 Int = Union[int, np.int_, np.uint8, np.uint16, np.uint32, np.uint64]
-Float = Union[float, np.float_]
+Float = Union[float, np.float64, np.float32, np.float16]
+
+NumArray = npt.NDArray[Union[Float, Int]]
+FloatArray = npt.NDArray[Float]
+IntArray = npt.NDArray[Int]
+
 
 Matrix = Union[FloatArray, coo_matrix, lil_matrix]
 EdgeType = Union[
