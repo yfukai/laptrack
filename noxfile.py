@@ -20,7 +20,7 @@ except ImportError:
 
 
 package = "laptrack"
-python_versions = ["3.13", "3.12", "3.11", "3.10", "3.9"]
+python_versions = ["3.13", "3.12", "3.11", "3.10"]
 safety_ignore = [
     44717,
     44715,
@@ -53,7 +53,7 @@ doc_build_packages = [
 ]
 
 
-@session(name="pre-commit", python="3.9")
+@session(name="pre-commit", python=python_versions[-1])
 def precommit(session: Session) -> None:
     """Lint using pre-commit."""
     args = session.posargs or ["run", "--all-files", "--show-diff-on-failure"]
@@ -61,7 +61,7 @@ def precommit(session: Session) -> None:
     session.run("pre-commit", *args)
 
 
-@session(python="3.9")
+@session(python=python_versions[-1])
 def safety(session: Session) -> None:
     """Scan dependencies for insecure packages."""
     requirements = session.poetry.export_requirements()

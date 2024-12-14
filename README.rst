@@ -57,8 +57,8 @@ See the `publication`_ and `associated repository`_ for the algorithm and parame
 Requirements
 ------------
 
-Python >= 3.9 is supported.
-The software is tested against Python 3.9-3.12 in Ubuntu, and 3.12 in MacOS and Windows environments,
+Python >= 3.10 is supported.
+The software is tested against Python 3.10-3.13 in Ubuntu, and 3.13 in MacOS and Windows environments,
 but the other combinations should also be fine. Please `file an issue`_ if you encounter any problem.
 
 Installation
