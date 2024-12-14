@@ -13,8 +13,9 @@ from scipy.sparse import lil_matrix
 # Float = Union[float, np.float64, np.float32, np.float16]
 Int = TypeVar("Int", bound=np.integer)
 Float = TypeVar("Float", bound=np.floating)
+Number = TypeVar("Number", bound=np.number)
 
-NumArray = npt.NDArray[Union[Float, Int]]
+NumArray = npt.NDArray[Number]
 FloatArray = npt.NDArray[Float]
 IntArray = npt.NDArray[Int]
 
