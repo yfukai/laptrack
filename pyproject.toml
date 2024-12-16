@@ -14,10 +14,10 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "Natural Language :: English",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "License :: OSI Approved :: BSD License",
 ]
 
@@ -25,21 +25,15 @@ classifiers = [
 Changelog = "https://github.com/yfukai/laptrack/releases"
 
 [tool.poetry.dependencies]
-python = "^3.9,<3.13"
+python = "^3.10,<3.14"
 click = "^8.0.1"
 numpy = ">=1.26,<3.0.0"
-scipy = [
-    { version = "^1.12.0", python = ">=3.12" },
-    { version = "^1.8.0", python = "<3.12" }
-]
-networkx = "^2.6.1"
+scipy = "^1.14.1"
+networkx = "^3.4.2"
 pandas = ">=1.3.1,<3.0.0"
 typing-extensions = "^4.1.0"
 pydantic = "^2.0"
-scikit-image = [
-    { version = "^0.19.3", python = "<3.11" },
-    { version = ">=0.20.0,<1.0.0", python = ">=3.11" }
-]
+scikit-image = ">=0.24.0,<1.0.0"
 pooch = "^1.6.0"
 scikit-learn = "^1.5.0"
 
@@ -55,7 +49,6 @@ mypy = "^1.5.1"
 typeguard = "^2.13.3"
 xdoctest = {extras = ["colors"], version = "^1.1.0"}
 
-ipykernel = ">=6.23.0"
 matplotlib = ">=3.7.2"
 sphinx = "6.2.1"
 sphinx-autobuild = ">=2021.3.14"
@@ -67,13 +60,16 @@ nbsphinx = ">=0.8.9"
 autodoc-pydantic = ">=1.9.0"
 
 pygments = "^2.13.0"
-jupyter = ">=1.0.0"
-ipython = ">=8.10.0"
+ipykernel = ">=6.29.5"
+notebook = ">=7.2.2"
 xmltodict = "^0.13.0"
 pre-commit = "^2.20.0"
-nox = "^2022.8.7"
-nox-poetry = "^1.0.1"
+nox = "^2024.10.9"
+nox-poetry = "^1.0.3"
 toml = "^0.10.2"
+
+cryptography = ">=43.0.1"
+virtualenv = ">=20.26.6"
 
 [tool.coverage.paths]
 source = ["src", "*/site-packages"]
@@ -94,7 +90,7 @@ show_error_codes = true
 show_error_context = true
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
+requires = ["poetry-core>=1.8.4"]
 build-backend = "poetry.core.masonry.api"
 [tool.setuptools_scm]
 
