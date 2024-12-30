@@ -12,6 +12,7 @@ from pydantic import ValidationError
 
 from laptrack import LapTrack
 from laptrack import laptrack
+from laptrack._tracking import _ALIAS_FIELDS
 from laptrack.data_conversion import convert_tree_to_dataframe
 
 warnings.simplefilter("ignore", FutureWarning)
@@ -424,6 +425,29 @@ def test_no_connected_node(tracker_class) -> None:
     track_tree = lt.predict(coords)
     for frame, index in product([0, 1], [0, 1]):
         assert (frame, index) in track_tree.nodes()
+
+
+def test_alias_and_deprecation_warning():
+    # Check that the alias works and issues a warning
+    for old_name, new_name in _ALIAS_FIELDS.items():
+        with warnings.catch_warnings(record=True) as w:
+            if "metric" in old_name:
+                test_value = "euclidean"
+            else:
+                test_value = 20**2
+            warnings.simplefilter("always")  # Ensure all warnings are captured
+            lt = LapTrack(**{old_name: test_value})
+            assert (
+                getattr(lt, new_name) == test_value
+            )  # Validate the correct field is populated
+
+            # Check if a DeprecationWarning was raised
+            assert len(w) == 1  # Only one warning should be present
+            assert issubclass(w[0].category, DeprecationWarning)
+            assert (
+                f"Use of `{old_name}` is deprecated, use `{new_name}` instead."
+                == str(w[0].message)
+            )
 
 
 # # %%
