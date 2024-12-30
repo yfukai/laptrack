@@ -16,8 +16,8 @@ from laptrack.metric_utils import LabelOverlapOld
     "dataset", ["cell_segmentation", "mouse_epidermis", "HL60_3D_synthesized"]
 )
 @pytest.mark.parametrize("parallel_backend", ["serial", "ray"])
-@pytest.mark.parametrize("splitting_cost_cutoff", [False, 0.9])
-@pytest.mark.parametrize("merging_cost_cutoff", [False, 0.9])
+@pytest.mark.parametrize("splitting_cutoff", [False, 0.9])
+@pytest.mark.parametrize("merging_cutoff", [False, 0.9])
 @pytest.mark.parametrize("track_overlap_coefs", [(2.0, -0.5, -0.5, -0.5, -0.5)])
 @pytest.mark.parametrize(
     "splitting_overlap_coefs",
@@ -26,8 +26,8 @@ from laptrack.metric_utils import LabelOverlapOld
 def test_overlap_tracking(
     dataset,
     parallel_backend,
-    splitting_cost_cutoff,
-    merging_cost_cutoff,
+    splitting_cutoff,
+    merging_cutoff,
     track_overlap_coefs,
     splitting_overlap_coefs,
 ) -> None:
@@ -97,17 +97,17 @@ def test_overlap_tracking(
             return offset
 
     params = dict(
-        track_cost_cutoff=0.9,
+        cutoff=0.9,
         gap_closing_max_frame_count=1,
-        splitting_cost_cutoff=splitting_cost_cutoff,
-        merging_cost_cutoff=merging_cost_cutoff,
+        splitting_cutoff=splitting_cutoff,
+        merging_cutoff=merging_cutoff,
     )
 
     lt = LapTrack(
-        track_dist_metric=partial(metric, params=track_overlap_coefs),
-        gap_closing_dist_metric=partial(metric, params=track_overlap_coefs),
-        splitting_dist_metric=partial(metric, params=splitting_overlap_coefs),
-        merging_dist_metric=partial(metric, params=splitting_overlap_coefs),
+        metric=partial(metric, params=track_overlap_coefs),
+        gap_closing_metric=partial(metric, params=track_overlap_coefs),
+        splitting_metric=partial(metric, params=splitting_overlap_coefs),
+        merging_metric=partial(metric, params=splitting_overlap_coefs),
         **params
     )
     track_df1, split_df1, merge_df1 = lt.predict_dataframe(
@@ -117,10 +117,10 @@ def test_overlap_tracking(
     # New tracking
     olt = OverLapTrack(
         parallel_backend=parallel_backend,
-        track_dist_metric_coefs=track_overlap_coefs,
-        gap_closing_dist_metric_coefs=track_overlap_coefs,
-        splitting_dist_metric_coefs=splitting_overlap_coefs,
-        merging_dist_metric_coefs=splitting_overlap_coefs,
+        metric_coefs=track_overlap_coefs,
+        gap_closing_metric_coefs=track_overlap_coefs,
+        splitting_metric_coefs=splitting_overlap_coefs,
+        merging_metric_coefs=splitting_overlap_coefs,
         **params
     )
 
