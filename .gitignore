@@ -10,6 +10,7 @@
 __pycache__/
 .ipynb_checkpoints/
 .vscode/settings.json
+/.venv/
 Untitled.ipynb
 docs/examples/bright_spots_data/brownian_particles_images_with_noise.npz
 docs/examples/bright_spots_data/brownian_particles_images.npy
