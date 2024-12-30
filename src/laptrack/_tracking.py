@@ -96,7 +96,7 @@ def _get_segment_df(coords, track_tree):
     return segments_df
 
 
-ALIAS_FIELDS = {
+_ALIAS_FIELDS = {
     "track_dist_metric": "metric",
     "track_cost_cutoff": "cutoff",
     "gap_closing_dist_metric": "gap_closing_metric",
@@ -212,7 +212,7 @@ class LapTrack(BaseModel, extra="forbid"):
     @classmethod
     def _check_deprecated_names(cls, data: Any) -> Any:
         if isinstance(data, dict):
-            for old_name, new_name in ALIAS_FIELDS.items():
+            for old_name, new_name in _ALIAS_FIELDS.items():
                 if old_name in data:
                     warnings.warn(
                         f"Use of `{old_name}` is deprecated, use `{new_name}` instead.",

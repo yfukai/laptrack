@@ -219,6 +219,7 @@ def test_tracking_zero_distance2(shared_datadir: str) -> None:
     )
 
     data2 = data.copy()
+    np.random.seed(0)
     data2["h"] += np.random.random(len(data2)) * 1e-2
     track_df2, split_df2, merge_df2 = lt.predict_dataframe(
         data2,
