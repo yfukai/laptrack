@@ -26,7 +26,7 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 from scipy.spatial.distance import cdist
-from pydantic import BaseModel, Field, Extra
+from pydantic import BaseModel, Field
 
 
 from ._cost_matrix import build_frame_cost_matrix, build_segment_cost_matrix
@@ -95,7 +95,7 @@ def _get_segment_df(coords, track_tree):
     return segments_df
 
 
-class LapTrack(BaseModel, extra=Extra.forbid):
+class LapTrack(BaseModel, extra="forbid"):
     """Tracking class for LAP tracker with parameters."""
 
     track_dist_metric: Union[str, Callable] = Field(
