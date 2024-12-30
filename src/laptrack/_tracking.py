@@ -3,6 +3,7 @@ import logging
 import warnings
 from enum import Enum
 from functools import partial
+from typing import Any
 from typing import Callable
 from typing import cast
 from typing import Dict
@@ -26,7 +27,7 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 from scipy.spatial.distance import cdist
-from pydantic import BaseModel, Field, Extra
+from pydantic import BaseModel, Field, model_validator
 
 
 from ._cost_matrix import build_frame_cost_matrix, build_segment_cost_matrix
@@ -95,26 +96,38 @@ def _get_segment_df(coords, track_tree):
     return segments_df
 
 
-class LapTrack(BaseModel, extra=Extra.forbid):
+_ALIAS_FIELDS = {
+    "track_dist_metric": "metric",
+    "track_cost_cutoff": "cutoff",
+    "gap_closing_dist_metric": "gap_closing_metric",
+    "gap_closing_cost_cutoff": "gap_closing_cutoff",
+    "splitting_dist_metric": "splitting_metric",
+    "splitting_cost_cutoff": "splitting_cutoff",
+    "merging_dist_metric": "merging_metric",
+    "merging_cost_cutoff": "merging_cutoff",
+}
+
+
+class LapTrack(BaseModel, extra="forbid"):
     """Tracking class for LAP tracker with parameters."""
 
-    track_dist_metric: Union[str, Callable] = Field(
+    metric: Union[str, Callable] = Field(
         "sqeuclidean",
         description="The metric for calculating track linking cost. "
         + "See documentation for `scipy.spatial.distance.cdist` for accepted values.",
     )
-    track_cost_cutoff: float = Field(
+    cutoff: float = Field(
         15**2,
         description="The cost cutoff for the connected points in the track. "
         + "For default cases with `dist_metric='sqeuclidean'`, "
         + "this value should be squared maximum distance.",
     )
-    gap_closing_dist_metric: Union[str, Callable] = Field(
+    gap_closing_metric: Union[str, Callable] = Field(
         "sqeuclidean",
         description="The metric for calculating gap closing cost. "
         + "See documentation for `scipy.spatial.distance.cdist` for accepted values.",
     )
-    gap_closing_cost_cutoff: Union[Literal[False], float] = Field(
+    gap_closing_cutoff: Union[Literal[False], float] = Field(
         15**2,
         description="The cost cutoff for gap closing. "
         + "For default cases with `dist_metric='sqeuclidean'`, "
@@ -125,26 +138,24 @@ class LapTrack(BaseModel, extra=Extra.forbid):
         2, description="The maximum frame gaps, by default 2."
     )
 
-    splitting_dist_metric: Union[str, Callable] = Field(
+    splitting_metric: Union[str, Callable] = Field(
         "sqeuclidean",
-        description="The metric for calculating splitting cost. "
-        + "See `track_dist_metric`.",
+        description="The metric for calculating splitting cost. " + "See `metric`.",
     )
-    splitting_cost_cutoff: Union[Literal[False], float] = Field(
+    splitting_cutoff: Union[Literal[False], float] = Field(
         False,
         description="The cost cutoff for splitting. "
-        + "See `gap_closing_cost_cutoff`. "
+        + "See `gap_closing_cutoff`. "
         + "If False, no splitting is allowed.",
     )
-    merging_dist_metric: Union[str, Callable] = Field(
+    merging_metric: Union[str, Callable] = Field(
         "sqeuclidean",
-        description="The metric for calculating merging cost. "
-        + "See `track_dist_metric`",
+        description="The metric for calculating merging cost. " + "See `metric`",
     )
-    merging_cost_cutoff: Union[Literal[False], float] = Field(
+    merging_cutoff: Union[Literal[False], float] = Field(
         False,
         description="The cost cutoff for merging. "
-        + "See `gap_closing_cost_cutoff`. "
+        + "See `gap_closing_cutoff`. "
         + "If False, no merging is allowed.",
     )
 
@@ -197,6 +208,19 @@ class LapTrack(BaseModel, extra=Extra.forbid):
         exclude=True,
     )
 
+    @model_validator(mode="before")
+    @classmethod
+    def _check_deprecated_names(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            for old_name, new_name in _ALIAS_FIELDS.items():
+                if old_name in data:
+                    warnings.warn(
+                        f"Use of `{old_name}` is deprecated, use `{new_name}` instead.",
+                        DeprecationWarning,
+                    )
+                    data[new_name] = data.pop(old_name)
+        return data
+
     def _predict_links(
         self, coords, segment_connected_edges, split_merge_edges
     ) -> nx.Graph:
@@ -238,11 +262,11 @@ class LapTrack(BaseModel, extra=Extra.forbid):
 
             force_end_indices = [e[0][1] for e in edges_list if e[0][0] == frame]
             force_start_indices = [e[1][1] for e in edges_list if e[1][0] == frame + 1]
-            dist_matrix = cdist(coord1, coord2, metric=self.track_dist_metric)
+            dist_matrix = cdist(coord1, coord2, metric=self.metric)
             dist_matrix[force_end_indices, :] = np.inf
             dist_matrix[:, force_start_indices] = np.inf
 
-            ind = np.where(dist_matrix < self.track_cost_cutoff)
+            ind = np.where(dist_matrix < self.cutoff)
             dist_matrix = coo_matrix_builder(
                 dist_matrix.shape,
                 row=ind[0],
@@ -317,7 +341,7 @@ class LapTrack(BaseModel, extra=Extra.forbid):
             the cost matrix for gap closing candidates
 
         """
-        if self.gap_closing_cost_cutoff:
+        if self.gap_closing_cutoff:
 
             def to_gap_closing_candidates(row, segments_df):
                 # if the index is in force_end_indices, do not add to gap closing candidates
@@ -348,11 +372,11 @@ class LapTrack(BaseModel, extra=Extra.forbid):
                     target_dist_matrix = cdist(
                         [target_coord],
                         np.stack(df["first_frame_coords"].values),
-                        metric=self.gap_closing_dist_metric,
+                        metric=self.gap_closing_metric,
                     )
                     assert target_dist_matrix.shape[0] == 1
                     indices2 = np.where(
-                        target_dist_matrix[0] < self.gap_closing_cost_cutoff
+                        target_dist_matrix[0] < self.gap_closing_cutoff
                     )[0]
                     return (
                         df.index[indices2].values,
@@ -581,11 +605,7 @@ class LapTrack(BaseModel, extra=Extra.forbid):
                  the updated track tree
         """
         edges = list(split_edges) + list(merge_edges)
-        if (
-            self.gap_closing_cost_cutoff
-            or self.splitting_cost_cutoff
-            or self.merging_cost_cutoff
-        ):
+        if self.gap_closing_cutoff or self.splitting_cutoff or self.merging_cutoff:
             segments_df = _get_segment_df(coords, track_tree)
             force_end_nodes = [tuple(map(int, e[0])) for e in edges]
             force_start_nodes = [tuple(map(int, e[1])) for e in edges]
@@ -603,8 +623,8 @@ class LapTrack(BaseModel, extra=Extra.forbid):
             # compute candidate for splitting and merging
             for prefix, cutoff, dist_metric in zip(
                 ["first", "last"],
-                [self.splitting_cost_cutoff, self.merging_cost_cutoff],
-                [self.splitting_dist_metric, self.merging_dist_metric],
+                [self.splitting_cutoff, self.merging_cutoff],
+                [self.splitting_metric, self.merging_metric],
             ):
                 (
                     segments_df,

@@ -12,22 +12,23 @@ from pydantic import ValidationError
 
 from laptrack import LapTrack
 from laptrack import laptrack
+from laptrack._tracking import _ALIAS_FIELDS
 from laptrack.data_conversion import convert_tree_to_dataframe
 
 warnings.simplefilter("ignore", FutureWarning)
 
 DEFAULT_PARAMS = dict(
-    track_dist_metric="sqeuclidean",
-    splitting_dist_metric="sqeuclidean",
-    merging_dist_metric="sqeuclidean",
-    track_cost_cutoff=15**2,
+    metric="sqeuclidean",
+    splitting_metric="sqeuclidean",
+    merging_metric="sqeuclidean",
+    cutoff=15**2,
     track_start_cost=None,
     track_end_cost=None,
-    gap_closing_cost_cutoff=15**2,
+    gap_closing_cutoff=15**2,
     gap_closing_max_frame_count=2,
-    splitting_cost_cutoff=15**2,
+    splitting_cutoff=15**2,
     no_splitting_cost=None,
-    merging_cost_cutoff=15**2,
+    merging_cutoff=15**2,
     no_merging_cost=None,
 )
 
@@ -36,31 +37,31 @@ FILENAME_SUFFIX_PARAMS = [
         "without_gap_closing",
         {
             **DEFAULT_PARAMS,  # type: ignore
-            "gap_closing_cost_cutoff": False,
-            "splitting_cost_cutoff": False,
-            "merging_cost_cutoff": False,
+            "gap_closing_cutoff": False,
+            "splitting_cutoff": False,
+            "merging_cutoff": False,
         },
     ),
     (
         "with_gap_closing",
         {
             **DEFAULT_PARAMS,  # type: ignore
-            "splitting_cost_cutoff": False,
-            "merging_cost_cutoff": False,
+            "splitting_cutoff": False,
+            "merging_cutoff": False,
         },
     ),
     (
         "with_splitting",
         {
             **DEFAULT_PARAMS,  # type: ignore
-            "merging_cost_cutoff": False,
+            "merging_cutoff": False,
         },
     ),
     (
         "with_merging",
         {
             **DEFAULT_PARAMS,  # type: ignore
-            "splitting_cost_cutoff": False,
+            "splitting_cutoff": False,
         },
     ),
     (
@@ -194,9 +195,9 @@ def test_laptrack_function_shortcut(testdata) -> None:
 def test_tracking_zero_distance() -> None:
     coords = [np.array([[10, 10], [12, 11]]), np.array([[10, 10], [13, 11]])]
     lt = LapTrack(
-        gap_closing_cost_cutoff=False,
-        splitting_cost_cutoff=False,
-        merging_cost_cutoff=False,
+        gap_closing_cutoff=False,
+        splitting_cutoff=False,
+        merging_cutoff=False,
     )
     track_tree = lt.predict(coords)
     edges = track_tree.edges()
@@ -206,9 +207,9 @@ def test_tracking_zero_distance() -> None:
 def test_tracking_zero_distance2(shared_datadir: str) -> None:
     data = pd.read_csv(path.join(shared_datadir, "same_position_example.csv"))
     lt = LapTrack(
-        track_cost_cutoff=15**2,
-        splitting_cost_cutoff=15**2,
-        merging_cost_cutoff=15**2,
+        cutoff=15**2,
+        splitting_cutoff=15**2,
+        merging_cutoff=15**2,
     )
 
     track_df1, split_df1, merge_df1 = lt.predict_dataframe(
@@ -219,6 +220,7 @@ def test_tracking_zero_distance2(shared_datadir: str) -> None:
     )
 
     data2 = data.copy()
+    np.random.seed(0)
     data2["h"] += np.random.random(len(data2)) * 1e-2
     track_df2, split_df2, merge_df2 = lt.predict_dataframe(
         data2,
@@ -234,9 +236,9 @@ def test_tracking_zero_distance2(shared_datadir: str) -> None:
     )
 
 
-@pytest.mark.parametrize("splitting_cost_cutoff", [False, 15**2])
-@pytest.mark.parametrize("merging_cost_cutoff", [False, 15**2])
-def test_allow_frame_without_coords(splitting_cost_cutoff, merging_cost_cutoff) -> None:
+@pytest.mark.parametrize("splitting_cutoff", [False, 15**2])
+@pytest.mark.parametrize("merging_cutoff", [False, 15**2])
+def test_allow_frame_without_coords(splitting_cutoff, merging_cutoff) -> None:
     coords_edges = [
         ([np.array([[10, 10], [12, 11]]), np.array([])], set()),
         (
@@ -251,10 +253,10 @@ def test_allow_frame_without_coords(splitting_cost_cutoff, merging_cost_cutoff) 
     ]
 
     lt = LapTrack(
-        track_cost_cutoff=15**2,
-        gap_closing_cost_cutoff=False,
-        splitting_cost_cutoff=splitting_cost_cutoff,
-        merging_cost_cutoff=merging_cost_cutoff,
+        cutoff=15**2,
+        gap_closing_cutoff=False,
+        splitting_cutoff=splitting_cutoff,
+        merging_cutoff=merging_cutoff,
     )
     for coords, target_edges in coords_edges:
         track_tree = lt.predict(coords)
@@ -287,10 +289,10 @@ def test_allow_frame_without_coords(splitting_cost_cutoff, merging_cost_cutoff) 
 def test_tracking_not_connected() -> None:
     coords = [np.array([[10, 10], [12, 11]]), np.array([[50, 50], [53, 51]])]
     lt = LapTrack(
-        track_cost_cutoff=15**2,
-        gap_closing_cost_cutoff=False,
-        splitting_cost_cutoff=False,
-        merging_cost_cutoff=False,
+        cutoff=15**2,
+        gap_closing_cutoff=False,
+        splitting_cutoff=False,
+        merging_cutoff=False,
     )
     track_tree = lt.predict(coords)
     edges = track_tree.edges()
@@ -305,9 +307,9 @@ def test_gap_closing(shared_datadir: str) -> None:
         )
     )
     lt = LapTrack(
-        track_cost_cutoff=15**2,
-        splitting_cost_cutoff=False,
-        merging_cost_cutoff=False,
+        cutoff=15**2,
+        splitting_cutoff=False,
+        merging_cutoff=False,
     )
     track_tree = lt.predict(coords)
     for track in nx.connected_components(nx.Graph(track_tree)):
@@ -335,9 +337,9 @@ def df_to_tuples(df):
 def test_connected_edges(tracker_class) -> None:
     coords = [np.array([[10, 10], [12, 11]]), np.array([[10, 10], [13, 11]])]
     lt = tracker_class(
-        gap_closing_cost_cutoff=100,
-        splitting_cost_cutoff=100,
-        merging_cost_cutoff=100,
+        gap_closing_cutoff=100,
+        splitting_cutoff=100,
+        merging_cutoff=100,
     )
     connected_edges = [((0, 0), (1, 1))]
     track_tree = lt.predict(coords, connected_edges=connected_edges)
@@ -370,9 +372,9 @@ def test_connected_edges_splitting(tracker_class) -> None:
         np.array([[10, 10], [13, 11], [13, 15]]),
     ]
     lt = tracker_class(
-        gap_closing_cost_cutoff=100,
-        splitting_cost_cutoff=100,
-        merging_cost_cutoff=False,
+        gap_closing_cutoff=100,
+        splitting_cutoff=100,
+        merging_cutoff=False,
     )
     connected_edges = [((0, 0), (1, 1)), ((0, 0), (1, 2))]
     track_tree = lt.predict(coords, connected_edges=connected_edges)
@@ -418,17 +420,40 @@ def test_connected_edges_splitting(tracker_class) -> None:
 def test_no_connected_node(tracker_class) -> None:
     coords = [np.array([[10, 10], [12, 11]]), np.array([[10, 10], [100, 11]])]
     lt = tracker_class(
-        gap_closing_cost_cutoff=1,
+        gap_closing_cutoff=1,
     )
     track_tree = lt.predict(coords)
     for frame, index in product([0, 1], [0, 1]):
         assert (frame, index) in track_tree.nodes()
 
 
+def test_alias_and_deprecation_warning():
+    # Check that the alias works and issues a warning
+    for old_name, new_name in _ALIAS_FIELDS.items():
+        with warnings.catch_warnings(record=True) as w:
+            if "metric" in old_name:
+                test_value = "euclidean"
+            else:
+                test_value = 20**2
+            warnings.simplefilter("always")  # Ensure all warnings are captured
+            lt = LapTrack(**{old_name: test_value})
+            assert (
+                getattr(lt, new_name) == test_value
+            )  # Validate the correct field is populated
+
+            # Check if a DeprecationWarning was raised
+            assert len(w) == 1  # Only one warning should be present
+            assert issubclass(w[0].category, DeprecationWarning)
+            assert (
+                f"Use of `{old_name}` is deprecated, use `{new_name}` instead."
+                == str(w[0].message)
+            )
+
+
 # # %%
 # filename_suffix, params = FILENAME_SUFFIX_PARAMS[-1]
-# # params['splitting_cost_cutoff']=False
-# #params['merging_cost_cutoff']=50**2
+# # params['splitting_cutoff']=False
+# #params['merging_cutoff']=50**2
 # filename = path.join("data/", f"trackmate_tracks_{filename_suffix}")
 # spots_df = pd.read_csv(filename + "_spots.csv")
 # frame_max = spots_df["frame"].max()

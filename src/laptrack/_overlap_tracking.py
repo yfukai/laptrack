@@ -18,27 +18,27 @@ CoefType = Tuple[
 class OverLapTrack(LapTrack):
     """Tracking by label overlaps."""
 
-    track_dist_metric_coefs: CoefType = Field(
+    metric_coefs: CoefType = Field(
         (1.0, 0.0, 0.0, 0.0, -1.0),
         description="The coefficients to calculate the distance for the overlapping labels."
         + "Must be tuple of 5 floats of `(offset, overlap_coef, iou_coef, ratio_1_coef, ratio_2_coef)`."
         + "The distance is calculated by"
         + "`offset + overlap_coef * overlap + iou_coef * iou + ratio_1_coef * ratio_1 + ratio_2_coef * ratio_2`.",
     )
-    gap_closing_dist_metric_coefs: CoefType = Field(
+    gap_closing_metric_coefs: CoefType = Field(
         (1.0, 0.0, 0.0, 0.0, -1.0),
         description="The coefficients to calculate the distance for the overlapping labels."
-        + "See `track_dist_metric_coefs` for details.",
+        + "See `metric_coefs` for details.",
     )
-    splitting_dist_metric_coefs: CoefType = Field(
+    splitting_metric_coefs: CoefType = Field(
         (1.0, 0.0, 0.0, 0.0, -1.0),
         description="The coefficients to calculate the distance for the overlapping labels."
-        + "See `track_dist_metric_coefs` for details.",
+        + "See `metric_coefs` for details.",
     )
-    merging_dist_metric_coefs: CoefType = Field(
+    merging_metric_coefs: CoefType = Field(
         (1.0, 0.0, 0.0, 0.0, -1.0),
         description="The coefficients to calculate the distance for the overlapping labels."
-        + "See `track_dist_metric_coefs` for details.",
+        + "See `metric_coefs` for details.",
     )
 
     def predict_overlap_dataframe(self, labels: Union[IntArray, List[IntArray]]):
@@ -97,16 +97,10 @@ class OverLapTrack(LapTrack):
             )
             return distance
 
-        self.track_dist_metric = partial(metric, params=self.track_dist_metric_coefs)
-        self.gap_closing_dist_metric = partial(
-            metric, params=self.gap_closing_dist_metric_coefs
-        )
-        self.splitting_dist_metric = partial(
-            metric, params=self.splitting_dist_metric_coefs
-        )
-        self.merging_dist_metric = partial(
-            metric, params=self.merging_dist_metric_coefs
-        )
+        self.metric = partial(metric, params=self.metric_coefs)
+        self.gap_closing_metric = partial(metric, params=self.gap_closing_metric_coefs)
+        self.splitting_metric = partial(metric, params=self.splitting_metric_coefs)
+        self.merging_metric = partial(metric, params=self.merging_metric_coefs)
 
         track_df, split_df, merge_df = super().predict_dataframe(
             lo.frame_label_df, ["frame", "label"], only_coordinate_cols=False
