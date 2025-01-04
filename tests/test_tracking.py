@@ -12,6 +12,8 @@ from pydantic import ValidationError
 
 from laptrack import LapTrack
 from laptrack import laptrack
+from laptrack import OverLapTrack
+from laptrack._overlap_tracking import _ALIAS_FIELDS as _ALIAS_FIELDS_OVERLAP
 from laptrack._tracking import _ALIAS_FIELDS
 from laptrack.data_conversion import convert_tree_to_dataframe
 
@@ -429,25 +431,32 @@ def test_no_connected_node(tracker_class) -> None:
 
 def test_alias_and_deprecation_warning():
     # Check that the alias works and issues a warning
-    for old_name, new_name in _ALIAS_FIELDS.items():
-        with warnings.catch_warnings(record=True) as w:
-            if "metric" in old_name:
-                test_value = "euclidean"
-            else:
-                test_value = 20**2
-            warnings.simplefilter("always")  # Ensure all warnings are captured
-            lt = LapTrack(**{old_name: test_value})
-            assert (
-                getattr(lt, new_name) == test_value
-            )  # Validate the correct field is populated
+    for fields, cls in [
+        (_ALIAS_FIELDS, LapTrack),
+        (_ALIAS_FIELDS_OVERLAP, OverLapTrack),
+    ]:
+        for old_name, new_name in fields.items():
+            with warnings.catch_warnings(record=True) as w:
+                if cls == LapTrack:
+                    if "metric" in old_name:
+                        test_value = "euclidean"
+                    else:
+                        test_value = 20**2
+                else:
+                    test_value = (1.0, 0.0, 0.0, 0.0, -1.0)
+                warnings.simplefilter("always")  # Ensure all warnings are captured
+                lt = cls(**{old_name: test_value})
+                assert (
+                    getattr(lt, new_name) == test_value
+                )  # Validate the correct field is populated
 
-            # Check if a DeprecationWarning was raised
-            assert len(w) == 1  # Only one warning should be present
-            assert issubclass(w[0].category, DeprecationWarning)
-            assert (
-                f"Use of `{old_name}` is deprecated, use `{new_name}` instead."
-                == str(w[0].message)
-            )
+                # Check if a DeprecationWarning was raised
+                assert len(w) == 1  # Only one warning should be present
+                assert issubclass(w[0].category, DeprecationWarning)
+                assert (
+                    f"Use of `{old_name}` is deprecated, use `{new_name}` instead."
+                    == str(w[0].message)
+                )
 
 
 # # %%
