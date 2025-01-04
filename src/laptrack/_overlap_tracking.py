@@ -1,10 +1,13 @@
 # from functools import cache
+import warnings
 from functools import partial
+from typing import Any
 from typing import List
 from typing import Tuple
 from typing import Union
 
 from pydantic import Field
+from pydantic import model_validator
 
 from ._tracking import LapTrack
 from ._typing_utils import IntArray
@@ -13,6 +16,13 @@ from .metric_utils import LabelOverlap
 CoefType = Tuple[
     float, float, float, float, float
 ]  # offset, overlap, iou, ratio_1, ratio_2
+
+_ALIAS_FIELDS = {
+    "track_dist_metric_coefs": "metric_coefs",
+    "gap_closing_dist_metric_coefs": "gap_closing_metric_coefs",
+    "splitting_dist_metric_coefs": "splitting_metric_coefs",
+    "merging_dist_metric_coefs": "merging_metric_coefs",
+}
 
 
 class OverLapTrack(LapTrack):
@@ -40,6 +50,19 @@ class OverLapTrack(LapTrack):
         description="The coefficients to calculate the distance for the overlapping labels."
         + "See `metric_coefs` for details.",
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _check_deprecated_names(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            for old_name, new_name in _ALIAS_FIELDS.items():
+                if old_name in data:
+                    warnings.warn(
+                        f"Use of `{old_name}` is deprecated, use `{new_name}` instead.",
+                        DeprecationWarning,
+                    )
+                    data[new_name] = data.pop(old_name)
+        return data
 
     def predict_overlap_dataframe(self, labels: Union[IntArray, List[IntArray]]):
         """Predicts tracks with label overlaps.
