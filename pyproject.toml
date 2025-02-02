@@ -55,6 +55,7 @@ sphinx-autobuild = ">=2021.3.14"
 sphinx-rtd-theme = ">=1.2.2"
 sphinx-click = ">=5.0.1"
 sphinx-gallery = ">=0.10"
+jinja2 = ">=3.1.5" # to avoid safety issue
 sphinxcontrib-napoleon = ">=0.7"
 nbsphinx = ">=0.8.9"
 autodoc-pydantic = ">=1.9.0"
