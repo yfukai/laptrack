@@ -53,7 +53,7 @@ doc_build_packages = [
 ]
 
 
-@session(name="pre-commit", python=python_versions[-1])
+@session(name="pre-commit", python=python_versions[0])
 def precommit(session: Session) -> None:
     """Lint using pre-commit."""
     args = session.posargs or ["run", "--all-files", "--show-diff-on-failure"]
@@ -61,7 +61,7 @@ def precommit(session: Session) -> None:
     session.run("pre-commit", *args)
 
 
-@session(python=python_versions[-1])
+@session(python=python_versions[0])
 def safety(session: Session) -> None:
     """Scan dependencies for insecure packages."""
     requirements = session.poetry.export_requirements()

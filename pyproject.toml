@@ -36,6 +36,7 @@ pydantic = "^2.0"
 scikit-image = ">=0.24.0,<1.0.0"
 pooch = "^1.6.0"
 scikit-learn = "^1.5.0"
+jinja2 = ">=3.1.5" # to avoid safety issue
 
 [tool.poetry.scripts]
 laptrack = "laptrack.__main__:main"
@@ -55,7 +56,6 @@ sphinx-autobuild = ">=2021.3.14"
 sphinx-rtd-theme = ">=1.2.2"
 sphinx-click = ">=5.0.1"
 sphinx-gallery = ">=0.10"
-jinja2 = ">=3.1.5" # to avoid safety issue
 sphinxcontrib-napoleon = ">=0.7"
 nbsphinx = ">=0.8.9"
 autodoc-pydantic = ">=1.9.0"
