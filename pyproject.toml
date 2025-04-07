@@ -65,7 +65,7 @@ notebook = ">=7.2.2"
 xmltodict = "^0.13.0"
 pre-commit = "^2.20.0"
 nox = "^2024.10.9"
-nox-poetry = "^1.0.3"
+nox-poetry = "^1.2.0"
 toml = "^0.10.2"
 
 cryptography = ">=43.0.1"
