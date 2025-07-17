@@ -27,6 +27,7 @@ safety_ignore = [
     44716,
     51457,
     70612,
+    71628,
 ]  # ignore numpy 1.21 CVEs and py 1.11.0
 nox.needs_version = ">= 2021.6.6"
 nox.options.sessions = (
