@@ -108,7 +108,7 @@ def convert_dataframes_to_tree_coords(
     track_df: pd.DataFrame,
     split_df: pd.DataFrame,
     merge_df: pd.DataFrame,
-    coordinate_cols: List[str],
+    coordinate_cols: Sequence[str],
     frame_col: str = "frame",
 ) -> Tuple[nx.DiGraph, List[NumArray]]:
     """
@@ -171,7 +171,7 @@ def convert_tree_to_dataframe(
     tree: nx.DiGraph,
     coords: Optional[Sequence[NumArray]] = None,
     dataframe: Optional[pd.DataFrame] = None,
-    frame_index: Optional[List[Tuple[int, int]]] = None,
+    frame_index: Optional[Sequence[Tuple[int, int]]] = None,
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Convert the track tree to dataframes.
 
@@ -453,6 +453,6 @@ def convert_dataframes_to_geff_networkx(
         track_df, split_df, merge_df, coordinate_cols, frame_col
     )
     geff_tree = convert_digraph_to_geff_networkx(
-        tree, coords, attr_names=[frame_col] + coordinate_cols
+        tree, coords, attr_names=[frame_col] + list(coordinate_cols)
     )
     return geff_tree
