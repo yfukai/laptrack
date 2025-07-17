@@ -406,3 +406,5 @@ def convert_digraph_to_geff_networkx(
         for node in geff_tree.nodes:
             for i, attr_name in enumerate(attr_names[1:], start=0):
                 geff_tree.nodes[node][attr_name] = coords[node[0]][node[1], i]
+
+    return geff_tree

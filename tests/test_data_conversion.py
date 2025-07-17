@@ -284,6 +284,17 @@ def test_convert_tree_to_dataframe_frame_index(track_class):
     assert len(np.unique(df["tree_id"])) > 1
 
 
+def test_convert_dataframes_to_tree_coords(test_trees):
+    tree, segments, clones, coords = test_trees
+    track_df, split_df, merge_df = data_conversion.convert_tree_to_dataframe(
+        tree, coords
+    )
+    tree2, coords2 = data_conversion.convert_dataframes_to_tree_coords(
+        track_df, split_df, merge_df, ["coord-0", "coord-1"], frame_col="frame"
+    )
+    assert compare_coords_nodes_edges(tree, tree2, coords, coords2)
+
+
 @pytest.mark.parametrize("track_class", [LapTrack])
 def test_integration(track_class):
     df = pd.DataFrame(
