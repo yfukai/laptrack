@@ -391,19 +391,19 @@ def convert_digraph_to_geff_networkx(
     >>> geff_tree = data_conversion.convert_digraph_to_geff_networkx(tree, coords, attr_names)
     >>> geff.write_nx(geff_tree, "save_path.zarr")
     """
-    if attr_names is None:
-        attr_names = ["frame"] + [f"coord-{i}" for i in range(coords[0].shape[1])]
-    elif len(attr_names) != coords[0].shape[1] + 1:
-        raise ValueError(
-            f"attr_names must have length {coords[0].shape[1] + 1}, "
-            f"but got {len(attr_names)}"
-        )
     geff_tree = tree.copy()
     for node in geff_tree.nodes:
         geff_tree.nodes[node]["frame"] = node[0]
 
     # XXX could be more efficient
     if coords is not None:
+        if attr_names is None:
+            attr_names = ["frame"] + [f"coord-{i}" for i in range(coords[0].shape[1])]
+        elif len(attr_names) != coords[0].shape[1] + 1:
+            raise ValueError(
+                f"attr_names must have length {coords[0].shape[1] + 1}, "
+                f"but got {len(attr_names)}"
+            )
         for node in geff_tree.nodes:
             for i, attr_name in enumerate(attr_names[1:], start=0):
                 geff_tree.nodes[node][attr_name] = coords[node[0]][node[1], i]
