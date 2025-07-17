@@ -27,6 +27,7 @@ safety_ignore = [
     44716,
     51457,
     70612,
+    71628,
 ]  # ignore numpy 1.21 CVEs and py 1.11.0
 nox.needs_version = ">= 2021.6.6"
 nox.options.sessions = (
@@ -64,8 +65,8 @@ def precommit(session: Session) -> None:
 @session(python=python_versions[-1])
 def safety(session: Session) -> None:
     """Scan dependencies for insecure packages."""
+    session.install("safety==2.3.5", "poetry-plugin-export")
     requirements = session.poetry.export_requirements()
-    session.install("safety")
     session.run(
         "safety",
         "check",
