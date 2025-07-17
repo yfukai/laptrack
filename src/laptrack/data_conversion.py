@@ -104,6 +104,69 @@ def convert_dataframe_to_coords_frame_index(
     ], frame_index
 
 
+def convert_dataframes_to_tree_coords(
+    track_df: pd.DataFrame,
+    split_df: pd.DataFrame,
+    merge_df: pd.DataFrame,
+    coordinate_cols: List[str],
+    frame_col: str = "frame",
+) -> Tuple[nx.DiGraph, List[NumArray]]:
+    """
+    Convert the track dataframes to a tree and coordinates.
+
+    Parameters
+    ----------
+    track_df : pd.DataFrame
+        The track dataframe.
+    split_df : pd.DataFrame
+        The splitting dataframe.
+    merge_df : pd.DataFrame
+        The merging dataframe.
+    coordinate_cols : List[str]
+        The list of columns used for the coordinates.
+    frame_col : str, default "frame"
+        The column name used for the integer frame index.
+
+    Returns
+    -------
+    tree : nx.DiGraph
+        The directed graph representing the track tree.
+    coords : List[np.ndarray]
+        The list of coordinates.
+    """
+    _track_df = track_df.sort_values(frame_col).reset_index()
+    coords, frame_index = convert_dataframe_to_coords_frame_index(
+        _track_df, coordinate_cols, frame_col=frame_col
+    )
+    frame_index = [(int(frame), int(ind)) for frame, ind in frame_index]
+    grp_inds = {
+        track_id: grp.index.astype(int)
+        for track_id, grp in _track_df.groupby("track_id")
+    }
+
+    tree = nx.DiGraph()
+    tree.add_nodes_from(frame_index)
+    for grp_ind in grp_inds.values():
+        if len(grp_ind) > 1:
+            for i in range(len(grp_ind) - 1):
+                tree.add_edge(frame_index[grp_ind[i]], frame_index[grp_ind[i + 1]])
+    for _, row in split_df.iterrows():
+        parent_node = grp_inds[row["parent_track_id"]][-1]
+        child_node = grp_inds[row["child_track_id"]][0]
+        tree.add_edge(
+            frame_index[parent_node],
+            frame_index[child_node],
+        )
+    for _, row in merge_df.iterrows():
+        parent_node = grp_inds[row["parent_track_id"]][-1]
+        child_node = grp_inds[row["child_track_id"]][0]
+        tree.add_edge(
+            frame_index[parent_node],
+            frame_index[child_node],
+        )
+    return tree, coords
+
+
 def convert_tree_to_dataframe(
     tree: nx.DiGraph,
     coords: Optional[Sequence[NumArray]] = None,
@@ -291,3 +354,55 @@ def convert_split_merge_df_to_napari_graph(
             }
         )
     return split_merge_graph
+
+
+def convert_digraph_to_geff_networkx(
+    tree: nx.DiGraph,
+    coords: Optional[Sequence[NumArray]] = None,
+    attr_names: Optional[List[str]] = None,
+) -> nx.DiGraph:
+    """Convert the networkx directed graph to a networkx in the GEFF format.
+
+    Parameters
+    ----------
+    tree : nx.DiGraph
+        The directed graph representing the track tree.
+    coords : Optional[Sequence[NumArray]], default None
+        The coordinate values. If None, no coordinate values are appended
+        to the dataframe.
+    attr_names : Optional[List[str]], default None
+        The list of attribute names to be added to the nodes.
+        The length must match the number of coordinates in the `coords` + 1.
+        If None, default names of "frame", "coord-0", "coord-1", ... are used.
+
+    Returns
+    -------
+    geff_tree : nx.Graph
+        The undirected graph in the GEFF format, with the following attributes.
+        - attr_names[0]
+        - attr_names[1]
+        - ...
+
+    Example
+    -------
+    >>> import laptrack as lt
+    >>> import laptrack.data_conversion as data_conversion
+    >>> tree = lt.predict(coords)
+    >>> geff_tree = data_conversion.convert_digraph_to_geff_networkx(tree, coords, attr_names)
+    >>> geff.write_nx(geff_tree, "save_path.zarr")
+    """
+    if attr_names is None:
+        attr_names = ["frame"] + [f"coord-{i}" for i in range(coords[0].shape[1])]
+    elif len(attr_names) != coords[0].shape[1] + 1:
+        raise ValueError(
+            f"attr_names must have length {coords[0].shape[1] + 1}, "
+            f"but got {len(attr_names)}"
+        )
+    geff_tree = tree.copy()
+    for node in geff_tree.nodes:
+        geff_tree.nodes[node]["frame"] = node[0]
+
+    if coords is not None:
+        for node in geff_tree.nodes:
+            for i, attr_name in enumerate(attr_names[1:], start=0):
+                geff_tree.nodes[node][attr_name] = coords[node[0]][node[1], i]
