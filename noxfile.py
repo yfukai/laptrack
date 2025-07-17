@@ -64,8 +64,8 @@ def precommit(session: Session) -> None:
 @session(python=python_versions[-1])
 def safety(session: Session) -> None:
     """Scan dependencies for insecure packages."""
+    session.install("safety==2.3.5", "poetry-plugin-export")
     requirements = session.poetry.export_requirements()
-    session.install("safety")
     session.run(
         "safety",
         "check",
