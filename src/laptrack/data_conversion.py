@@ -402,9 +402,57 @@ def convert_digraph_to_geff_networkx(
     for node in geff_tree.nodes:
         geff_tree.nodes[node]["frame"] = node[0]
 
+    # XXX could be more efficient
     if coords is not None:
         for node in geff_tree.nodes:
             for i, attr_name in enumerate(attr_names[1:], start=0):
                 geff_tree.nodes[node][attr_name] = coords[node[0]][node[1], i]
+    nx.relabel_nodes(
+        geff_tree, {node: i for i, node in enumerate(geff_tree.nodes)}, copy=False
+    )
+    return geff_tree
 
+
+def convert_dataframes_to_geff_networkx(
+    track_df: pd.DataFrame,
+    split_df: pd.DataFrame,
+    merge_df: pd.DataFrame,
+    coordinate_cols: Sequence[str],
+    frame_col: str = "frame",
+) -> nx.DiGraph:
+    """Convert the track dataframes to a GEFF networkx graph.
+
+    Parameters
+    ----------
+    track_df : pd.DataFrame
+        The track dataframe.
+    split_df : pd.DataFrame
+        The splitting dataframe.
+    merge_df : pd.DataFrame
+        The merging dataframe.
+    coordinate_cols : Sequence[str]
+        The list of columns used for the coordinates.
+    frame_col : str, default "frame"
+        The column name used for the integer frame index.
+
+    Returns
+    -------
+    geff_tree : nx.DiGraph
+        The directed graph in the GEFF format.
+
+    Example
+    -------
+    >>> import laptrack as lt
+    >>> import laptrack.data_conversion as data_conversion
+    >>> lt = LapTrack()
+    >>> track_df, split_df, merge_df = lt.predict(df, coordinate_cols = ["x","y","z"])
+    >>> geff_tree = data_conversion.convert_dataframes_to_geff_networkx(track_df, split_df, merge_df)
+    >>> geff.write_nx(geff_tree, "save_path.zarr")
+    """
+    tree, coords = convert_dataframes_to_tree_coords(
+        track_df, split_df, merge_df, coordinate_cols, frame_col
+    )
+    geff_tree = convert_digraph_to_geff_networkx(
+        tree, coords, attr_names=[frame_col] + coordinate_cols
+    )
     return geff_tree

@@ -358,14 +358,12 @@ def test_convert_split_merge_df_to_napari_graph(test_trees):
 
 
 @pytest.mark.skipif(geff is None, reason="geff is not installed")
-def test_convert_to_geff_networkx():
-    # Create simple test data.
-    sample_data = {"nodes": [1, 2, 3], "edges": [(1, 2), (2, 3)]}
-    # Convert sample data to a geff networkx object.
-    # The conversion function should be defined in laptrack.data_conversion.
-    # Adjust the function name and parameters as required by your implementation.
-    graph = data_conversion.convert_to_geff_networkx(sample_data)
-
-    # Verify that the returned object has expected nodes and edges.
-    assert set(graph.nodes()) == set(sample_data["nodes"])
-    assert set(graph.edges()) == set(sample_data["edges"])
+def test_convert_to_geff_networkx(test_trees, tmp_path):
+    tree, segments, clones, coords = test_trees
+    geff_tree = data_conversion.convert_digraph_to_geff_networkx(
+        tree, coords, ["frame", "x", "y"]
+    )
+    geff.write_nx(geff_tree, tmp_path / "test.geff")
+    geff_tree2 = geff.read_nx(tmp_path / "test.geff")
+    assert set(geff_tree.nodes) == set(geff_tree2.nodes)
+    assert set(geff_tree.edges) == set(geff_tree2.edges)
