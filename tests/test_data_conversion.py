@@ -1,10 +1,77 @@
+from typing import Sequence
+
 import networkx as nx
 import numpy as np
 import pandas as pd
 import pytest
 
+try:
+    import geff
+except ImportError:
+    geff = None
+
 from laptrack import data_conversion
 from laptrack import LapTrack
+from laptrack._typing_utils import NumArray
+
+
+def compare_coords_nodes_edges(
+    tree1: nx.DiGraph,
+    tree2: nx.DiGraph,
+    coords1: Sequence[NumArray],
+    coords2: Sequence[NumArray],
+) -> bool:
+    """Compare two trees and their coordinates. The coordinate may be reordered,
+    and the index of the (frame, index) tuples for the nodes may differ.
+
+    Parameters
+    ----------
+    tree1 : nx.DiGraph
+        Tree to compare with tree2
+    tree2 : nx.DiGraph
+        Tree to compare with tree1
+    coords1 : Sequence[NumArray]
+        Coordinates of the nodes in tree1
+    coords2 : Sequence[NumArray]
+        Coordinates of the nodes in tree2
+
+    Returns
+    -------
+    bool
+        True if the trees and coordinates are equal, False otherwise.
+    """
+    if len(coords1) != len(coords2):
+        return False
+    tree1_coords = {node: tuple(coords1[node[0]][node[1]]) for node in tree1.nodes}
+    tree2_coords = {node: tuple(coords2[node[0]][node[1]]) for node in tree2.nodes}
+    tree1_2 = nx.relabel_nodes(tree1, tree1_coords, copy=True)
+    tree2_2 = nx.relabel_nodes(tree2, tree2_coords, copy=True)
+    # XXX the following does not work, but not sure why
+    # return nx.is_isomorphic(tree1_2, tree2_2, node_match=lambda x, y: x == y, edge_match=lambda x, y: x == y)
+    return set(tree1_2.edges) == set(tree2_2.edges) and set(tree1_2.nodes) == set(
+        tree2_2.nodes
+    )
+
+
+def test_compare_coords_nodes_edges():
+    tree1 = nx.DiGraph()
+    tree2 = nx.DiGraph()
+
+    # Create a simple tree structure
+    tree1.add_edges_from([((0, 0), (1, 0)), ((0, 1), (1, 1))])
+    tree2.add_edges_from([((0, 0), (1, 1)), ((0, 1), (1, 0))])
+
+    coords1 = [
+        np.array([[0.0, 0.0], [0.1, 0.1]]),
+        np.array([[1.0, 1.0], [1.1, 1.1]]),
+    ]
+    coords2 = [
+        np.array([[0.0, 0.0], [0.1, 0.1]]),
+        np.array([[1.1, 1.1], [1.0, 1.0]]),
+    ]
+
+    assert compare_coords_nodes_edges(tree1, tree2, coords1, coords2)
+    assert not compare_coords_nodes_edges(tree1, tree2, coords1, coords1)
 
 
 def test_convert_dataframe_to_coords():
@@ -217,6 +284,17 @@ def test_convert_tree_to_dataframe_frame_index(track_class):
     assert len(np.unique(df["tree_id"])) > 1
 
 
+def test_convert_dataframes_to_tree_coords(test_trees):
+    tree, segments, clones, coords = test_trees
+    track_df, split_df, merge_df = data_conversion.convert_tree_to_dataframe(
+        tree, coords
+    )
+    tree2, coords2 = data_conversion.convert_dataframes_to_tree_coords(
+        track_df, split_df, merge_df, ["coord-0", "coord-1"], frame_col="frame"
+    )
+    assert compare_coords_nodes_edges(tree, tree2, coords, coords2)
+
+
 @pytest.mark.parametrize("track_class", [LapTrack])
 def test_integration(track_class):
     df = pd.DataFrame(
@@ -277,3 +355,15 @@ def test_convert_split_merge_df_to_napari_graph(test_trees):
         pd.DataFrame(), merge_df
     )
     assert graph[track_id_2_2] == [track_id_1_2, track_id_1_3]
+
+
+@pytest.mark.skipif(geff is None, reason="geff is not installed")
+def test_convert_to_geff_networkx(test_trees, tmp_path):
+    tree, segments, clones, coords = test_trees
+    geff_tree = data_conversion.convert_digraph_to_geff_networkx(
+        tree, coords, ["frame", "x", "y"]
+    )
+    geff.write_nx(geff_tree, tmp_path / "test.geff")
+    geff_tree2 = geff.read_nx(tmp_path / "test.geff")
+    assert set(geff_tree.nodes) == set(geff_tree2.nodes)
+    assert set(geff_tree.edges) == set(geff_tree2.edges)

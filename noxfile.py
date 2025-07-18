@@ -80,7 +80,7 @@ def safety(session: Session) -> None:
 def mypy(session: Session) -> None:
     """Type-check using mypy."""
     args = session.posargs or ["src", "tests", "docs/conf.py"]
-    session.install(".")
+    session.install(".[all]")
     session.install("mypy", "pytest")
     session.run("mypy", *args)
     if not session.posargs:
@@ -90,7 +90,7 @@ def mypy(session: Session) -> None:
 @session(python=python_versions)
 def tests(session: Session) -> None:
     """Run the test suite."""
-    session.install(".")
+    session.install(".[all]")
     session.install("coverage[toml]", "pytest", "pytest-datadir", "pygments")
     try:
         session.install("ray")
@@ -120,7 +120,7 @@ def coverage(session: Session) -> None:
 @session(python=python_versions)
 def typeguard(session: Session) -> None:
     """Runtime type checking using Typeguard."""
-    session.install(".")
+    session.install(".[all]")
     session.install("pytest", "pytest-datadir", "typeguard", "pygments", "ray")
     session.run("pytest", f"--typeguard-packages={package}", *session.posargs)
 
@@ -129,7 +129,7 @@ def typeguard(session: Session) -> None:
 def docs_build(session: Session) -> None:
     """Build the documentation."""
     args = session.posargs or ["docs", "docs/_build"]
-    session.install(".", *doc_build_packages)
+    session.install(".[all]", *doc_build_packages)
 
     build_dir = Path("docs", "_build")
     if build_dir.exists():
@@ -142,7 +142,7 @@ def docs_build(session: Session) -> None:
 def docs(session: Session) -> None:
     """Build and serve the documentation with live reloading on file changes."""
     args = session.posargs or ["--open-browser", "docs", "docs/_build"]
-    session.install(".", *doc_build_packages)
+    session.install(".[all]", *doc_build_packages)
 
     build_dir = Path("docs", "_build")
     if build_dir.exists():
