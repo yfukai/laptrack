@@ -51,7 +51,7 @@ def convert_dataframe_to_coords(
 
 def convert_dataframe_to_coords_frame_index(
     df: pd.DataFrame,
-    coordinate_cols: List[str],
+    coordinate_cols: Sequence[str],
     frame_col: str = "frame",
 ) -> Tuple[List[NumArray], List[Tuple[int, int]]]:
     """
