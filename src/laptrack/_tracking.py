@@ -326,7 +326,7 @@ class LapTrack(BaseModel, extra="forbid"):
         Parameters
         ----------
         segments_df : pd.DataFrame
-            must have the columns "first_frame", "first_index", "first_crame_coords", "last_frame", "last_index", "last_frame_coords"
+            must have the columns "first_frame", "first_index", "first_frame_coords", "last_frame", "last_index", "last_frame_coords"
         force_end_nodes : list of int
             the indices of the segments_df that is forced to be end for future connection
         force_start_nodes : list of int
