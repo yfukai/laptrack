@@ -26,7 +26,6 @@ Changelog = "https://github.com/yfukai/laptrack/releases"
 
 [tool.poetry.dependencies]
 python = "^3.10,<3.14"
-click = "^8.0.1"
 numpy = ">=1.26,<3.0.0"
 scipy = "==1.14.1" # pin this version to avoid scipy bug
 networkx = "^3.4.2"
