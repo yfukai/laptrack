@@ -8,3 +8,6 @@ updates:
     directory: "/.github/workflows"
     schedule:
       interval: monthly
+    groups:
+      pip-all: # 好きなグループ名
+        patterns: ["*"] # すべての依存を対象に 1 PR へ
