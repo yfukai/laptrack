@@ -47,7 +47,8 @@ def fetch(data_name: str):
     ----------
     data_name: str
         The name of the dataset. Must be one of ["simple_tracks",
-        "bright_brownian_particles", "cell_segmentation", "mouse_epidermis"].
+        "bright_brownian_particles", "cell_segmentation", "mouse_epidermis",
+        "HL60_3D_synthesized"].
 
     Returns
     -------
