@@ -1102,28 +1102,27 @@ files = [
 
 [[package]]
 name = "geff"
-version = "0.2.1"
+version = "0.0.2.dev114+g053c3d2"
 description = "Reference implementation of the Graph Exchange File Format"
 optional = true
 python-versions = ">=3.10"
 groups = ["main"]
 markers = "extra == \"geff\" or extra == \"all\""
-files = [
-    {file = "geff-0.2.1-py3-none-any.whl", hash = "sha256:8af82f0eb5fd4211a1da74ff11aeb0739173ab90ac669625f7e249021148e8f2"},
-    {file = "geff-0.2.1.tar.gz", hash = "sha256:60d65bf61872608b9d4fb487a55e0194681b1928efb2103721a5a8085c6620df"},
-]
+files = []
+develop = false
 
 [package.dependencies]
 networkx = "*"
 numcodecs = "<0.16"
-pydantic = "*"
+pydantic = ">=2"
 pyyaml = "*"
 zarr = ">2,<4"
 
-[package.extras]
-bench = ["pandas", "pytest-benchmark", "tabulate", "typer"]
-dev = ["ipython", "mypy", "pre-commit", "pytest (>=8.3.4)", "pytest-cov", "ruff", "types-PyYAML"]
-docs = ["json-schema-for-humans", "mike", "mkdocs-api-autonav", "mkdocs-include-markdown-plugin", "mkdocs-material", "mkdocstrings[python]", "ruff", "typing-extensions"]
+[package.source]
+type = "git"
+url = "https://github.com/yfukai/geff"
+reference = "solve_file_not_found"
+resolved_reference = "053c3d26dd258c1657b623683e13903ec943fc46"
 
 [[package]]
 name = "h11"
@@ -5181,4 +5180,4 @@ geff = ["geff"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.10,<3.14"
-content-hash = "1a9bc1f092d61ddb7acc74abdc6a6ce5bf4d2f2207af18254f07e807fcbdb297"
+content-hash = "ca5b71d4687a49c21acf66e1234d14140ccf69c4af993705bce7977eabb25568"
