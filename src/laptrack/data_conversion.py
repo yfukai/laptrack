@@ -317,11 +317,11 @@ def convert_tree_to_dataframe(
             )
     merge_df = pd.DataFrame.from_records(merge_df_data).astype(int)
 
-    if coords is not None:
+    if dataframe is not None:
+        track_df = track_df.reset_index(drop=True)
+    else:
         assert track_df.index.names == ["__frame", "__index"]
         track_df.index = track_df.index.set_names(["frame", "index"])
-    elif dataframe is not None:
-        track_df = track_df.reset_index(drop=True)
 
     return track_df, split_df, merge_df
 
