@@ -139,7 +139,8 @@ def test_reproducing_trackmate(testdata, parallel_backend) -> None:
     assert not any(split_df.duplicated())
     assert not any(merge_df.duplicated())
     track_df2, split_df2, merge_df2 = convert_tree_to_dataframe(track_tree, coords)
-    track_df2 = track_df2.rename(columns={"coord-0": "x", "coord-1": "y"})
+    track_df2 = track_df2.rename(columns={"coord-0": "x", "coord-1": "y"}).reset_index()
+    del track_df2["index"]
     assert (track_df == track_df2).all().all()
     assert (split_df == split_df2).all().all()
     assert (merge_df == merge_df2).all().all()
@@ -169,8 +170,7 @@ def test_reproducing_trackmate(testdata, parallel_backend) -> None:
     track_df, split_df, merge_df = lt.predict_dataframe(
         df, ["x", "y"], only_coordinate_cols=False
     )
-    assert all(track_df["frame_y"] == track_df2.index.get_level_values("frame"))
-    track_df = track_df.drop(columns=["frame_y"])
+    assert all(track_df["frame"] == track_df2["frame"])
     assert (track_df == track_df2).all().all()
     assert (split_df == split_df2).all().all()
     assert (merge_df == merge_df2).all().all()
@@ -281,7 +281,7 @@ def test_allow_frame_without_coords(splitting_cutoff, merging_cutoff) -> None:
     track_df, split_df, merge_df = lt.predict_dataframe(
         df, ["x", "y"], only_coordinate_cols=False
     )
-    track_df = track_df.set_index(["frame_y", "x", "y"])
+    track_df = track_df.set_index(["frame", "x", "y"])
     assert split_df.empty
     assert merge_df.empty
     for _track_id, grp in track_df.groupby("track_id"):

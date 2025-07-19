@@ -15,3 +15,4 @@ Gallery for example usages.
     examples/overlap_tracking.ipynb
     examples/custom_metric.ipynb
     examples/napari_interactive_fix.ipynb
+    examples/file_export.ipynb

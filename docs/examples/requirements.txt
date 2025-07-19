@@ -1,4 +1,4 @@
-laptrack
+laptrack[all]
 napari[all]
 pandas
 numpy

@@ -255,13 +255,7 @@ def test_convert_tree_to_dataframe(test_trees):
     )
 
 
-@pytest.mark.parametrize(
-    "track_class",
-    [
-        LapTrack,
-    ],
-)
-def test_convert_tree_to_dataframe_frame_index(track_class):
+def test_convert_tree_to_dataframe_frame_index():
     df = pd.DataFrame(
         {
             "frame": [0, 0, 0, 1, 1, 2, 2, 2, 2, 2],
@@ -273,15 +267,15 @@ def test_convert_tree_to_dataframe_frame_index(track_class):
     coords, frame_index = data_conversion.convert_dataframe_to_coords_frame_index(
         df, ["x", "y"]
     )
-    lt = track_class(gap_closing_max_frame_count=1)
+    lt = LapTrack(gap_closing_max_frame_count=1)
     tree = lt.predict(coords)
-    df, split_df, merge_df = data_conversion.convert_tree_to_dataframe(
+    track_df, split_df, merge_df = data_conversion.convert_tree_to_dataframe(
         tree, dataframe=df, frame_index=frame_index
     )
-    assert all(df["frame_y"] == df.index.get_level_values("frame"))
-    assert len(np.unique(df.iloc[[0, 3, 5]]["tree_id"])) == 1
-    assert len(np.unique(df.iloc[[1, 4, 6]]["tree_id"])) == 1
-    assert len(np.unique(df["tree_id"])) > 1
+    assert all(df["frame"] == track_df["frame"])
+    assert len(np.unique(track_df.iloc[[0, 3, 5]]["tree_id"])) == 1
+    assert len(np.unique(track_df.iloc[[1, 4, 6]]["tree_id"])) == 1
+    assert len(np.unique(track_df["tree_id"])) > 1
 
 
 def test_convert_dataframes_to_tree_coords(test_trees):

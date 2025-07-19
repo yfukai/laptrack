@@ -760,8 +760,6 @@ class LapTrack(BaseModel, extra="forbid"):
             The list of the columns to use for coordinates.
         frame_col : str, optional
             The column name to use for the frame index. Defaults to "frame".
-        only_coordinate_cols : bool, optional
-            Whether to use only the coordinate columns. Defaults to True.
         connected_edges : Optional[List[Tuple[Int,Int]]]
             The edges that is known to be connected.
             Must be a list of the tuples of the row numbers (not index, but `iloc`).
@@ -800,19 +798,9 @@ class LapTrack(BaseModel, extra="forbid"):
         else:
             connected_edges2 = None
         tree = self.predict(coords, connected_edges=connected_edges2)
-        if only_coordinate_cols:
-            track_df, split_df, merge_df = convert_tree_to_dataframe(tree, coords)
-            track_df = track_df.rename(
-                columns={f"coord-{i}": k for i, k in enumerate(coordinate_cols)}
-            )
-            warnings.warn(
-                "The parameter only_coordinate_cols will be False by default in the major release.",
-                FutureWarning,
-            )
-        else:
-            track_df, split_df, merge_df = convert_tree_to_dataframe(
-                tree, dataframe=df, frame_index=frame_index
-            )
+        track_df, split_df, merge_df = convert_tree_to_dataframe(
+            tree, dataframe=df, frame_index=frame_index
+        )
 
         track_df["track_id"] = track_df["track_id"] + index_offset
         track_df["tree_id"] = track_df["tree_id"] + index_offset
