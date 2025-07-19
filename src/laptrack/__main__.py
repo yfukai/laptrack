@@ -83,7 +83,7 @@ def _tap_configure_from_cls(cls: type) -> Callable:
 
 
 class _TrackArgs(Tap):
-    csv_path: Path  # path to input csv file
+    csv_path: Optional[Path]  # path to input csv file
     output_path: Path
     track_geff_path: Optional[Path] = None  # path to output geff file
     frame_col: str = "frame"
@@ -94,30 +94,39 @@ class _TrackArgs(Tap):
 class _OverLapTrackArgs(Tap):
     labels_path: Path  # path to input csv file
     output_path: Path
-    track_geff_path: Optional[Path] = None  # path to output geff file
     configure = _tap_configure_from_cls(OverLapTrack)
 
 
 def track(args: _TrackArgs) -> None:
     """Execute tracking based on parsed arguments."""
-    df = pd.read_csv(args.csv_path)
-    tracked_tree = geff.read_nx(args.track_geff_path)
-    # FIXME
-
     lt_kwargs = {name: getattr(args, name) for name in LapTrack.model_fields}
     lt = LapTrack(**lt_kwargs)
 
-    track_df, split_df, merge_df = lt.predict_dataframe(
-        df, coordinate_cols=args.coordinate_cols, frame_col=args.frame_col
-    )
+    if args.csv_path is None and args.track_geff_path is None:
+        raise ValueError("Either csv_path or track_geff_path must be provided.")
+    if args.csv_path is not None and args.track_geff_path is not None:
+        raise ValueError("Only one of csv_path or track_geff_path can be provided.")
+    if args.csv_path is not None:
+        df = pd.read_csv(args.csv_path)
+        track_df, split_df, merge_df = lt.predict_dataframe(
+            df, coordinate_cols=args.coordinate_cols, frame_col=args.frame_col
+        )
 
-    geff_tree = data_conversion.convert_dataframes_to_geff_networkx(
-        track_df,
-        split_df,
-        merge_df,
-        coordinate_cols=args.coordinate_cols,
-        frame_col=args.frame_col,
-    )
+        geff_tree = data_conversion.convert_dataframes_to_geff_networkx(
+            track_df,
+            split_df,
+            merge_df,
+            coordinate_cols=args.coordinate_cols,
+            frame_col=args.frame_col,
+        )
+    else:
+        tracked_tree = geff.read_nx(args.track_geff_path)
+        tree, coords = data_conversion.convert_geff_networkx_to_networkx_coords(
+            tracked_tree, coordinate_cols=args.coordinate_cols, frame_col=args.frame_col
+        )
+        lt.predict(coords, tree.edges, split_merge_validation=False)
+    # FIXME
+
     geff.write_nx(geff_tree, args.output_path)
 
 
