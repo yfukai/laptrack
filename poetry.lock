@@ -1102,16 +1102,14 @@ files = [
 
 [[package]]
 name = "geff"
-version = "0.3.0"
+version = "0.0.2.dev114+g053c3d2"
 description = "Reference implementation of the Graph Exchange File Format"
 optional = true
 python-versions = ">=3.10"
 groups = ["main"]
 markers = "extra == \"geff\" or extra == \"all\""
-files = [
-    {file = "geff-0.3.0-py3-none-any.whl", hash = "sha256:5c0449c13a71bf67c9e89ee63183388b14ac22bc98777a1565cf53eadea01ff7"},
-    {file = "geff-0.3.0.tar.gz", hash = "sha256:e144c500540fe23fb3e6da689f3685686c84ea689419cfcfd79bc406856afa42"},
-]
+files = []
+develop = false
 
 [package.dependencies]
 networkx = "*"
@@ -1119,6 +1117,12 @@ numcodecs = "<0.16"
 pydantic = ">=2"
 pyyaml = "*"
 zarr = ">2,<4"
+
+[package.source]
+type = "git"
+url = "https://github.com/yfukai/geff"
+reference = "solve_file_not_found"
+resolved_reference = "053c3d26dd258c1657b623683e13903ec943fc46"
 
 [[package]]
 name = "h11"
@@ -5176,4 +5180,4 @@ geff = ["geff"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.10,<3.14"
-content-hash = "5e3d5ff4580b8d9aba46e3e5c5d478665932bf2dd06ae0b29ef375e57b2d3460"
+content-hash = "ca5b71d4687a49c21acf66e1234d14140ccf69c4af993705bce7977eabb25568"
