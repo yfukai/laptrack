@@ -215,8 +215,8 @@ def convert_tree_to_dataframe(
         df_data.append(
             pd.DataFrame(
                 {
-                    "frame": [frame] * len(indices),
-                    "index": indices,
+                    "__frame": [frame] * len(indices),
+                    "__index": indices,
                 }
             )
         )
@@ -225,7 +225,7 @@ def convert_tree_to_dataframe(
         # XXX there may exist faster impl.
         for i in range(coords[0].shape[1]):
             track_df[f"coord-{i}"] = [
-                coords[int(row["frame"])][int(row["index"]), i]
+                coords[int(row["__frame"])][int(row["__index"]), i]
                 for _, row in track_df.iterrows()
             ]
     elif dataframe is not None:
@@ -237,30 +237,30 @@ def convert_tree_to_dataframe(
         frame_index_test = set(
             [
                 tuple([int(v) for v in vv])
-                for vv in track_df[["frame", "index"]].to_numpy()
+                for vv in track_df[["__frame", "__index"]].to_numpy()
             ]
         )
         assert (
             set(list(frame_index)) == frame_index_test
         ), "inverse map (frame,index) is incorrect"
 
-        assert "__frame" not in dataframe.columns
-        assert "__index" not in dataframe.columns
+        assert (
+            "__frame" not in dataframe.columns
+        ), "__frame is reserved and cannot be used."
+        assert (
+            "__index" not in dataframe.columns
+        ), "__index is reserved and cannot be used."
         dataframe["__frame"] = [x[0] for x in frame_index]
         dataframe["__index"] = [x[1] for x in frame_index]
         track_df = pd.merge(
             track_df,
             dataframe,
-            left_on=["frame", "index"],
-            right_on=["__frame", "__index"],
+            on=["__frame", "__index"],
             how="outer",
         )
         assert len(track_df) == df_len
-        track_df = track_df.drop(columns=["__frame", "__index"]).rename(
-            columns={"frame_x": "frame", "index_x": "index"}
-        )
 
-    track_df = track_df.set_index(["frame", "index"])
+    track_df = track_df.set_index(["__frame", "__index"])
     connected_components = list(nx.connected_components(nx.Graph(tree)))
     for track_id, nodes in enumerate(connected_components):
         for (frame, index) in nodes:
@@ -316,6 +316,12 @@ def convert_tree_to_dataframe(
                 }
             )
     merge_df = pd.DataFrame.from_records(merge_df_data).astype(int)
+
+    if coords is not None:
+        assert track_df.index.names == ["__frame", "__index"]
+        track_df.index = track_df.index.set_names(["frame", "index"])
+    elif dataframe is not None:
+        track_df = track_df.reset_index(drop=True)
 
     return track_df, split_df, merge_df
 
