@@ -367,3 +367,15 @@ def test_convert_to_geff_networkx(test_trees, tmp_path):
     geff_tree2 = geff.read_nx(tmp_path / "test.geff")
     assert set(geff_tree.nodes) == set(geff_tree2.nodes)
     assert set(geff_tree.edges) == set(geff_tree2.edges)
+
+
+@pytest.mark.skipif(geff is None, reason="geff is not installed")
+def test_convert_geff_networkx_to_tree_coords(test_trees):
+    tree, _, _, coords = test_trees
+    geff_tree = data_conversion.convert_digraph_to_geff_networkx(
+        tree, coords, ["frame", "x", "y"]
+    )
+    tree2, coords2 = data_conversion.convert_geff_networkx_to_tree_coords(
+        geff_tree, frame_attr="frame", coordinate_attrs=["x", "y"]
+    )
+    assert compare_coords_nodes_edges(tree, tree2, coords, coords2)

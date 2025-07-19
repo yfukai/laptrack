@@ -456,3 +456,71 @@ def convert_dataframes_to_geff_networkx(
         tree, coords, attr_names=[frame_col] + list(coordinate_cols)
     )
     return geff_tree
+
+
+def convert_geff_networkx_to_tree_coords(
+    geff_tree: nx.DiGraph,
+    frame_attr: str = "frame",
+    coordinate_attrs: Optional[Sequence[str]] = None,
+) -> Tuple[nx.DiGraph, List[NumArray]]:
+    """Convert a GEFF networkx graph to a directed graph and coordinates.
+
+    Parameters
+    ----------
+    geff_tree : nx.DiGraph
+        The graph in the GEFF format whose nodes have attributes for frame
+        and coordinates.
+    frame_attr : str, default "frame"
+        The node attribute name that stores the frame index.
+    coordinate_attrs : Optional[Sequence[str]], default None
+        The node attribute names that store the coordinates. If ``None``, they
+        are inferred from the first node excluding ``frame_attr``.
+
+    Returns
+    -------
+    tree : nx.DiGraph
+        Directed graph whose nodes are ``(frame, index)`` tuples.
+    coords : List[np.ndarray]
+        Coordinate arrays corresponding to each frame.
+    """
+    # infer coordinate attribute names if not supplied
+    if geff_tree.number_of_nodes() == 0:
+        return nx.DiGraph(), []
+
+    sample_node, data = next(iter(geff_tree.nodes(data=True)))
+    if coordinate_attrs is None:
+        coordinate_attrs = [k for k in data.keys() if k != frame_attr]
+        coordinate_attrs.sort()
+
+    dim = len(coordinate_attrs)
+
+    # collect nodes for each frame
+    frame_to_nodes: Dict[int, List[int]] = {}
+    for node, attrs in geff_tree.nodes(data=True):
+        frame = int(attrs[frame_attr])
+        frame_to_nodes.setdefault(frame, []).append(node)
+
+    frames = sorted(frame_to_nodes.keys())
+
+    coords: List[NumArray] = []
+    mapping: Dict[int, Tuple[int, int]] = {}
+
+    for frame in frames:
+        nodes = sorted(frame_to_nodes.get(frame, []))
+        if nodes:
+            coord_arr = np.array(
+                [[geff_tree.nodes[n][attr] for attr in coordinate_attrs] for n in nodes]
+            )
+        else:
+            coord_arr = np.array([])
+        coords.append(coord_arr)
+        for idx, node in enumerate(nodes):
+            mapping[node] = (frame, idx)
+
+    tree = nx.DiGraph()
+    tree.add_nodes_from(mapping.values())
+    for u, v in geff_tree.edges:
+        if u in mapping and v in mapping:
+            tree.add_edge(mapping[u], mapping[v])
+
+    return tree, coords
