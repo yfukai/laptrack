@@ -118,7 +118,7 @@ def track(args: _TrackArgs) -> None:
             frame_col=args.frame_col,
         )
     else:
-        tracked_tree = geff.read_nx(args.track_geff_path)
+        tracked_tree, metadata = geff.read_nx(args.track_geff_path)
         tree, coords, mappings = data_conversion.geff_networkx_to_tree_coords_mapping(
             tracked_tree, coordinate_cols=args.coordinate_cols, frame_col=args.frame_col
         )
