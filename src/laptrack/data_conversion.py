@@ -495,7 +495,7 @@ def geff_networkx_to_tree_coords_mapping(
     """
     # infer coordinate attribute names if not supplied
     if geff_tree.number_of_nodes() == 0:
-        return nx.DiGraph(), []
+        return nx.DiGraph(), [], {}
 
     sample_node, data = next(iter(geff_tree.nodes(data=True)))
     assert frame_attr in data, (
