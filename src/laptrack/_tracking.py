@@ -37,8 +37,8 @@ from ._typing_utils import Int
 from ._typing_utils import EdgeType
 from ._coo_matrix_builder import coo_matrix_builder
 from .data_conversion import (
-    convert_dataframe_to_coords_frame_index,
-    convert_tree_to_dataframe,
+    dataframe_to_coords_frame_index,
+    tree_to_dataframe,
 )
 from .utils import _coord_is_empty
 
@@ -788,7 +788,7 @@ class LapTrack(BaseModel, extra="forbid"):
             - "parent_track_id" : The track id of the parent.
             - "child_track_id" : The track id of the child.
         """
-        coords, frame_index = convert_dataframe_to_coords_frame_index(
+        coords, frame_index = dataframe_to_coords_frame_index(
             df, coordinate_cols, frame_col
         )
         if connected_edges is not None:
@@ -798,7 +798,8 @@ class LapTrack(BaseModel, extra="forbid"):
         else:
             connected_edges2 = None
         tree = self.predict(coords, connected_edges=connected_edges2)
-        track_df, split_df, merge_df = convert_tree_to_dataframe(
+
+        track_df, split_df, merge_df = tree_to_dataframe(
             tree, dataframe=df, frame_index=frame_index
         )
 
