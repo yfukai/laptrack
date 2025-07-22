@@ -15,7 +15,7 @@ from laptrack import laptrack
 from laptrack import OverLapTrack
 from laptrack._overlap_tracking import _ALIAS_FIELDS as _ALIAS_FIELDS_OVERLAP
 from laptrack._tracking import _ALIAS_FIELDS
-from laptrack.data_conversion import convert_tree_to_dataframe
+from laptrack.data_conversion import tree_to_dataframe
 
 warnings.simplefilter("ignore", FutureWarning)
 
@@ -138,7 +138,7 @@ def test_reproducing_trackmate(testdata, parallel_backend) -> None:
     )
     assert not any(split_df.duplicated())
     assert not any(merge_df.duplicated())
-    track_df2, split_df2, merge_df2 = convert_tree_to_dataframe(track_tree, coords)
+    track_df2, split_df2, merge_df2 = tree_to_dataframe(track_tree, coords)
     track_df2 = track_df2.rename(columns={"coord-0": "x", "coord-1": "y"})
     assert (track_df == track_df2).all().all()
     assert (split_df == split_df2).all().all()
