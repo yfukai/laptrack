@@ -255,7 +255,7 @@ def test_tree_to_dataframe(test_trees):
     )
 
 
-def test_tree_to_dataframe_frame_index(track_class):
+def test_tree_to_dataframe_frame_index():
     df = pd.DataFrame(
         {
             "frame": [0, 0, 0, 1, 1, 2, 2, 2, 2, 2],
