@@ -368,7 +368,7 @@ def test_geff_networkx_to_tree_coords_with_mapping(test_trees):
     geff_tree = data_conversion.digraph_to_geff_networkx(
         tree, coords, ["frame", "x", "y"]
     )
-    tree2, coords2, mapping = data_conversion.geff_networkx_to_tree_coords(
+    tree2, coords2, mapping = data_conversion.geff_networkx_to_tree_coords_mapping(
         geff_tree, frame_attr="frame", coordinate_attrs=["x", "y"]
     )
     assert compare_coords_nodes_edges(tree, tree2, coords, coords2)

@@ -464,11 +464,11 @@ def dataframes_to_geff_networkx(
     return geff_tree
 
 
-def geff_networkx_to_tree_coords(
+def geff_networkx_to_tree_coords_mapping(
     geff_tree: nx.DiGraph,
     frame_attr: str = "frame",
     coordinate_attrs: Optional[Sequence[str]] = None,
-) -> Tuple[nx.DiGraph, List[NumArray]]:
+) -> Tuple[nx.DiGraph, List[NumArray], Dict[int, Tuple[int, int]]]:
     """Convert a GEFF networkx graph to a directed graph and coordinates.
 
     Parameters
