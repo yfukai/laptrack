@@ -117,9 +117,7 @@ def calc_scores(
                 order_edges(predicted_edges), create_using=nx.DiGraph
             )
             gt_track_df, gt_split_df, _gt_merge_df = tree_to_dataframe(gt_tree)
-            pred_track_df, pred_split_df, _pred_merge_df = tree_to_dataframe(
-                pred_tree
-            )
+            pred_track_df, pred_split_df, _pred_merge_df = tree_to_dataframe(pred_tree)
             gt_track_df = gt_track_df.reset_index()
             pred_track_df = pred_track_df.reset_index()
 

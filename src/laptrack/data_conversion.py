@@ -79,9 +79,7 @@ def dataframe_to_coords_frame_index(
     df = df.copy()
     df["iloc__"] = np.arange(len(df), dtype=int)
 
-    coords = dataframe_to_coords(
-        df, list(coordinate_cols) + ["iloc__"], frame_col
-    )
+    coords = dataframe_to_coords(df, list(coordinate_cols) + ["iloc__"], frame_col)
 
     inverse_map = dict(
         sum(
@@ -491,16 +489,16 @@ def geff_networkx_to_tree_coords_mapping(
     node_mapping : Dict[int, Tuple[int, int]]
         Mapping from the original node index to the new node index in the form
         ``{original_node_index: (frame, index)}``.
-        
+
     """
     # infer coordinate attribute names if not supplied
     if geff_tree.number_of_nodes() == 0:
         return nx.DiGraph(), [], {}
 
     sample_node, data = next(iter(geff_tree.nodes(data=True)))
-    assert frame_attr in data, (
-        f"frame_attr '{frame_attr}' must be in the node attributes of the graph"
-    )
+    assert (
+        frame_attr in data
+    ), f"frame_attr '{frame_attr}' must be in the node attributes of the graph"
     if coordinate_attrs is None:
         coordinate_attrs = []
 

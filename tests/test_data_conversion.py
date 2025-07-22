@@ -280,9 +280,7 @@ def test_tree_to_dataframe_frame_index():
 
 def test_dataframes_to_tree_coords(test_trees):
     tree, segments, clones, coords = test_trees
-    track_df, split_df, merge_df = data_conversion.tree_to_dataframe(
-        tree, coords
-    )
+    track_df, split_df, merge_df = data_conversion.tree_to_dataframe(tree, coords)
     tree2, coords2 = data_conversion.dataframes_to_tree_coords(
         track_df, split_df, merge_df, ["coord-0", "coord-1"], frame_col="frame"
     )
@@ -307,9 +305,7 @@ def test_integration(track_class):
 
 def test_split_merge_df_to_napari_graph(test_trees):
     tree, segments, clones, coords = test_trees
-    track_df, split_df, merge_df = data_conversion.tree_to_dataframe(
-        tree, coords
-    )
+    track_df, split_df, merge_df = data_conversion.tree_to_dataframe(tree, coords)
     graph = data_conversion.split_merge_df_to_napari_graph(split_df, merge_df)
 
     # test track graph shape (int .. coordinate index)
@@ -338,16 +334,12 @@ def test_split_merge_df_to_napari_graph(test_trees):
     assert graph[track_id_2_2] == [track_id_1_2, track_id_1_3]
 
     # only split
-    graph = data_conversion.split_merge_df_to_napari_graph(
-        split_df, pd.DataFrame()
-    )
+    graph = data_conversion.split_merge_df_to_napari_graph(split_df, pd.DataFrame())
     assert graph[track_id_3_0] == [track_id_2_0]
     assert graph[track_id_3_1] == [track_id_2_0]
 
     # only merge
-    graph = data_conversion.split_merge_df_to_napari_graph(
-        pd.DataFrame(), merge_df
-    )
+    graph = data_conversion.split_merge_df_to_napari_graph(pd.DataFrame(), merge_df)
     assert graph[track_id_2_2] == [track_id_1_2, track_id_1_3]
 
 
@@ -362,6 +354,7 @@ def test_to_geff_networkx(test_trees, tmp_path):
     assert set(geff_tree.nodes) == set(geff_tree2.nodes)
     assert set(geff_tree.edges) == set(geff_tree2.edges)
 
+
 @pytest.mark.skipif(geff is None, reason="geff is not installed")
 def test_geff_networkx_to_tree_coords_with_mapping(test_trees):
     tree, _, _, coords = test_trees
@@ -373,8 +366,10 @@ def test_geff_networkx_to_tree_coords_with_mapping(test_trees):
     )
     assert compare_coords_nodes_edges(tree, tree2, coords, coords2)
     assert len(mapping) == len(geff_tree.nodes)
+
     def get_data_from_node(node):
         return coords2[node[0]][node[1]]
+
     for node in geff_tree.nodes:
         d1 = [geff_tree.nodes[node].get(attr) for attr in ["x", "y"]]
         n2 = mapping[node]
