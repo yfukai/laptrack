@@ -105,7 +105,9 @@ def testdata(request, shared_datadir: str):
     return params, coords, edges_set
 
 
-@pytest.mark.parametrize("parallel_backend", ["serial", "ray"])
+@pytest.mark.parametrize(
+    "parallel_backend", ["serial", "multiprocessing", "joblib", "ray"]
+)
 def test_reproducing_trackmate(testdata, parallel_backend) -> None:
 
     if parallel_backend == "ray":

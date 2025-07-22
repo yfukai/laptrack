@@ -49,7 +49,45 @@ class ParallelBackend(str, Enum):
     """Parallelization strategy for computation."""
 
     serial = "serial"
+    multiprocessing = "multiprocessing"
+    joblib = "joblib"
     ray = "ray"
+
+    @classmethod
+    def get_pallalel_apply(cls, parallel_backend: "ParallelBackend"):
+        """Get the parallel apply function based on the backend."""
+        if parallel_backend == cls.serial:
+            return lambda func, iterable: map(func, iterable)
+        elif parallel_backend == cls.multiprocessing:
+            from multiprocessing import Pool
+
+            def _apply_func(func, iterable):
+                with Pool() as pool:
+                    return pool.map(func, iterable)
+
+            return _apply_func
+        elif parallel_backend == cls.joblib:
+            try:
+                from joblib import Parallel, delayed
+            except ImportError:
+                raise ImportError(
+                    "Please install `laptrack[joblib]` to use `ParallelBackend.joblib`."
+                )
+            return lambda func, iterable: Parallel(n_jobs=-1)(
+                delayed(func)(i) for i in iterable
+            )
+        elif parallel_backend == cls.ray:
+            try:
+                import ray
+            except ImportError:
+                raise ImportError(
+                    "Please install `laptrack[ray]` to use `ParallelBackend.ray`."
+                )
+            return lambda func, iterable: ray.get(
+                [ray.remote(func).remote(i) for i in iterable]
+            )
+        else:
+            raise ValueError(f"Unknown parallel backend {parallel_backend}.")
 
 
 def _get_segment_df(coords, track_tree):
@@ -253,10 +291,9 @@ class LapTrack(BaseModel, extra="forbid"):
         edges_list = list(segment_connected_edges) + list(split_merge_edges)
 
         def _predict_link_single_frame(
-            frame: int,
-            coord1: np.ndarray,
-            coord2: np.ndarray,
+            args: Tuple[int, np.ndarray, np.ndarray]
         ) -> List[EdgeType]:
+            frame, coord1, coord2 = args
             if _coord_is_empty(coord1) or _coord_is_empty(coord2):
                 return []
 
@@ -291,27 +328,14 @@ class LapTrack(BaseModel, extra="forbid"):
             ]
             return edges
 
-        if self.parallel_backend == ParallelBackend.serial:
-            all_edges = []
-            for frame, (coord1, coord2) in enumerate(zip(coords[:-1], coords[1:])):
-                edges = _predict_link_single_frame(frame, coord1, coord2)
-                all_edges.extend(edges)
-        elif self.parallel_backend == ParallelBackend.ray:
-            try:
-                import ray
-            except ImportError:
-                raise ImportError("Please install `ray` to use `ParallelBackend.ray`.")
-            remote_func = ray.remote(_predict_link_single_frame)
-            res = [
-                remote_func.remote(frame, coord1, coord2)
-                for frame, (coord1, coord2) in enumerate(zip(coords[:-1], coords[1:]))
-            ]
-            all_edges = sum(ray.get(res), [])
-        else:
-            raise ValueError(
-                f"Unknown parallel backend {self.parallel_backend}. "
-                + f"Must be one of {', '.join([ps.name for ps in ParallelBackend])}."
-            )
+        apply_func = ParallelBackend.get_pallalel_apply(self.parallel_backend)
+        all_edges = sum(
+            apply_func(
+                _predict_link_single_frame,
+                zip(range(len(coords) - 1), coords[:-1], coords[1:]),
+            ),
+            [],
+        )
 
         track_tree.add_edges_from(all_edges)
         track_tree.add_edges_from(segment_connected_edges)
@@ -389,6 +413,23 @@ class LapTrack(BaseModel, extra="forbid"):
                 segments_df["gap_closing_candidates"] = segments_df.apply(
                     partial(to_gap_closing_candidates, segments_df=segments_df), axis=1
                 )
+            elif self.parallel_backend == ParallelBackend.multiprocessing:
+                from multiprocessing import Pool
+
+                with Pool() as pool:
+                    res = pool.map(
+                        partial(to_gap_closing_candidates, segments_df=segments_df),
+                        [row for _, row in segments_df.iterrows()],
+                    )
+                segments_df["gap_closing_candidates"] = res
+            elif self.parallel_backend == ParallelBackend.joblib:
+                from joblib import Parallel, delayed
+
+                res = Parallel(n_jobs=-1)(
+                    delayed(to_gap_closing_candidates)(row, segments_df)
+                    for _, row in segments_df.iterrows()
+                )
+                segments_df["gap_closing_candidates"] = res
             elif self.parallel_backend == ParallelBackend.ray:
                 try:
                     import ray
