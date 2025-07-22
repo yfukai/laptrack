@@ -137,11 +137,6 @@ class OverLapTrack(LapTrack):
         track_df, split_df, merge_df = self._predict_dataframe(
             lo.frame_label_df, ["frame", "label"], only_coordinate_cols=False
         )
-        assert all(track_df.index.get_level_values("frame") == track_df["frame_y"])
-        track_df = (
-            track_df.droplevel("frame")
-            .rename(columns={"frame_y": "frame"})
-            .set_index(["frame", "label"])
-        )
+        track_df = track_df.set_index(["frame", "label"])
         # _calc_overlap.cache_clear()
         return track_df, split_df, merge_df
