@@ -74,7 +74,7 @@ def test_compare_coords_nodes_edges():
     assert not compare_coords_nodes_edges(tree1, tree2, coords1, coords1)
 
 
-def test_convert_dataframe_to_coords():
+def test_dataframe_to_coords():
     df = pd.DataFrame(
         {
             "frame": [0, 0, 0, 1, 1, 2, 2, 2, 2, 2],
@@ -214,7 +214,7 @@ def test_trees():
     return tree, segments, clones, coords
 
 
-def test_convert_tree_to_dataframe(test_trees):
+def test_tree_to_dataframe(test_trees):
     tree, segments, clones, coords = test_trees
     df, split_df, merge_df = data_conversion.tree_to_dataframe(tree, coords)
     len(set(df["track_id"])) == len(segments)
@@ -261,7 +261,7 @@ def test_convert_tree_to_dataframe(test_trees):
         LapTrack,
     ],
 )
-def test_convert_tree_to_dataframe_frame_index(track_class):
+def test_tree_to_dataframe_frame_index(track_class):
     df = pd.DataFrame(
         {
             "frame": [0, 0, 0, 1, 1, 2, 2, 2, 2, 2],
@@ -284,7 +284,7 @@ def test_convert_tree_to_dataframe_frame_index(track_class):
     assert len(np.unique(df["tree_id"])) > 1
 
 
-def test_convert_dataframes_to_tree_coords(test_trees):
+def test_dataframes_to_tree_coords(test_trees):
     tree, segments, clones, coords = test_trees
     track_df, split_df, merge_df = data_conversion.tree_to_dataframe(
         tree, coords
@@ -311,7 +311,7 @@ def test_integration(track_class):
     data_conversion.tree_to_dataframe(tree)
 
 
-def test_convert_split_merge_df_to_napari_graph(test_trees):
+def test_split_merge_df_to_napari_graph(test_trees):
     tree, segments, clones, coords = test_trees
     track_df, split_df, merge_df = data_conversion.tree_to_dataframe(
         tree, coords
@@ -358,24 +358,31 @@ def test_convert_split_merge_df_to_napari_graph(test_trees):
 
 
 @pytest.mark.skipif(geff is None, reason="geff is not installed")
-def test_convert_to_geff_networkx(test_trees, tmp_path):
+def test_to_geff_networkx(test_trees, tmp_path):
     tree, segments, clones, coords = test_trees
     geff_tree = data_conversion.digraph_to_geff_networkx(
         tree, coords, ["frame", "x", "y"]
     )
     geff.write_nx(geff_tree, tmp_path / "test.geff")
-    geff_tree2 = geff.read_nx(tmp_path / "test.geff")
+    geff_tree2, metadata = geff.read_nx(tmp_path / "test.geff")
     assert set(geff_tree.nodes) == set(geff_tree2.nodes)
     assert set(geff_tree.edges) == set(geff_tree2.edges)
 
-
 @pytest.mark.skipif(geff is None, reason="geff is not installed")
-def test_convert_geff_networkx_to_tree_coords(test_trees):
+def test_geff_networkx_to_tree_coords_with_mapping(test_trees):
     tree, _, _, coords = test_trees
     geff_tree = data_conversion.digraph_to_geff_networkx(
         tree, coords, ["frame", "x", "y"]
     )
-    tree2, coords2 = data_conversion.geff_networkx_to_tree_coords(
+    tree2, coords2, mapping = data_conversion.geff_networkx_to_tree_coords(
         geff_tree, frame_attr="frame", coordinate_attrs=["x", "y"]
     )
     assert compare_coords_nodes_edges(tree, tree2, coords, coords2)
+    assert len(mapping) == len(geff_tree.nodes)
+    def get_data_from_node(node):
+        return coords2[node[0]][node[1]]
+    for node in geff_tree.nodes:
+        d1 = [geff_tree.nodes[node].get(attr) for attr in ["x", "y"]]
+        n2 = mapping[node]
+        assert geff_tree.nodes[node]["frame"] == n2[0]
+        assert np.all(d1 == get_data_from_node(n2))
