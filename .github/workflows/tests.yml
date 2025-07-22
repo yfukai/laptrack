@@ -3,6 +3,10 @@ name: Tests
 on:
   - push
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   tests:
     name: ${{ matrix.session }} ${{ matrix.python-version }} / ${{ matrix.os }}
