@@ -20,8 +20,6 @@ from . import data_conversion
 from . import LapTrack
 from . import OverLapTrack
 
-# %%
-
 
 def _read_image(file_path):
     extension = Path(file_path).suffix.lower()
@@ -112,7 +110,7 @@ def track(args: _TrackArgs) -> None:
             df, coordinate_cols=args.coordinate_cols, frame_col=args.frame_col
         )
 
-        geff_tree = data_conversion.convert_dataframes_to_geff_networkx(
+        geff_tree = data_conversion.dataframes_to_geff_networkx(
             track_df,
             split_df,
             merge_df,
@@ -121,11 +119,16 @@ def track(args: _TrackArgs) -> None:
         )
     else:
         tracked_tree = geff.read_nx(args.track_geff_path)
-        tree, coords = data_conversion.convert_geff_networkx_to_networkx_coords(
+        tree, coords, mappings = data_conversion.geff_networkx_to_tree_coords_mapping(
             tracked_tree, coordinate_cols=args.coordinate_cols, frame_col=args.frame_col
         )
-        lt.predict(coords, tree.edges, split_merge_validation=False)
-    # FIXME
+        tree2 = lt.predict(coords, tree.edges, split_merge_validation=False)
+        geff_tree = data_conversion.tree_to_geff_networkx(
+            tree2,
+            mappings,
+            coordinate_cols=args.coordinate_cols,
+            frame_col=args.frame_col,
+        )
 
     geff.write_nx(geff_tree, args.output_path)
 
@@ -140,7 +143,7 @@ def track_overlap(args: _OverLapTrackArgs) -> None:
 
     track_df, split_df, merge_df = lt.predict_overlap_dataframe(labels)
 
-    geff_tree = data_conversion.convert_dataframes_to_geff_networkx(
+    geff_tree = data_conversion.dataframes_to_geff_networkx(
         track_df, split_df, merge_df, coordinate_cols=["seg_id"], frame_col="frame"
     )
     geff.write_nx(geff_tree, args.output_path)
@@ -148,7 +151,7 @@ def track_overlap(args: _OverLapTrackArgs) -> None:
 
 def main():  # noqa: D103
     if len(sys.argv) < 2:
-        print("Please specify a subcommand: train or test")
+        print("Please specify a subcommand: track or track_overlap")
         sys.exit(1)
 
     subcommand = sys.argv[1]
