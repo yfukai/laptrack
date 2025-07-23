@@ -465,8 +465,8 @@ def dataframes_to_geff_networkx(
 
 def geff_networkx_to_tree_coords_mapping(
     geff_tree: nx.DiGraph,
-    frame_attr: str = "frame",
-    coordinate_attrs: Optional[Sequence[str]] = None,
+    frame_prop: str = "frame",
+    coordinate_props: Optional[Sequence[str]] = None,
 ) -> Tuple[nx.DiGraph, List[NumArray], Dict[int, Tuple[int, int]]]:
     """Convert a GEFF networkx graph to a directed graph and coordinates.
 
@@ -475,9 +475,9 @@ def geff_networkx_to_tree_coords_mapping(
     geff_tree : nx.DiGraph
         The graph in the GEFF format whose nodes have attributes for frame
         and coordinates.
-    frame_attr : str, default "frame"
+    frame_prop : str, default "frame"
         The node attribute name that stores the frame index.
-    coordinate_attrs : Optional[Sequence[str]], default None
+    coordinate_props : Optional[Sequence[str]], default None
         The node attribute names that store the coordinates. If ``None``, they
         are inferred from the first node excluding ``frame_attr``.
 
@@ -498,15 +498,15 @@ def geff_networkx_to_tree_coords_mapping(
 
     sample_node, data = next(iter(geff_tree.nodes(data=True)))
     assert (
-        frame_attr in data
-    ), f"frame_attr '{frame_attr}' must be in the node attributes of the graph"
-    if coordinate_attrs is None:
-        coordinate_attrs = []
+        frame_prop in data
+    ), f"frame_attr '{frame_prop}' must be in the node attributes of the graph"
+    if coordinate_props is None:
+        coordinate_props = []
 
     # collect nodes for each frame
     frame_to_nodes: Dict[int, List[int]] = {}
     for node, attrs in geff_tree.nodes(data=True):
-        frame = int(attrs[frame_attr])
+        frame = int(attrs[frame_prop])
         frame_to_nodes.setdefault(frame, []).append(node)
 
     frames = sorted(frame_to_nodes.keys())
@@ -519,7 +519,7 @@ def geff_networkx_to_tree_coords_mapping(
     for frame in range(frame_min, frame_max + 1):
         nodes = sorted(frame_to_nodes.get(frame, []))
         coord_arr = np.array(
-            [[geff_tree.nodes[n][attr] for attr in coordinate_attrs] for n in nodes]
+            [[geff_tree.nodes[n][attr] for attr in coordinate_props] for n in nodes]
         )
         coords.append(coord_arr)
         for idx, node in enumerate(nodes):

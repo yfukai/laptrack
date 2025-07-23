@@ -13,6 +13,7 @@ import geff
 import numpy as np
 import pandas as pd
 import zarr
+from pydantic import BaseModel
 from skimage.io import imread
 from tap import Tap
 
@@ -37,7 +38,7 @@ def _read_image(file_path):
             return imread(file_path)
 
 
-def _tap_configure_from_cls(clses: List[type]) -> Callable:
+def _tap_configure_from_cls(clses: List[type[BaseModel]]) -> Callable:
     def configure(self) -> None:
         """Configure parser based on :class:`LapTrack` fields."""
 
@@ -142,7 +143,9 @@ def track(args: _TrackArgs) -> None:
     else:
         tracked_tree, tracked_metadata = geff.read_nx(args.track_geff_path)
         tree, coords, mappings = data_conversion.geff_networkx_to_tree_coords_mapping(
-            tracked_tree, coordinate_cols=args.coordinate_cols, frame_col=args.frame_col
+            tracked_tree,
+            coordinate_props=args.coordinate_cols,
+            frame_prop=args.frame_col,
         )
         rev_mappings = {v: k for k, v in mappings.items()}
         tree2 = lt.predict(coords, tree.edges, split_merge_validation=False)
@@ -163,7 +166,6 @@ def track(args: _TrackArgs) -> None:
 def track_overlap(args: _OverLapTrackArgs) -> None:
     """Execute overlap tracking based on parsed arguments."""
     labels = _read_image(args.labels_path)
-    tracked_tree = geff.read_nx(args.track_geff_path)
 
     lt_kwargs = {name: getattr(args, name) for name in OverLapTrack.model_fields}
     lt = OverLapTrack(**lt_kwargs)
@@ -171,7 +173,7 @@ def track_overlap(args: _OverLapTrackArgs) -> None:
     track_df, split_df, merge_df = lt.predict_overlap_dataframe(labels)
 
     geff_tree = data_conversion.dataframes_to_geff_networkx(
-        track_df, split_df, merge_df, coordinate_cols=["seg_id"], frame_col="frame"
+        track_df[["seg_id"]], split_df, merge_df, frame_col="frame"
     )
     geff.write_nx(geff_tree, args.output_path)
 

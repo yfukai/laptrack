@@ -362,7 +362,7 @@ def test_geff_networkx_to_tree_coords_with_mapping(test_trees):
         tree, coords, ["frame", "x", "y"]
     )
     tree2, coords2, mapping = data_conversion.geff_networkx_to_tree_coords_mapping(
-        geff_tree, frame_attr="frame", coordinate_attrs=["x", "y"]
+        geff_tree, frame_prop="frame", coordinate_props=["x", "y"]
     )
     assert compare_coords_nodes_edges(tree, tree2, coords, coords2)
     assert len(mapping) == len(geff_tree.nodes)
