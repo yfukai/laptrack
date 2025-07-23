@@ -37,7 +37,7 @@ def _read_image(file_path):
             return imread(file_path)
 
 
-def _tap_configure_from_cls(cls: type) -> Callable:
+def _tap_configure_from_cls(clses: List[type]) -> Callable:
     def configure(self) -> None:
         """Configure parser based on :class:`LapTrack` fields."""
 
@@ -54,28 +54,29 @@ def _tap_configure_from_cls(cls: type) -> Callable:
         def is_false_literal(tp: object) -> bool:
             return get_origin(tp) is Literal and get_args(tp) == (False,)
 
-        for name, field in LapTrack.model_fields.items():
-            annotation = field.annotation
-            default = field.default
+        for c in clses:
+            for name, field in c.model_fields.items():
+                annotation = field.annotation
+                default = field.default
 
-            parser_type: object = annotation
-            if get_origin(annotation) is Union:
-                args = get_args(annotation)
-                if any(
-                    callable_arg is Callable or callable_arg == Callable
-                    for callable_arg in args
-                ):
-                    parser_type = str
-                elif any(is_false_literal(a) for a in args) and float in args:
-                    parser_type = float_or_false
-                elif float in args and type(None) in args:
-                    parser_type = optional_float
-                elif str in args:
-                    parser_type = str
-                else:
-                    parser_type = args[0]
+                parser_type: object = annotation
+                if get_origin(annotation) is Union:
+                    args = get_args(annotation)
+                    if any(
+                        callable_arg is Callable or callable_arg == Callable
+                        for callable_arg in args
+                    ):
+                        parser_type = str
+                    elif any(is_false_literal(a) for a in args) and float in args:
+                        parser_type = float_or_false
+                    elif float in args and type(None) in args:
+                        parser_type = optional_float
+                    elif str in args:
+                        parser_type = str
+                    else:
+                        parser_type = args[0]
 
-            self.add_argument(f"--{name}", type=parser_type, default=default)
+                self.add_argument(f"--{name}", type=parser_type, default=default)
 
     return configure
 
@@ -85,7 +86,7 @@ class _Args(Tap):
 
     def configure(self) -> None:
         """Configure parser based on :class:`LapTrack` fields."""
-        self.add_subparsers(help="Subcommands for laptrack")
+        self.add_subparsers(dest="cmd", help="Subcommands for laptrack")
         self.add_subparser(
             "track", _TrackArgs, help="Track point-like object from a dataframe."
         )
@@ -99,17 +100,17 @@ class _TrackArgs(Tap):
     metadata_path: Optional[Path] = None  # path to metadata file
     frame_col: str = "frame"
     coordinate_cols: List[str]
-    configure = _tap_configure_from_cls(LapTrack)
+    configure = _tap_configure_from_cls([LapTrack])
 
 
 class _OverLapTrackArgs(Tap):
     labels_path: Path  # path to input csv file
     metadata_path: Optional[Path] = None  # path to metadata file
     output_path: Path
-    configure = _tap_configure_from_cls(OverLapTrack)
+    configure = _tap_configure_from_cls([OverLapTrack])
 
 
-def track(args: _Args) -> None:
+def track(args: _TrackArgs) -> None:
     """Execute tracking based on parsed arguments."""
     lt_kwargs = {name: getattr(args, name) for name in LapTrack.model_fields}
     lt = LapTrack(**lt_kwargs)
@@ -118,7 +119,10 @@ def track(args: _Args) -> None:
         with open(args.metadata_path, "r") as f:
             metadata = geff.GeffMetadata.model_validate_json(f.read())
     else:
-        metadata = {}
+        metadata = geff.GeffMetadata(
+            geff_version=geff.__version__,
+            directed=True,
+        )
 
     if args.csv_path is None and args.track_geff_path is None:
         raise ValueError("Either csv_path or track_geff_path must be provided.")
@@ -133,7 +137,6 @@ def track(args: _Args) -> None:
             track_df,
             split_df,
             merge_df,
-            coordinate_cols=args.coordinate_cols,
             frame_col=args.frame_col,
         )
     else:
@@ -150,7 +153,7 @@ def track(args: _Args) -> None:
                 assert edge2[0] not in tracked_tree.nodes
                 assert edge2[1] not in tracked_tree.nodes
                 tracked_tree.add_edge(edge2[0], edge2[1])
-        _metadata = tracked_metadata.copy()
+        _metadata = tracked_metadata.model_copy()
         _metadata.update(metadata)
         metadata = _metadata
 
@@ -176,18 +179,13 @@ def track_overlap(args: _OverLapTrackArgs) -> None:
 def main():  # noqa: D103
     args = _Args().parse_args()
     # raise an error if no subcommand is provided
-    if not hasattr(args, "subcommand"):
+    if not hasattr(args, "cmd"):
         print("No subcommand provided. Use 'track' or 'overlap_track'.")
         sys.exit(1)
-    print(args)
+    if args.cmd == "track":
+        track(args)
+    del args.cmd  # Remove cmd from args to avoid confusion
 
-
-#    if hasattr(args, 'track_geff_path') and args.track_geff_path:
-#        args.csv_path = None  # Ensure csv_path is None if track_geff_path is provided
-#    if hasattr(args, 'labels_path') and args.labels_path:
-#        track_overlap(args)
-#    else:
-#        track(args)
 
 if __name__ == "__main__":
     main()  # pragma: no cover
