@@ -80,10 +80,23 @@ def _tap_configure_from_cls(cls: type) -> Callable:
     return configure
 
 
+class _Args(Tap):
+    """Base class for command-line arguments."""
+
+    def configure(self) -> None:
+        """Configure parser based on :class:`LapTrack` fields."""
+        self.add_subparsers(help="Subcommands for laptrack")
+        self.add_subparser(
+            "track", _TrackArgs, help="Track point-like object from a dataframe."
+        )
+        self.add_subparser("overlap_track", _OverLapTrackArgs, help="b help")
+
+
 class _TrackArgs(Tap):
     csv_path: Optional[Path]  # path to input csv file
-    output_path: Path
     track_geff_path: Optional[Path] = None  # path to output geff file
+    output_path: Path
+    metadata_path: Optional[Path] = None  # path to metadata file
     frame_col: str = "frame"
     coordinate_cols: List[str]
     configure = _tap_configure_from_cls(LapTrack)
@@ -91,14 +104,21 @@ class _TrackArgs(Tap):
 
 class _OverLapTrackArgs(Tap):
     labels_path: Path  # path to input csv file
+    metadata_path: Optional[Path] = None  # path to metadata file
     output_path: Path
     configure = _tap_configure_from_cls(OverLapTrack)
 
 
-def track(args: _TrackArgs) -> None:
+def track(args: _Args) -> None:
     """Execute tracking based on parsed arguments."""
     lt_kwargs = {name: getattr(args, name) for name in LapTrack.model_fields}
     lt = LapTrack(**lt_kwargs)
+
+    if args.metadata_path is not None:
+        with open(args.metadata_path, "r") as f:
+            metadata = geff.GeffMetadata.model_validate_json(f.read())
+    else:
+        metadata = {}
 
     if args.csv_path is None and args.track_geff_path is None:
         raise ValueError("Either csv_path or track_geff_path must be provided.")
@@ -109,7 +129,6 @@ def track(args: _TrackArgs) -> None:
         track_df, split_df, merge_df = lt.predict_dataframe(
             df, coordinate_cols=args.coordinate_cols, frame_col=args.frame_col
         )
-
         geff_tree = data_conversion.dataframes_to_geff_networkx(
             track_df,
             split_df,
@@ -118,19 +137,24 @@ def track(args: _TrackArgs) -> None:
             frame_col=args.frame_col,
         )
     else:
-        tracked_tree, metadata = geff.read_nx(args.track_geff_path)
+        tracked_tree, tracked_metadata = geff.read_nx(args.track_geff_path)
         tree, coords, mappings = data_conversion.geff_networkx_to_tree_coords_mapping(
             tracked_tree, coordinate_cols=args.coordinate_cols, frame_col=args.frame_col
         )
+        rev_mappings = {v: k for k, v in mappings.items()}
         tree2 = lt.predict(coords, tree.edges, split_merge_validation=False)
-        geff_tree = data_conversion.tree_to_geff_networkx(
-            tree2,
-            mappings,
-            coordinate_cols=args.coordinate_cols,
-            frame_col=args.frame_col,
-        )
+        # Copy the GEFF to new output
+        for edge in tree2.edges:
+            edge2 = [rev_mappings[edge[0]], rev_mappings[edge[1]]]
+            if edge2 not in tracked_tree.edges:
+                assert edge2[0] not in tracked_tree.nodes
+                assert edge2[1] not in tracked_tree.nodes
+                tracked_tree.add_edge(edge2[0], edge2[1])
+        _metadata = tracked_metadata.copy()
+        _metadata.update(metadata)
+        metadata = _metadata
 
-    geff.write_nx(geff_tree, args.output_path)
+    geff.write_nx(geff_tree, args.output_path, metadata=metadata)
 
 
 def track_overlap(args: _OverLapTrackArgs) -> None:
@@ -150,22 +174,20 @@ def track_overlap(args: _OverLapTrackArgs) -> None:
 
 
 def main():  # noqa: D103
-    if len(sys.argv) < 2:
-        print("Please specify a subcommand: track or track_overlap")
+    args = _Args().parse_args()
+    # raise an error if no subcommand is provided
+    if not hasattr(args, "subcommand"):
+        print("No subcommand provided. Use 'track' or 'overlap_track'.")
         sys.exit(1)
+    print(args)
 
-    subcommand = sys.argv[1]
-    sub_args = sys.argv[2:]
 
-    if subcommand == "track":
-        track(_TrackArgs().parse_args(sub_args))
-    elif subcommand == "track_overlap":
-        args = _OverLapTrackArgs().parse_args(sub_args)
-        print(f"Testing model from {args.model_path} on {args.test_data}")
-    else:
-        print(f"Unknown subcommand: {subcommand}")
-        sys.exit(1)
-
+#    if hasattr(args, 'track_geff_path') and args.track_geff_path:
+#        args.csv_path = None  # Ensure csv_path is None if track_geff_path is provided
+#    if hasattr(args, 'labels_path') and args.labels_path:
+#        track_overlap(args)
+#    else:
+#        track(args)
 
 if __name__ == "__main__":
     main()  # pragma: no cover

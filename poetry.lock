@@ -1118,7 +1118,7 @@ files = [
 
 [[package]]
 name = "geff"
-version = "0.0.2.dev115+gf0e10e0"
+version = "0.3.1.dev20+gf8cc42c"
 description = "Reference implementation of the Graph Exchange File Format"
 optional = true
 python-versions = ">=3.10"
@@ -1133,11 +1133,14 @@ numcodecs = "<0.16"
 pydantic = ">=2"
 zarr = ">2,<4"
 
+[package.extras]
+spatial-graph = ["spatial-graph"]
+
 [package.source]
 type = "git"
-url = "https://github.com/yfukai/geff"
-reference = "solve_file_not_found"
-resolved_reference = "f0e10e0d66f679d5a7ce04fb0f27e65397bdcd73"
+url = "https://github.com/live-image-tracking-tools/geff"
+reference = "main"
+resolved_reference = "f8cc42c6d70afd9da5937f9a10656d3ca979ac12"
 
 [[package]]
 name = "h11"
@@ -5236,4 +5239,4 @@ geff = ["geff"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.10,<3.14"
-content-hash = "d65d957b899446324a9410f82bd5baea8c88cd13169085ed27a136939d21cc27"
+content-hash = "c3c04bb0cd904421353fc6a82d8e418f28c0d1cfccbdb0b3efe9a5f14f30c361"

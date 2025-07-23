@@ -421,7 +421,6 @@ def dataframes_to_geff_networkx(
     track_df: pd.DataFrame,
     split_df: pd.DataFrame,
     merge_df: pd.DataFrame,
-    coordinate_cols: Sequence[str],
     frame_col: str = "frame",
 ) -> nx.DiGraph:
     """Convert the track dataframes to a GEFF networkx graph.
@@ -434,8 +433,6 @@ def dataframes_to_geff_networkx(
         The splitting dataframe.
     merge_df : pd.DataFrame
         The merging dataframe.
-    coordinate_cols : Sequence[str]
-        The list of columns used for the coordinates.
     frame_col : str, default "frame"
         The column name used for the integer frame index.
 
@@ -453,11 +450,15 @@ def dataframes_to_geff_networkx(
     >>> geff_tree = data_conversion.dataframes_to_geff_networkx(track_df, split_df, merge_df)
     >>> geff.write_nx(geff_tree, "save_path.zarr")
     """
+    column_names = track_df.columns.tolist()
+    if frame_col not in column_names:
+        raise ValueError(f"frame_col '{frame_col}' must be in the track_df columns")
+    column_names.remove(frame_col)
     tree, coords = dataframes_to_tree_coords(
-        track_df, split_df, merge_df, coordinate_cols, frame_col
+        track_df, split_df, merge_df, column_names, frame_col
     )
     geff_tree = digraph_to_geff_networkx(
-        tree, coords, attr_names=[frame_col] + list(coordinate_cols)
+        tree, coords, attr_names=[frame_col] + column_names
     )
     return geff_tree
 
