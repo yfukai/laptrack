@@ -95,7 +95,7 @@ class _Args(Tap):
 
 
 class _TrackArgs(Tap):
-    csv_path: Optional[Path]  # path to input csv file
+    csv_path: Optional[Path] = None  # path to input csv file
     track_geff_path: Optional[Path] = None  # path to output geff file
     output_path: Path
     metadata_path: Optional[Path] = None  # path to metadata file
@@ -141,9 +141,9 @@ def track(args: _TrackArgs) -> None:
             frame_col=args.frame_col,
         )
     else:
-        tracked_tree, tracked_metadata = geff.read_nx(args.track_geff_path)
+        geff_tree, tracked_metadata = geff.read_nx(args.track_geff_path)
         tree, coords, mappings = data_conversion.geff_networkx_to_tree_coords_mapping(
-            tracked_tree,
+            geff_tree,
             coordinate_props=args.coordinate_cols,
             frame_prop=args.frame_col,
         )
@@ -152,12 +152,13 @@ def track(args: _TrackArgs) -> None:
         # Copy the GEFF to new output
         for edge in tree2.edges:
             edge2 = [rev_mappings[edge[0]], rev_mappings[edge[1]]]
-            if edge2 not in tracked_tree.edges:
-                assert edge2[0] not in tracked_tree.nodes
-                assert edge2[1] not in tracked_tree.nodes
-                tracked_tree.add_edge(edge2[0], edge2[1])
-        _metadata = tracked_metadata.model_copy()
-        _metadata.update(metadata)
+            if edge2 not in geff_tree.edges:
+                assert edge2[0] in geff_tree.nodes
+                assert edge2[1] in geff_tree.nodes
+                geff_tree.add_edge(edge2[0], edge2[1])
+        _metadata = tracked_metadata.model_copy(
+            update=metadata.model_dump(exclude_unset=True)
+        )
         metadata = _metadata
 
     geff.write_nx(geff_tree, args.output_path, metadata=metadata)
