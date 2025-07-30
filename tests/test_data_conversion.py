@@ -346,32 +346,32 @@ def test_split_merge_df_to_napari_graph(test_trees):
 @pytest.mark.skipif(geff is None, reason="geff is not installed")
 def test_to_geff_networkx(test_trees, tmp_path):
     tree, segments, clones, coords = test_trees
-    geff_tree = data_conversion.digraph_to_geff_networkx(
+    geff_trees = data_conversion.digraph_to_geff_networkx(
         tree, coords, ["frame", "x", "y"]
     )
-    geff.write_nx(geff_tree, tmp_path / "test.geff")
+    geff.write_nx(geff_trees.tree, tmp_path / "test.geff")
     geff_tree2, metadata = geff.read_nx(tmp_path / "test.geff")
-    assert set(geff_tree.nodes) == set(geff_tree2.nodes)
-    assert set(geff_tree.edges) == set(geff_tree2.edges)
+    assert set(geff_trees.tree.nodes) == set(geff_tree2.nodes)
+    assert set(geff_trees.tree.edges) == set(geff_tree2.edges)
 
 
 @pytest.mark.skipif(geff is None, reason="geff is not installed")
 def test_geff_networkx_to_tree_coords_with_mapping(test_trees):
     tree, _, _, coords = test_trees
-    geff_tree = data_conversion.digraph_to_geff_networkx(
+    geff_trees = data_conversion.digraph_to_geff_networkx(
         tree, coords, ["frame", "x", "y"]
     )
     tree2, coords2, mapping = data_conversion.geff_networkx_to_tree_coords_mapping(
-        geff_tree, frame_attr="frame", coordinate_attrs=["x", "y"]
+        geff_trees.tree, frame_attr="frame", coordinate_attrs=["x", "y"]
     )
     assert compare_coords_nodes_edges(tree, tree2, coords, coords2)
-    assert len(mapping) == len(geff_tree.nodes)
+    assert len(mapping) == len(geff_trees.tree.nodes)
 
     def get_data_from_node(node):
         return coords2[node[0]][node[1]]
 
-    for node in geff_tree.nodes:
-        d1 = [geff_tree.nodes[node].get(attr) for attr in ["x", "y"]]
+    for node in geff_trees.tree.nodes:
+        d1 = [geff_trees.tree.nodes[node].get(attr) for attr in ["x", "y"]]
         n2 = mapping[node]
-        assert geff_tree.nodes[node]["frame"] == n2[0]
+        assert geff_trees.tree.nodes[node]["frame"] == n2[0]
         assert np.all(d1 == get_data_from_node(n2))

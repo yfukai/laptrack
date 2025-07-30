@@ -165,6 +165,41 @@ def dataframes_to_tree_coords(
     return tree, coords
 
 
+def _compute_lineage_tree(
+    tree: nx.DiGraph,
+) -> Tuple[
+    List[set],
+    List[Tuple[IntTuple, List[IntTuple]]],
+    List[Tuple[IntTuple, List[IntTuple]]],
+]:
+    tree2 = tree.copy()
+
+    splits: List[Tuple[IntTuple, List[IntTuple]]] = []
+    merges: List[Tuple[IntTuple, List[IntTuple]]] = []
+    for node in tree.nodes:
+        children = list(tree.successors(node))
+        parents = list(tree.predecessors(node))
+        if len(children) > 1:
+            for child in children:
+                if tree2.has_edge(node, child):
+                    tree2.remove_edge(node, child)
+            if node not in [p[0] for p in splits]:
+                splits.append((node, children))
+        if len(parents) > 1:
+            for parent in parents:
+                if tree2.has_edge(parent, node):
+                    tree2.remove_edge(parent, node)
+            if node not in [p[0] for p in merges]:
+                merges.append((node, parents))
+
+    connected_components = list(nx.connected_components(nx.Graph(tree2)))
+    return (
+        connected_components,
+        splits,
+        merges,
+    )
+
+
 def tree_to_dataframe(
     tree: nx.DiGraph,
     coords: Optional[Sequence[NumArray]] = None,
@@ -264,27 +299,8 @@ def tree_to_dataframe(
         for (frame, index) in nodes:
             track_df.loc[(frame, index), "tree_id"] = track_id
     #            tree.nodes[(frame, index)]["tree_id"] = track_id
-    tree2 = tree.copy()
 
-    splits: List[Tuple[IntTuple, List[IntTuple]]] = []
-    merges: List[Tuple[IntTuple, List[IntTuple]]] = []
-    for node in tree.nodes:
-        children = list(tree.successors(node))
-        parents = list(tree.predecessors(node))
-        if len(children) > 1:
-            for child in children:
-                if tree2.has_edge(node, child):
-                    tree2.remove_edge(node, child)
-            if node not in [p[0] for p in splits]:
-                splits.append((node, children))
-        if len(parents) > 1:
-            for parent in parents:
-                if tree2.has_edge(parent, node):
-                    tree2.remove_edge(parent, node)
-            if node not in [p[0] for p in merges]:
-                merges.append((node, parents))
-
-    connected_components = list(nx.connected_components(nx.Graph(tree2)))
+    connected_components, splits, merges = _compute_lineage_tree(tree)
     for track_id, nodes in enumerate(connected_components):
         for (frame, index) in nodes:
             track_df.loc[(frame, index), "track_id"] = track_id
@@ -360,6 +376,38 @@ def split_merge_df_to_napari_graph(
     return split_merge_graph
 
 
+class GEFFNetworkXs:
+    """A class to store GEFF networks for the original tree and lineage tree."""
+
+    def __init__(self, tree: nx.DiGraph, lineage_tree: Optional[nx.DiGraph] = None):
+        self.tree = tree
+        self._lineage_tree = lineage_tree
+
+    @property
+    def lineage_tree(self, track_id_prop="track_id") -> nx.DiGraph:
+        """Get the lineage tree."""
+        if self._lineage_tree is None:
+            connected_components, splits, merges = _compute_lineage_tree(self.tree)
+            for track_id, nodes in enumerate(connected_components):
+                for node in nodes:
+                    self.tree.nodes[node][track_id_prop] = track_id
+            self._lineage_tree = nx.DiGraph()
+            self._lineage_tree.add_nodes_from(range(len(connected_components)))
+            for (node, children) in splits:
+                for child in children:
+                    self._lineage_tree.add_edge(
+                        self.tree.nodes[node][track_id_prop],
+                        self.tree.nodes[child][track_id_prop],
+                    )
+            for (node, parents) in merges:
+                for parent in parents:
+                    self._lineage_tree.add_edge(
+                        self.tree.nodes[parent][track_id_prop],
+                        self.tree.nodes[node][track_id_prop],
+                    )
+        return self._lineage_tree
+
+
 def digraph_to_geff_networkx(
     tree: nx.DiGraph,
     coords: Optional[Sequence[NumArray]] = None,
@@ -414,7 +462,7 @@ def digraph_to_geff_networkx(
     nx.relabel_nodes(
         geff_tree, {node: i for i, node in enumerate(geff_tree.nodes)}, copy=False
     )
-    return geff_tree
+    return GEFFNetworkXs(tree=geff_tree)
 
 
 def dataframes_to_geff_networkx(
@@ -459,7 +507,14 @@ def dataframes_to_geff_networkx(
     geff_tree = digraph_to_geff_networkx(
         tree, coords, attr_names=[frame_col] + list(coordinate_cols)
     )
-    return geff_tree
+    edges_split = split_df[["parent_track_id", "child_track_id"]].values
+    edges_merge = merge_df[["parent_track_id", "child_track_id"]].values
+    lineage_tree = nx.from_edgelist(
+        np.concatenate([edges_split, edges_merge]), create_using=nx.DiGraph
+    )
+    nodes_non_included = track_df["track_id"].unique()
+    lineage_tree.add_nodes_from(nodes_non_included)
+    return GEFFNetworkXs(tree=geff_tree, lineage_tree=lineage_tree)
 
 
 def geff_networkx_to_tree_coords_mapping(
