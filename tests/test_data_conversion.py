@@ -349,10 +349,26 @@ def test_to_geff_networkx(test_trees, tmp_path):
     geff_trees = data_conversion.digraph_to_geff_networkx(
         tree, coords, ["frame", "x", "y"]
     )
-    geff.write_nx(geff_trees.tree, tmp_path / "test.geff")
+    t, lt = geff_trees.tree, geff_trees.lineage_tree
+    geff.write_nx(t, tmp_path / "test.geff")
     geff_tree2, metadata = geff.read_nx(tmp_path / "test.geff")
-    assert set(geff_trees.tree.nodes) == set(geff_tree2.nodes)
-    assert set(geff_trees.tree.edges) == set(geff_tree2.edges)
+    assert set(t.nodes) == set(geff_tree2.nodes)
+    assert set(t.edges) == set(geff_tree2.edges)
+    lineage_coords = {
+        frozenset(
+            [
+                (n["frame"], n["x"], n["y"])
+                for nid, n in t.nodes(data=True)
+                if n["track_id"] == sid
+            ]
+        )
+        for sid in lt.nodes
+    }
+    lineage_coords2 = {
+        frozenset([(frame, *coords[frame][index]) for frame, index in segment])
+        for segment in segments
+    }
+    assert lineage_coords == lineage_coords2
 
 
 @pytest.mark.skipif(geff is None, reason="geff is not installed")
