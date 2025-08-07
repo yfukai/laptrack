@@ -44,7 +44,7 @@ def test_read_labels(tmp_path):
 
 
 def test_tap_configure():
-    args = __main__._TrackArgs().parse_args(
+    args = __main__.TrackArgs().parse_args(
         "--coordinate_cols position_x position_y --csv_path test.csv --output_path test.zarr --metric sqeuclidean --cutoff 255".split()
     )
     lt_kwargs = {name: getattr(args, name) for name in LapTrack.model_fields}
@@ -73,7 +73,7 @@ def csv_with_additional_feature(tmp_path, shared_datadir: str):
 
 
 def get_args_lt(csv_path, geff_path):
-    args = __main__._TrackArgs().parse_args(
+    args = __main__.TrackArgs().parse_args(
         (
             f"--csv_path {csv_path} --output_path {geff_path} "
             "--coordinate_cols position_x position_y --frame_col frame "
@@ -99,13 +99,13 @@ def test_run_track(tmp_path, csv_with_additional_feature):
     track_df, split_df, merge_df = lt.predict_dataframe(
         df, coordinate_cols=["position_x", "position_y"], frame_col="frame"
     )
-    geff_tree2 = data_conversion.dataframes_to_geff_networkx(
+    geff_trees2 = data_conversion.dataframes_to_geff_networkx(
         track_df,
         split_df,
         merge_df,
         frame_col="frame",
     )
-    assert nx.is_isomorphic(geff_tree1, geff_tree2)
+    assert nx.is_isomorphic(geff_tree1, geff_trees2.tree)
 
 
 def test_run_track_geff(tmp_path, csv_with_additional_feature):

@@ -89,12 +89,18 @@ class _Args(Tap):
         """Configure parser based on :class:`LapTrack` fields."""
         self.add_subparsers(dest="cmd", help="Subcommands for laptrack")
         self.add_subparser(
-            "track", _TrackArgs, help="Track point-like object from a dataframe."
+            "track", TrackArgs, help="Track point-like object from a dataframe."
         )
-        self.add_subparser("overlap_track", _OverLapTrackArgs, help="b help")
+        self.add_subparser(
+            "overlap_track",
+            OverLapTrackArgs,
+            help="Track segmentation images by overlap.",
+        )
 
 
-class _TrackArgs(Tap):
+class TrackArgs(Tap):
+    """Arguments for the "track" command."""
+
     csv_path: Optional[Path] = None  # path to input csv file
     track_geff_path: Optional[Path] = None  # path to output geff file
     output_path: Path
@@ -104,14 +110,16 @@ class _TrackArgs(Tap):
     configure = _tap_configure_from_cls([LapTrack])
 
 
-class _OverLapTrackArgs(Tap):
+class OverLapTrackArgs(Tap):
+    """Arguments for the "overlap_track" command."""
+
     labels_path: Path  # path to input csv file
     metadata_path: Optional[Path] = None  # path to metadata file
     output_path: Path
     configure = _tap_configure_from_cls([OverLapTrack])
 
 
-def track(args: _TrackArgs) -> None:
+def track(args: TrackArgs) -> None:
     """Execute tracking based on parsed arguments."""
     lt_kwargs = {name: getattr(args, name) for name in LapTrack.model_fields}
     lt = LapTrack(**lt_kwargs)
@@ -134,16 +142,16 @@ def track(args: _TrackArgs) -> None:
         track_df, split_df, merge_df = lt.predict_dataframe(
             df, coordinate_cols=args.coordinate_cols, frame_col=args.frame_col
         )
-        geff_tree = data_conversion.dataframes_to_geff_networkx(
+        geff_nxs = data_conversion.dataframes_to_geff_networkx(
             track_df,
             split_df,
             merge_df,
             frame_col=args.frame_col,
         )
     else:
-        geff_tree, tracked_metadata = geff.read_nx(args.track_geff_path)
+        geff_nxs, tracked_metadata = geff.read_nx(args.track_geff_path)
         tree, coords, mappings = data_conversion.geff_networkx_to_tree_coords_mapping(
-            geff_tree,
+            geff_nxs,
             coordinate_props=args.coordinate_cols,
             frame_prop=args.frame_col,
         )
@@ -152,19 +160,20 @@ def track(args: _TrackArgs) -> None:
         # Copy the GEFF to new output
         for edge in tree2.edges:
             edge2 = [rev_mappings[edge[0]], rev_mappings[edge[1]]]
-            if edge2 not in geff_tree.edges:
-                assert edge2[0] in geff_tree.nodes
-                assert edge2[1] in geff_tree.nodes
-                geff_tree.add_edge(edge2[0], edge2[1])
+            if edge2 not in geff_nxs.edges:
+                assert edge2[0] in geff_nxs.nodes
+                assert edge2[1] in geff_nxs.nodes
+                geff_nxs.add_edge(edge2[0], edge2[1])
         _metadata = tracked_metadata.model_copy(
             update=metadata.model_dump(exclude_unset=True)
         )
         metadata = _metadata
 
-    geff.write_nx(geff_tree, args.output_path, metadata=metadata)
+    geff.write_nx(geff_nxs.tree, args.output_path, metadata=metadata)
+    geff.write_nx(geff_nxs.lineage_tree, args.output_path / "lineage_tree.geff")
 
 
-def track_overlap(args: _OverLapTrackArgs) -> None:
+def track_overlap(args: OverLapTrackArgs) -> None:
     """Execute overlap tracking based on parsed arguments."""
     labels = _read_image(args.labels_path)
 
