@@ -514,7 +514,7 @@ def dataframes_to_geff_networkx(
     )
     nodes_non_included = track_df["track_id"].unique()
     lineage_tree.add_nodes_from(nodes_non_included)
-    return GEFFNetworkXs(tree=geff_tree, lineage_tree=lineage_tree)
+    return GEFFNetworkXs(tree=geff_tree.tree, lineage_tree=lineage_tree)
 
 
 def geff_networkx_to_tree_coords_mapping(
