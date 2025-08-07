@@ -746,7 +746,6 @@ class LapTrack(BaseModel, extra="forbid"):
         df: pd.DataFrame,
         coordinate_cols: List[str],
         frame_col: str = "frame",
-        only_coordinate_cols: bool = True,
         connected_edges: Optional[List[Tuple[Int, Int]]] = None,
         index_offset: Int = 0,
     ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:

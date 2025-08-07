@@ -319,6 +319,8 @@ def tree_to_dataframe(
                 }
             )
     split_df = pd.DataFrame.from_records(split_df_data).astype(int)
+    if split_df.empty:
+        split_df = pd.DataFrame({"parent_track_id": [], "child_track_id": []})
 
     merge_df_data = []
     for (node, parents) in merges:
@@ -330,6 +332,8 @@ def tree_to_dataframe(
                 }
             )
     merge_df = pd.DataFrame.from_records(merge_df_data).astype(int)
+    if merge_df.empty:
+        merge_df = pd.DataFrame({"parent_track_id": [], "child_track_id": []})
 
     if dataframe is not None:
         track_df = track_df.reset_index(drop=True)
