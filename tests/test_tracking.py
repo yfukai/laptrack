@@ -134,7 +134,8 @@ def test_reproducing_trackmate(testdata, parallel_backend) -> None:
         )
     df = pd.concat(data)
     track_df, split_df, merge_df = lt.predict_dataframe(
-        df, ["x", "y"], only_coordinate_cols=True
+        df,
+        ["x", "y"],
     )
     assert not any(split_df.duplicated())
     assert not any(merge_df.duplicated())
@@ -147,7 +148,9 @@ def test_reproducing_trackmate(testdata, parallel_backend) -> None:
 
     # check index offset
     track_df3, split_df3, merge_df3 = lt.predict_dataframe(
-        df, ["x", "y"], index_offset=2, only_coordinate_cols=True
+        df,
+        ["x", "y"],
+        index_offset=2,
     )
     assert min(track_df3["track_id"]) == 2
     assert min(track_df3["tree_id"]) == 2
@@ -168,7 +171,8 @@ def test_reproducing_trackmate(testdata, parallel_backend) -> None:
     assert (merge_df3 == merge_df4).all().all()
 
     track_df, split_df, merge_df = lt.predict_dataframe(
-        df, ["x", "y"], only_coordinate_cols=False
+        df,
+        ["x", "y"],
     )
     assert all(track_df["frame"] == track_df2["frame"])
     assert (track_df == track_df2).all().all()
@@ -218,7 +222,6 @@ def test_tracking_zero_distance2(shared_datadir: str) -> None:
         data,
         coordinate_cols=["h"],
         frame_col="seconds",
-        only_coordinate_cols=False,
     )
 
     data2 = data.copy()
@@ -228,7 +231,6 @@ def test_tracking_zero_distance2(shared_datadir: str) -> None:
         data2,
         coordinate_cols=["h"],
         frame_col="seconds",
-        only_coordinate_cols=False,
     )
 
     assert (
@@ -279,7 +281,8 @@ def test_allow_frame_without_coords(splitting_cutoff, merging_cutoff) -> None:
     ]
 
     track_df, split_df, merge_df = lt.predict_dataframe(
-        df, ["x", "y"], only_coordinate_cols=False
+        df,
+        ["x", "y"],
     )
     track_df = track_df.set_index(["frame", "x", "y"])
     assert split_df.empty
@@ -360,7 +363,6 @@ def test_connected_edges(tracker_class) -> None:
         coords_df,
         coordinate_cols=["y", "x"],
         connected_edges=connected_edges2,
-        only_coordinate_cols=False,
     )
     assert set(
         [df_to_tuples(grp[["y", "x"]]) for _, grp in track_df.groupby("track_id")]
@@ -395,7 +397,6 @@ def test_connected_edges_splitting(tracker_class) -> None:
         coords_df,
         coordinate_cols=["y", "x"],
         connected_edges=connected_edges2,
-        only_coordinate_cols=False,
     )
     assert set(
         [df_to_tuples(grp[["y", "x"]]) for _, grp in track_df.groupby("track_id")]

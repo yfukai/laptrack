@@ -13,6 +13,7 @@ from skimage.io import imsave
 from laptrack import __main__
 from laptrack import data_conversion
 from laptrack import LapTrack
+from laptrack import OverLapTrack
 from laptrack.datasets import cell_segmentation
 from laptrack.datasets import HL60_3D_synthesized
 
@@ -87,6 +88,37 @@ def get_args_lt(csv_path, geff_path):
     return args, lt
 
 
+def test_get_args_lt():
+    args, lt = get_args_lt("test.csv", "test.geff")
+    assert lt.metric == "sqeuclidean"
+    assert lt.cutoff == 100
+    assert lt.splitting_cutoff == 100
+    assert lt.merging_cutoff == 100
+    assert lt.alternative_cost_percentile_interpolation == "higher"
+
+
+def get_args_olt(labels_path, image_path, geff_path):
+    args = __main__.OverLapTrackArgs().parse_args(
+        (
+            f"--labels_path {labels_path} --output_path {geff_path} "
+            f"--image_path {image_path} "
+            "--metric_coefs 1. -1. 0 0 0 "
+            "--cutoff 1 "
+            # "--splitting_metric_coefs (1. -1. 0 0 0) --splitting_cutoff 1"
+        ).split()
+    )
+    lt = OverLapTrack(**{k: getattr(args, k) for k in OverLapTrack.model_fields})
+    return args, lt
+
+
+def test_get_args_olt():
+    args, lt = get_args_olt("test", "test2", "test.geff")
+    assert lt.metric_coefs == (1, -1, 0, 0, 0)
+    assert lt.cutoff == 1
+    assert lt.splitting_metric_coefs == (1, -1, 0, 0, 0)
+    assert lt.splitting_cutoff == 1
+
+
 def test_run_track(tmp_path, csv_with_additional_feature):
     """Test the track function with a sample CSV file."""
     os.chdir(tmp_path)
@@ -109,4 +141,8 @@ def test_run_track(tmp_path, csv_with_additional_feature):
 
 
 def test_run_track_geff(tmp_path, csv_with_additional_feature):
+    pass
+
+
+def test_run_overlap_track(tmp_path):
     pass

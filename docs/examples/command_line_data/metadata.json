@@ -1,0 +1,50 @@
+{
+  "geff_version": "0.5.1.dev1+ge6d3dc6",
+  "directed": true,
+  "axes": [
+    {
+      "name": "frame",
+      "type": "time",
+      "unit": "frame",
+      "min": null,
+      "max": null
+    },
+    {
+      "name": "y",
+      "type": "space",
+      "unit": "px",
+      "min": null,
+      "max": null
+    },
+    {
+      "name": "x",
+      "type": "space",
+      "unit": "px",
+      "min": null,
+      "max": null
+    }
+  ],
+  "node_props_metadata": null,
+  "edge_props_metadata": null,
+  "sphere": null,
+  "ellipsoid": null,
+  "track_node_props": {
+    "lineage": "tree_id",
+    "tracklet": "track_id"
+  },
+  "related_objects": [
+    {
+      "type": "image",
+      "path": "../image",
+      "label_prop": null
+    },
+    {
+      "type": "labels",
+      "path": "../labels",
+      "label_prop": "seg_id"
+    }
+  ],
+  "affine": null,
+  "display_hints": null,
+  "extra": {}
+}
