@@ -1,3 +1,7 @@
+.. image:: logo_300.png
+   :align: center
+   :alt: LapTrack Logo
+
 LapTrack
 ========
 

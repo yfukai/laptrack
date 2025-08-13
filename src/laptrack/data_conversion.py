@@ -165,6 +165,41 @@ def dataframes_to_tree_coords(
     return tree, coords
 
 
+def _compute_lineage_tree(
+    tree: nx.DiGraph,
+) -> Tuple[
+    List[set],
+    List[Tuple[IntTuple, List[IntTuple]]],
+    List[Tuple[IntTuple, List[IntTuple]]],
+]:
+    tree2 = tree.copy()
+
+    splits: List[Tuple[IntTuple, List[IntTuple]]] = []
+    merges: List[Tuple[IntTuple, List[IntTuple]]] = []
+    for node in tree.nodes:
+        children = list(tree.successors(node))
+        parents = list(tree.predecessors(node))
+        if len(children) > 1:
+            for child in children:
+                if tree2.has_edge(node, child):
+                    tree2.remove_edge(node, child)
+            if node not in [p[0] for p in splits]:
+                splits.append((node, children))
+        if len(parents) > 1:
+            for parent in parents:
+                if tree2.has_edge(parent, node):
+                    tree2.remove_edge(parent, node)
+            if node not in [p[0] for p in merges]:
+                merges.append((node, parents))
+
+    connected_components = list(nx.connected_components(nx.Graph(tree2)))
+    return (
+        connected_components,
+        splits,
+        merges,
+    )
+
+
 def tree_to_dataframe(
     tree: nx.DiGraph,
     coords: Optional[Sequence[NumArray]] = None,
@@ -264,27 +299,8 @@ def tree_to_dataframe(
         for (frame, index) in nodes:
             track_df.loc[(frame, index), "tree_id"] = track_id
     #            tree.nodes[(frame, index)]["tree_id"] = track_id
-    tree2 = tree.copy()
 
-    splits: List[Tuple[IntTuple, List[IntTuple]]] = []
-    merges: List[Tuple[IntTuple, List[IntTuple]]] = []
-    for node in tree.nodes:
-        children = list(tree.successors(node))
-        parents = list(tree.predecessors(node))
-        if len(children) > 1:
-            for child in children:
-                if tree2.has_edge(node, child):
-                    tree2.remove_edge(node, child)
-            if node not in [p[0] for p in splits]:
-                splits.append((node, children))
-        if len(parents) > 1:
-            for parent in parents:
-                if tree2.has_edge(parent, node):
-                    tree2.remove_edge(parent, node)
-            if node not in [p[0] for p in merges]:
-                merges.append((node, parents))
-
-    connected_components = list(nx.connected_components(nx.Graph(tree2)))
+    connected_components, splits, merges = _compute_lineage_tree(tree)
     for track_id, nodes in enumerate(connected_components):
         for (frame, index) in nodes:
             track_df.loc[(frame, index), "track_id"] = track_id
@@ -303,6 +319,8 @@ def tree_to_dataframe(
                 }
             )
     split_df = pd.DataFrame.from_records(split_df_data).astype(int)
+    if split_df.empty:
+        split_df = pd.DataFrame({"parent_track_id": [], "child_track_id": []})
 
     merge_df_data = []
     for (node, parents) in merges:
@@ -314,6 +332,8 @@ def tree_to_dataframe(
                 }
             )
     merge_df = pd.DataFrame.from_records(merge_df_data).astype(int)
+    if merge_df.empty:
+        merge_df = pd.DataFrame({"parent_track_id": [], "child_track_id": []})
 
     if dataframe is not None:
         track_df = track_df.reset_index(drop=True)
@@ -358,6 +378,38 @@ def split_merge_df_to_napari_graph(
             }
         )
     return split_merge_graph
+
+
+class GEFFNetworkXs:
+    """A class to store GEFF networks for the original tree and lineage tree."""
+
+    def __init__(self, tree: nx.DiGraph, lineage_tree: Optional[nx.DiGraph] = None):
+        self.tree = tree
+        self._lineage_tree = lineage_tree
+
+    @property
+    def lineage_tree(self, track_id_prop="track_id") -> nx.DiGraph:
+        """Get the lineage tree."""
+        if self._lineage_tree is None:
+            connected_components, splits, merges = _compute_lineage_tree(self.tree)
+            for track_id, nodes in enumerate(connected_components):
+                for node in nodes:
+                    self.tree.nodes[node][track_id_prop] = track_id
+            self._lineage_tree = nx.DiGraph()
+            self._lineage_tree.add_nodes_from(range(len(connected_components)))
+            for (node, children) in splits:
+                for child in children:
+                    self._lineage_tree.add_edge(
+                        self.tree.nodes[node][track_id_prop],
+                        self.tree.nodes[child][track_id_prop],
+                    )
+            for (node, parents) in merges:
+                for parent in parents:
+                    self._lineage_tree.add_edge(
+                        self.tree.nodes[parent][track_id_prop],
+                        self.tree.nodes[node][track_id_prop],
+                    )
+        return self._lineage_tree
 
 
 def digraph_to_geff_networkx(
@@ -414,14 +466,13 @@ def digraph_to_geff_networkx(
     nx.relabel_nodes(
         geff_tree, {node: i for i, node in enumerate(geff_tree.nodes)}, copy=False
     )
-    return geff_tree
+    return GEFFNetworkXs(tree=geff_tree)
 
 
 def dataframes_to_geff_networkx(
     track_df: pd.DataFrame,
     split_df: pd.DataFrame,
     merge_df: pd.DataFrame,
-    coordinate_cols: Sequence[str],
     frame_col: str = "frame",
 ) -> nx.DiGraph:
     """Convert the track dataframes to a GEFF networkx graph.
@@ -434,8 +485,6 @@ def dataframes_to_geff_networkx(
         The splitting dataframe.
     merge_df : pd.DataFrame
         The merging dataframe.
-    coordinate_cols : Sequence[str]
-        The list of columns used for the coordinates.
     frame_col : str, default "frame"
         The column name used for the integer frame index.
 
@@ -453,19 +502,30 @@ def dataframes_to_geff_networkx(
     >>> geff_tree = data_conversion.dataframes_to_geff_networkx(track_df, split_df, merge_df)
     >>> geff.write_nx(geff_tree, "save_path.zarr")
     """
+    column_names = track_df.columns.tolist()
+    if frame_col not in column_names:
+        raise ValueError(f"frame_col '{frame_col}' must be in the track_df columns")
+    column_names.remove(frame_col)
     tree, coords = dataframes_to_tree_coords(
-        track_df, split_df, merge_df, coordinate_cols, frame_col
+        track_df, split_df, merge_df, column_names, frame_col
     )
     geff_tree = digraph_to_geff_networkx(
-        tree, coords, attr_names=[frame_col] + list(coordinate_cols)
+        tree, coords, attr_names=[frame_col] + column_names
     )
-    return geff_tree
+    edges_split = split_df[["parent_track_id", "child_track_id"]].values
+    edges_merge = merge_df[["parent_track_id", "child_track_id"]].values
+    lineage_tree = nx.from_edgelist(
+        np.concatenate([edges_split, edges_merge]), create_using=nx.DiGraph
+    )
+    nodes_non_included = track_df["track_id"].unique()
+    lineage_tree.add_nodes_from(nodes_non_included)
+    return GEFFNetworkXs(tree=geff_tree.tree, lineage_tree=lineage_tree)
 
 
 def geff_networkx_to_tree_coords_mapping(
     geff_tree: nx.DiGraph,
-    frame_attr: str = "frame",
-    coordinate_attrs: Optional[Sequence[str]] = None,
+    frame_prop: str = "frame",
+    coordinate_props: Optional[Sequence[str]] = None,
 ) -> Tuple[nx.DiGraph, List[NumArray], Dict[int, Tuple[int, int]]]:
     """Convert a GEFF networkx graph to a directed graph and coordinates.
 
@@ -474,9 +534,9 @@ def geff_networkx_to_tree_coords_mapping(
     geff_tree : nx.DiGraph
         The graph in the GEFF format whose nodes have attributes for frame
         and coordinates.
-    frame_attr : str, default "frame"
+    frame_prop : str, default "frame"
         The node attribute name that stores the frame index.
-    coordinate_attrs : Optional[Sequence[str]], default None
+    coordinate_props : Optional[Sequence[str]], default None
         The node attribute names that store the coordinates. If ``None``, they
         are inferred from the first node excluding ``frame_attr``.
 
@@ -497,15 +557,15 @@ def geff_networkx_to_tree_coords_mapping(
 
     sample_node, data = next(iter(geff_tree.nodes(data=True)))
     assert (
-        frame_attr in data
-    ), f"frame_attr '{frame_attr}' must be in the node attributes of the graph"
-    if coordinate_attrs is None:
-        coordinate_attrs = []
+        frame_prop in data
+    ), f"frame_attr '{frame_prop}' must be in the node attributes of the graph"
+    if coordinate_props is None:
+        coordinate_props = []
 
     # collect nodes for each frame
     frame_to_nodes: Dict[int, List[int]] = {}
     for node, attrs in geff_tree.nodes(data=True):
-        frame = int(attrs[frame_attr])
+        frame = int(attrs[frame_prop])
         frame_to_nodes.setdefault(frame, []).append(node)
 
     frames = sorted(frame_to_nodes.keys())
@@ -518,7 +578,7 @@ def geff_networkx_to_tree_coords_mapping(
     for frame in range(frame_min, frame_max + 1):
         nodes = sorted(frame_to_nodes.get(frame, []))
         coord_arr = np.array(
-            [[geff_tree.nodes[n][attr] for attr in coordinate_attrs] for n in nodes]
+            [[geff_tree.nodes[n][attr] for attr in coordinate_props] for n in nodes]
         )
         coords.append(coord_arr)
         for idx, node in enumerate(nodes):

@@ -64,6 +64,15 @@ class OverLapTrack(LapTrack):
                     data[new_name] = data.pop(old_name)
         return data
 
+    _predict_dataframe = LapTrack.predict_dataframe
+
+    def predict_dataframe(*args, **kwargs):
+        """Predicts tracks with label overlaps. Cannot be used for OverLapTrack."""
+        """Raises NotImplementedError."""
+        raise NotImplementedError(
+            "Use `predict_overlap_dataframe` instead of `predict_dataframe` for OverLapTrack."
+        )
+
     def predict_overlap_dataframe(self, labels: Union[IntArray, List[IntArray]]):
         """Predicts tracks with label overlaps.
 
@@ -78,10 +87,9 @@ class OverLapTrack(LapTrack):
             The track dataframe, with the following columns:
 
             - "frame" : The frame index.
-            - "index" : The coordinate index.
+            - "label" : The segmentation label.
             - "track_id" : The track id.
             - "tree_id" : The tree id.
-            - the other columns : The coordinate values.
         split_df : pd.DataFrame
             The splitting dataframe, with the following columns:
 
@@ -125,8 +133,9 @@ class OverLapTrack(LapTrack):
         self.splitting_metric = partial(metric, params=self.splitting_metric_coefs)
         self.merging_metric = partial(metric, params=self.merging_metric_coefs)
 
-        track_df, split_df, merge_df = super().predict_dataframe(
-            lo.frame_label_df, ["frame", "label"], only_coordinate_cols=False
+        track_df, split_df, merge_df = self._predict_dataframe(
+            lo.frame_label_df,
+            ["frame", "label"],
         )
         track_df = track_df.set_index(["frame", "label"])
         # _calc_overlap.cache_clear()

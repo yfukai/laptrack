@@ -111,7 +111,8 @@ def test_overlap_tracking(
         **params
     )
     track_df1, split_df1, merge_df1 = lt.predict_dataframe(
-        coordinate_df, coordinate_cols=["frame", "label"], only_coordinate_cols=False
+        coordinate_df,
+        coordinate_cols=["frame", "label"],
     )
 
     # New tracking
