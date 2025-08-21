@@ -8,7 +8,7 @@ import pytest
 try:
     import geff
 except ImportError:
-    geff = None # type: ignore[assignment]
+    geff = None  # type: ignore[assignment]
 
 from laptrack import data_conversion
 from laptrack import LapTrack
