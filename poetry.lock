@@ -5504,4 +5504,4 @@ geff = ["geff"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.10,<3.14"
-content-hash = "05b0c69e177ad6e7bf6997f0cf6cd56f747d0b787199534bd4820b3112e760f0"
+content-hash = "f28f5812c47a5ba37d4697a009545f19de77a90918254ed81113c56e5287ae7d"
