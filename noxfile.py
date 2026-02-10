@@ -20,7 +20,7 @@ except ImportError:
 
 
 package = "laptrack"
-python_versions = ["3.13", "3.12", "3.11", "3.10"]
+python_versions = ["3.14", "3.13", "3.12", "3.11", "3.10"]
 safety_ignore = [
     44717,
     44715,

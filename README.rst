@@ -58,7 +58,7 @@ Requirements
 ------------
 
 Python >= 3.10 is supported.
-The software is tested against Python 3.10-3.13 in Ubuntu, and 3.13 in MacOS and Windows environments,
+The software is tested against Python 3.10-3.14 in Ubuntu, and 3.14 in MacOS and Windows environments,
 but the other combinations should also be fine. Please `file an issue`_ if you encounter any problem.
 
 Installation
