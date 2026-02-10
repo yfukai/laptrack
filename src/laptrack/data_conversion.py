@@ -393,7 +393,7 @@ def digraph_to_geff_networkx(
     >>> import laptrack.data_conversion as data_conversion
     >>> tree = lt.predict(coords)
     >>> geff_tree = data_conversion.digraph_to_geff_networkx(tree, coords, attr_names)
-    >>> geff.write_nx(geff_tree, "save_path.zarr")
+    >>> geff.write(geff_tree, "save_path.zarr")
     """
     geff_tree = tree.copy()
     for node in geff_tree.nodes:
@@ -451,7 +451,7 @@ def dataframes_to_geff_networkx(
     >>> lt = LapTrack()
     >>> track_df, split_df, merge_df = lt.predict(df, coordinate_cols = ["x","y","z"])
     >>> geff_tree = data_conversion.dataframes_to_geff_networkx(track_df, split_df, merge_df)
-    >>> geff.write_nx(geff_tree, "save_path.zarr")
+    >>> geff.write(geff_tree, "save_path.zarr")
     """
     tree, coords = dataframes_to_tree_coords(
         track_df, split_df, merge_df, coordinate_cols, frame_col
