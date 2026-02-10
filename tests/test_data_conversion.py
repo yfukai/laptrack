@@ -349,8 +349,8 @@ def test_to_geff_networkx(test_trees, tmp_path):
     geff_tree = data_conversion.digraph_to_geff_networkx(
         tree, coords, ["frame", "x", "y"]
     )
-    geff.write_nx(geff_tree, tmp_path / "test.geff")
-    geff_tree2, metadata = geff.read_nx(tmp_path / "test.geff")
+    geff.write(geff_tree, tmp_path / "test.geff")
+    geff_tree2, _metadata = geff.read(tmp_path / "test.geff", backend="networkx")
     assert set(geff_tree.nodes) == set(geff_tree2.nodes)
     assert set(geff_tree.edges) == set(geff_tree2.edges)
 
