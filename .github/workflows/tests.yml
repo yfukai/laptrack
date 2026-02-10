@@ -30,7 +30,7 @@ jobs:
           - { python-version: "3.13", os: macos-latest, session: "tests" }
           # ray support is still lagging on the latest Python versions
           - { python-version: "3.12", os: ubuntu-latest, session: "typeguard" }
-          - { python-version: "3.13", os: ubuntu-latest, session: "docs-build" }
+          - { python-version: "3.14", os: ubuntu-latest, session: "docs-build" }
 
     env:
       NOXSESSION: ${{ matrix.session }}
