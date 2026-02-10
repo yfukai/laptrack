@@ -1,6 +1,6 @@
 [project]
 name = "laptrack"
-version = "0.17.0"
+version = "0.17.1"
 description = "LapTrack"
 authors = [{ name = "Yohsuke Fukai", email = "ysk@yfukai.net" }]
 license = { file = "LICENSE.rst" }
