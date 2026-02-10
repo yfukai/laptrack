@@ -30,7 +30,7 @@ jobs:
           - { python-version: "3.13", os: macos-latest, session: "tests" }
           # ray support is still lagging on the latest Python versions
           - { python-version: "3.12", os: ubuntu-latest, session: "typeguard" }
-          - { python-version: "3.14", os: ubuntu-latest, session: "docs-build" }
+          - { python-version: "3.13", os: ubuntu-latest, session: "docs-build" }
 
     env:
       NOXSESSION: ${{ matrix.session }}
@@ -53,14 +53,14 @@ jobs:
           pip install --constraint=.github/workflows/constraints.txt pip
           pip --version
 
-      - name: Install Poetry
+      - name: Install uv
         run: |
-          pip install --constraint=.github/workflows/constraints.txt poetry poetry-plugin-export
-          poetry --version
+          pip install --constraint=.github/workflows/constraints.txt uv
+          uv --version
 
       - name: Install Nox
         run: |
-          pip install --constraint=.github/workflows/constraints.txt nox nox-poetry
+          pip install --constraint=.github/workflows/constraints.txt nox
           nox --version
 
       - name: Compute pre-commit cache key
@@ -124,14 +124,14 @@ jobs:
           pip install --constraint=.github/workflows/constraints.txt pip
           pip --version
 
-      - name: Install Poetry
+      - name: Install uv
         run: |
-          pip install --constraint=.github/workflows/constraints.txt poetry poetry-plugin-export
-          poetry --version
+          pip install --constraint=.github/workflows/constraints.txt uv
+          uv --version
 
       - name: Install Nox
         run: |
-          pip install --constraint=.github/workflows/constraints.txt nox nox-poetry
+          pip install --constraint=.github/workflows/constraints.txt nox
           nox --version
 
       - name: Download coverage data

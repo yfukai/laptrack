@@ -45,27 +45,23 @@ How to set up your development environment
 
 You need Python 3.10+ and the following tools:
 
-- Poetry_
+- uv_
 - Nox_
-- nox-poetry_
-- poetry-bumpversion_
 
 Install the package with development requirements:
 
 .. code:: console
 
-   $ poetry install
+   $ uv sync --all-extras --group dev
 
 You can now run an interactive shell session:
 
 .. code:: console
 
-   $ poetry shell
+   $ uv run python
 
-.. _Poetry: https://python-poetry.org/
+.. _uv: https://docs.astral.sh/uv/
 .. _Nox: https://nox.thea.codes/
-.. _nox-poetry: https://nox-poetry.readthedocs.io/
-.. _poetry-bumpversion: https://github.com/monim67/poetry-bumpversion
 
 
 How to test the project

@@ -1,13 +1,11 @@
-[tool.poetry]
+[project]
 name = "laptrack"
 version = "0.17.0"
 description = "LapTrack"
-authors = ["Yohsuke Fukai <ysk@yfukai.net>"]
-license = "BSD-3-Clause"
+authors = [{ name = "Yohsuke Fukai", email = "ysk@yfukai.net" }]
+license = { file = "LICENSE.rst" }
 readme = "README.rst"
-homepage = "https://github.com/yfukai/laptrack"
-repository = "https://github.com/yfukai/laptrack"
-documentation = "https://laptrack.readthedocs.io"
+requires-python = ">=3.10,<3.15"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -21,61 +19,63 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
     "License :: OSI Approved :: BSD License",
 ]
+dependencies = [
+    "click>=8.0.1",
+    "numpy>=1.26,<3.0.0",
+    "scipy>=1.14.1,!=1.15.*,<2.0.0", # allow 1.14.1 or >=1.16.0 to avoid scipy bug
+    "networkx>=3.4.2",
+    "pandas>=1.3.1,<4.0.0",
+    "typing-extensions>=4.1.0,<5.0.0",
+    "pydantic>=2.0,<3.0.0",
+    "scikit-image>=0.24.0,<1.0.0",
+    "pooch>=1.6.0",
+    "scikit-learn>=1.5.0",
+]
 
-[tool.poetry.urls]
+[project.urls]
+Homepage = "https://github.com/yfukai/laptrack"
+Repository = "https://github.com/yfukai/laptrack"
+Documentation = "https://laptrack.readthedocs.io"
 Changelog = "https://github.com/yfukai/laptrack/releases"
 
-[tool.poetry.dependencies]
-python = "^3.10,<3.15"
-click = ">=8.0.1"
-numpy = ">=1.26,<3.0.0"
-scipy = ">=1.14.1,!=1.15.*,<2.0.0" # allow 1.14.1 or >=1.16.0 to avoid scipy bug
-networkx = ">=3.4.2"
-pandas = ">=1.3.1,<4.0.0"
-typing-extensions = "^4.1.0"
-pydantic = "^2.0"
-scikit-image = ">=0.24.0,<1.0.0"
-pooch = ">=1.6.0"
-scikit-learn = ">=1.5.0"
-geff = { version = ">=1.1.4.1.1", optional = true }
+[project.optional-dependencies]
+geff = ["geff>=1.1.4.1.1"]
+all = ["geff>=1.1.4.1.1"]
 
-[tool.poetry.extras]
-geff = ["geff"]
-all = ["geff"]
-
-[tool.poetry.scripts]
+[project.scripts]
 laptrack = "laptrack.__main__:main"
 
-[tool.poetry.group.dev.dependencies]
-pytest = "^6.2.4"
-pytest-datadir = "^1.3.1"
-coverage = {extras = ["toml"], version = "^6.2"}
-safety = "^2.3.1"
-mypy = "^1.5.1"
-typeguard = "^2.13.3"
-xdoctest = {extras = ["colors"], version = "^1.1.0"}
+[dependency-groups]
+dev = [
+    "pytest>=6.2.4,<7.0.0",
+    "pytest-datadir>=1.3.1,<2.0.0",
+    "coverage[toml]>=6.2,<7.0.0",
+    "safety>=2.3.1,<3.0.0",
+    "mypy>=1.5.1,<2.0.0",
+    "typeguard>=2.13.3,<3.0.0",
+    "xdoctest[colors]>=1.1.0,<2.0.0",
+    "matplotlib>=3.7.2",
+    "sphinx==6.2.1",
+    "sphinx-autobuild>=2021.3.14",
+    "sphinx-rtd-theme>=1.2.2",
+    "sphinx-click>=5.0.1",
+    "sphinx-gallery>=0.10",
+    "sphinxcontrib-napoleon>=0.7",
+    "nbsphinx>=0.8.9",
+    "autodoc-pydantic>=1.9.0",
+    "pygments>=2.13.0,<3.0.0",
+    "ipykernel>=6.29.5",
+    "notebook>=7.2.2",
+    "xmltodict>=0.15.1,<0.16.0",
+    "pre-commit>=2.20.0,<3.0.0",
+    "nox>=2024.10.9,<2025.0.0",
+    "toml>=0.10.2,<0.11.0",
+    "cryptography>=43.0.1",
+    "virtualenv>=20.26.6",
+]
 
-matplotlib = ">=3.7.2"
-sphinx = "6.2.1"
-sphinx-autobuild = ">=2021.3.14"
-sphinx-rtd-theme = ">=1.2.2"
-sphinx-click = ">=5.0.1"
-sphinx-gallery = ">=0.10"
-sphinxcontrib-napoleon = ">=0.7"
-nbsphinx = ">=0.8.9"
-autodoc-pydantic = ">=1.9.0"
-
-pygments = "^2.13.0"
-ipykernel = ">=6.29.5"
-notebook = ">=7.2.2"
-xmltodict = "^0.15.1"
-pre-commit = "^2.20.0"
-nox = "^2024.10.9"
-nox-poetry = "^1.2.0"
-toml = "^0.10.2"
-
-cryptography = ">=43.0.1"
-virtualenv = ">=20.26.6"
+[tool.uv]
+default-groups = ["dev"]
 
 [tool.coverage.paths]
 source = ["src", "*/site-packages"]
@@ -96,8 +96,8 @@ show_error_codes = true
 show_error_context = true
 
 [build-system]
-requires = ["poetry-core>=1.8.4"]
-build-backend = "poetry.core.masonry.api"
-[tool.setuptools_scm]
+requires = ["hatchling>=1.26.0"]
+build-backend = "hatchling.build"
 
-[tool.poetry_bumpversion.file."src/laptrack/__init__.py"]
+[tool.hatch.build.targets.wheel]
+packages = ["src/laptrack"]
