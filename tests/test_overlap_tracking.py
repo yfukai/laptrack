@@ -126,7 +126,7 @@ def test_overlap_tracking(
 
     track_df2, split_df2, merge_df2 = olt.predict_overlap_dataframe(labels)
 
-    track_df1 = track_df1.droplevel("index").set_index(["label"], append=True)
+    track_df1 = track_df1.set_index(["frame", "label"])
     assert (
         (track_df1[["tree_id", "track_id"]] == track_df2[["tree_id", "track_id"]])
         .all()

@@ -1,6 +1,7 @@
-laptrack
+laptrack[all]
 napari[all]
 pandas
 numpy
 scikit-image
 jupyter
+matplotlib

@@ -9,7 +9,7 @@ import pandas as pd
 
 from ._typing_utils import EdgeType
 from ._typing_utils import Int
-from .data_conversion import convert_tree_to_dataframe
+from .data_conversion import tree_to_dataframe
 from .utils import order_edges
 
 
@@ -116,10 +116,8 @@ def calc_scores(
             pred_tree = nx.from_edgelist(
                 order_edges(predicted_edges), create_using=nx.DiGraph
             )
-            gt_track_df, gt_split_df, _gt_merge_df = convert_tree_to_dataframe(gt_tree)
-            pred_track_df, pred_split_df, _pred_merge_df = convert_tree_to_dataframe(
-                pred_tree
-            )
+            gt_track_df, gt_split_df, _gt_merge_df = tree_to_dataframe(gt_tree)
+            pred_track_df, pred_split_df, _pred_merge_df = tree_to_dataframe(pred_tree)
             gt_track_df = gt_track_df.reset_index()
             pred_track_df = pred_track_df.reset_index()
 
