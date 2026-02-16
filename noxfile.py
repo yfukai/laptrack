@@ -2,25 +2,12 @@
 import shutil
 import sys
 from pathlib import Path
-from textwrap import dedent
 
 import nox
 
-try:
-    from nox_poetry import Session
-    from nox_poetry import session
-except ImportError:
-    message = f"""\
-    Nox failed to import the 'nox-poetry' package.
-
-    Please install it using the following command:
-
-    {sys.executable} -m pip install nox-poetry"""
-    raise SystemExit(dedent(message))
-
 
 package = "laptrack"
-python_versions = ["3.13", "3.12", "3.11", "3.10"]
+python_versions = ["3.14", "3.13", "3.12", "3.11", "3.10"]
 safety_ignore = [
     44717,
     44715,
@@ -54,19 +41,30 @@ doc_build_packages = [
 ]
 
 
-@session(name="pre-commit", python=python_versions[-1])
-def precommit(session: Session) -> None:
+@nox.session(name="pre-commit", python=python_versions[-1])
+def precommit(session: nox.Session) -> None:
     """Lint using pre-commit."""
     args = session.posargs or ["run", "--all-files", "--show-diff-on-failure"]
     session.install("pre-commit")
     session.run("pre-commit", *args)
 
 
-@session(python=python_versions[-1])
-def safety(session: Session) -> None:
+@nox.session(python=python_versions[-1])
+def safety(session: nox.Session) -> None:
     """Scan dependencies for insecure packages."""
-    session.install("safety==2.3.5", "poetry-plugin-export")
-    requirements = session.poetry.export_requirements()
+    session.install("safety==2.3.5", "uv")
+    requirements = Path(session.create_tmp()) / "requirements.txt"
+    session.run(
+        "uv",
+        "export",
+        "--frozen",
+        "--all-extras",
+        "--group",
+        "dev",
+        "--no-hashes",
+        "--output-file",
+        str(requirements),
+    )
     session.run(
         "safety",
         "check",
@@ -76,8 +74,8 @@ def safety(session: Session) -> None:
     )
 
 
-@session(python=python_versions)
-def mypy(session: Session) -> None:
+@nox.session(python=python_versions)
+def mypy(session: nox.Session) -> None:
     """Type-check using mypy."""
     args = session.posargs or ["src", "tests", "docs/conf.py"]
     session.install(".[all]")
@@ -87,8 +85,8 @@ def mypy(session: Session) -> None:
         session.run("mypy", f"--python-executable={sys.executable}", "noxfile.py")
 
 
-@session(python=python_versions)
-def tests(session: Session) -> None:
+@nox.session(python=python_versions)
+def tests(session: nox.Session) -> None:
     """Run the test suite."""
     session.install(".[all]")
     session.install("coverage[toml]", "pytest", "pytest-datadir", "pygments")
@@ -104,8 +102,8 @@ def tests(session: Session) -> None:
             session.notify("coverage", posargs=[])
 
 
-@session
-def coverage(session: Session) -> None:
+@nox.session
+def coverage(session: nox.Session) -> None:
     """Produce the coverage report."""
     args = session.posargs or ["report"]
 
@@ -117,16 +115,16 @@ def coverage(session: Session) -> None:
     session.run("coverage", *args)
 
 
-@session(python=python_versions)
-def typeguard(session: Session) -> None:
+@nox.session(python=python_versions)
+def typeguard(session: nox.Session) -> None:
     """Runtime type checking using Typeguard."""
     session.install(".[all]")
     session.install("pytest", "pytest-datadir", "typeguard", "pygments", "ray")
     session.run("pytest", f"--typeguard-packages={package}", *session.posargs)
 
 
-@session(name="docs-build", python=python_versions[0])
-def docs_build(session: Session) -> None:
+@nox.session(name="docs-build", python=python_versions[0])
+def docs_build(session: nox.Session) -> None:
     """Build the documentation."""
     args = session.posargs or ["docs", "docs/_build"]
     session.install(".[all]", *doc_build_packages)
@@ -138,8 +136,8 @@ def docs_build(session: Session) -> None:
     session.run("sphinx-build", *args)
 
 
-@session(python=python_versions[0])
-def docs(session: Session) -> None:
+@nox.session(python=python_versions[0])
+def docs(session: nox.Session) -> None:
     """Build and serve the documentation with live reloading on file changes."""
     args = session.posargs or ["--open-browser", "docs", "docs/_build"]
     session.install(".[all]", *doc_build_packages)

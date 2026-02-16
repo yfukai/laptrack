@@ -256,7 +256,7 @@ class LapTrack(BaseModel, extra="forbid"):
             frame: int,
             coord1: np.ndarray,
             coord2: np.ndarray,
-        ) -> List[EdgeType]:
+        ) -> List[Tuple[Tuple[Int, Int], Tuple[Int, Int]]]:
             if _coord_is_empty(coord1) or _coord_is_empty(coord2):
                 return []
 
@@ -285,8 +285,8 @@ class LapTrack(BaseModel, extra="forbid"):
             count1 = dist_matrix.shape[0]
             count2 = dist_matrix.shape[1]
             connections = [(i, xs[i]) for i in range(count1) if xs[i] < count2]
-            edges: List[EdgeType] = [
-                ((frame, connection[0]), (frame + 1, connection[1]))
+            edges: List[Tuple[Tuple[Int, Int], Tuple[Int, Int]]] = [
+                ((frame, int(connection[0])), (frame + 1, int(connection[1])))
                 for connection in connections
             ]
             return edges

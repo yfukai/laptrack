@@ -1,20 +1,16 @@
 version: 2
 
-# taken from https://browniebroke.com/blog/specify-docs-dependency-groups-with-poetry-and-read-the-docs/
+# use uv to export dependency groups for Read the Docs installs
 build:
   os: ubuntu-20.04
   tools:
     python: "3.10"
   jobs:
     post_create_environment:
-      # Install poetry
-      - pip install poetry poetry-plugin-export
-      # Tell poetry to not use a virtual environment
-      - poetry config virtualenvs.create false
+      - pip install uv
     post_install:
       - pip uninstall -y sphinx
-      # Install dependencies
-      - poetry export -f requirements.txt -o requirements.txt --without-hashes --with dev
+      - uv export --frozen --all-extras --group dev --no-hashes --no-emit-project -o requirements.txt
       - pip install -U -r requirements.txt
 
 sphinx:
