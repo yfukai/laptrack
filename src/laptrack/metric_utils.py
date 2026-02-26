@@ -1,4 +1,5 @@
 """Utilities for metric calculation."""
+
 import sys
 
 if sys.version_info >= (3, 9):
@@ -122,7 +123,7 @@ class LabelOverlapOld:
         bbox = []
         for i in range(self.ndim):
             y0 = max(r1[f"bbox-{i}"], r2[f"bbox-{i}"])
-            y1 = min(r1[f"bbox-{i+self.ndim}"], r2[f"bbox-{i+self.ndim}"])
+            y1 = min(r1[f"bbox-{i + self.ndim}"], r2[f"bbox-{i + self.ndim}"])
             bbox.append((y0, y1))
         if all([y0 <= y1 for y0, y1 in bbox]):
             return bbox
@@ -133,7 +134,7 @@ class LabelOverlapOld:
         bbox = []
         for i in range(self.ndim):
             y0 = min(r1[f"bbox-{i}"], r2[f"bbox-{i}"])
-            y1 = max(r1[f"bbox-{i+self.ndim}"], r2[f"bbox-{i+self.ndim}"])
+            y1 = max(r1[f"bbox-{i + self.ndim}"], r2[f"bbox-{i + self.ndim}"])
             bbox.append((y0, y1))
         return bbox
 

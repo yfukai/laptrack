@@ -3,7 +3,7 @@ LapTrack
 
 |PyPI| |Status| |Python Version| |License| |Download|
 
-|Read the Docs| |Tests| |Codecov| |pre-commit| |Black|
+|Read the Docs| |Tests| |Codecov| |pre-commit| |Ruff|
 
 |Publication| |Preprint| |Zenodo|
 
@@ -34,9 +34,9 @@ LapTrack
 .. |pre-commit| image:: https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white
    :target: https://github.com/pre-commit/pre-commit
    :alt: pre-commit
-.. |Black| image:: https://img.shields.io/badge/code%20style-black-000000.svg
-   :target: https://github.com/psf/black
-   :alt: Black
+.. |Ruff| image:: https://img.shields.io/badge/linting-ruff-red?logo=ruff
+   :target: https://github.com/astral-sh/ruff
+   :alt: Ruff
 .. |Zenodo| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.5519537.svg
    :target: https://doi.org/10.5281/zenodo.5519537
    :alt: Zenodo

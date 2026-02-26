@@ -1,4 +1,5 @@
 """Main module for tracking."""
+
 import logging
 import warnings
 from enum import Enum
@@ -112,97 +113,97 @@ class LapTrack(BaseModel, extra="forbid"):
     """Tracking class for LAP tracker with parameters."""
 
     metric: Union[str, Callable] = Field(
-        "sqeuclidean",
+        default="sqeuclidean",
         description="The metric for calculating track linking cost. "
         + "See documentation for `scipy.spatial.distance.cdist` for accepted values.",
     )
     cutoff: float = Field(
-        15**2,
+        default=15**2,
         description="The cost cutoff for the connected points in the track. "
         + "For default cases with `dist_metric='sqeuclidean'`, "
         + "this value should be squared maximum distance.",
     )
     gap_closing_metric: Union[str, Callable] = Field(
-        "sqeuclidean",
+        default="sqeuclidean",
         description="The metric for calculating gap closing cost. "
         + "See documentation for `scipy.spatial.distance.cdist` for accepted values.",
     )
     gap_closing_cutoff: Union[Literal[False], float] = Field(
-        15**2,
+        default=15**2,
         description="The cost cutoff for gap closing. "
         + "For default cases with `dist_metric='sqeuclidean'`, "
         + "this value should be squared maximum distance. "
         + "If False, no gap closing is allowed.",
     )
     gap_closing_max_frame_count: int = Field(
-        2, description="The maximum frame gaps, by default 2."
+        default=2, description="The maximum frame gaps, by default 2."
     )
 
     splitting_metric: Union[str, Callable] = Field(
-        "sqeuclidean",
+        default="sqeuclidean",
         description="The metric for calculating splitting cost. " + "See `metric`.",
     )
     splitting_cutoff: Union[Literal[False], float] = Field(
-        False,
+        default=False,
         description="The cost cutoff for splitting. "
         + "See `gap_closing_cutoff`. "
         + "If False, no splitting is allowed.",
     )
     merging_metric: Union[str, Callable] = Field(
-        "sqeuclidean",
+        default="sqeuclidean",
         description="The metric for calculating merging cost. " + "See `metric`",
     )
     merging_cutoff: Union[Literal[False], float] = Field(
-        False,
+        default=False,
         description="The cost cutoff for merging. "
         + "See `gap_closing_cutoff`. "
         + "If False, no merging is allowed.",
     )
 
     track_start_cost: Optional[float] = Field(
-        None,  # b in Jaqaman et al 2008 NMeth.
+        default=None,  # b in Jaqaman et al 2008 NMeth.
         description="The cost for starting the track (b in Jaqaman et al 2008 NMeth) "
         + "If None, automatically estimated.",
     )
     track_end_cost: Optional[float] = Field(
-        None,  # b in Jaqaman et al 2008 NMeth.
+        default=None,  # b in Jaqaman et al 2008 NMeth.
         description="The cost for ending the track (d in Jaqaman et al 2008 NMeth). "
         + "If None, automatically estimated.",
     )
     segment_start_cost: Optional[float] = Field(
-        None,  # b in Jaqaman et al 2008 NMeth for segment connection
+        default=None,  # b in Jaqaman et al 2008 NMeth for segment connection
         description="The cost for starting the segment (b in Jaqaman et al 2008 NMeth). "
         + "If None, automatically estimated.",
     )
     segment_end_cost: Optional[float] = Field(
-        None,  # b in Jaqaman et al 2008 NMeth for segment connection
+        default=None,  # b in Jaqaman et al 2008 NMeth for segment connection
         description="The cost for ending the segment (d in Jaqaman et al 2008 NMeth). "
         + "If None, automatically estimated.",
     )
     no_splitting_cost: Optional[float] = Field(
-        None,  # d' in Jaqaman et al 2008 NMeth.
+        default=None,  # d' in Jaqaman et al 2008 NMeth.
         description="The cost to reject splitting, if None, automatically estimated.",
     )
     no_merging_cost: Optional[float] = Field(
-        None,  # d' in Jaqaman et al 2008 NMeth.
+        default=None,  # d' in Jaqaman et al 2008 NMeth.
         description="The cost to reject merging, if None, automatically estimated.",
     )
 
     alternative_cost_factor: float = Field(
-        1.05,
+        default=1.05,
         description="The factor to calculate the alternative costs "
         + "(b,d,b',d' in Jaqaman et al 2008 NMeth).",
     )
     alternative_cost_percentile: float = Field(
-        90, description="The percentile to calculate the alternative costs."
+        default=90, description="The percentile to calculate the alternative costs."
     )
     alternative_cost_percentile_interpolation: str = Field(
-        "lower",
+        default="lower",
         description="The percentile interpolation to calculate the alternative costs. "
         + "See `numpy.percentile` for accepted values.",
     )
     parallel_backend: ParallelBackend = Field(
-        ParallelBackend.serial,
+        default=ParallelBackend.serial,
         description="The parallelization strategy. "
         + f"Must be one of {', '.join([ps.name for ps in ParallelBackend])}.",
         exclude=True,
@@ -416,9 +417,9 @@ class LapTrack(BaseModel, extra="forbid"):
             candidate_inds = row["gap_closing_candidates"][0]
             candidate_costs = row["gap_closing_candidates"][1]
             # row ... track end, col ... track start
-            gap_closing_dist_matrix[
-                (int(cast(int, ind)), candidate_inds)
-            ] = candidate_costs
+            gap_closing_dist_matrix[(int(cast(int, ind)), candidate_inds)] = (
+                candidate_costs
+            )
 
         return segments_df, gap_closing_dist_matrix
 
@@ -470,9 +471,7 @@ class LapTrack(BaseModel, extra="forbid"):
                     [target_coord], coords[other_frame], metric=dist_metric
                 )
                 assert target_dist_matrix.shape[0] == 1
-                target_dist_matrix[
-                    0, other_no_connection_indices
-                ] = (
+                target_dist_matrix[0, other_no_connection_indices] = (
                     np.inf
                 )  # do not connect to the segments that is forced to be start or end
                 indices = np.where(target_dist_matrix[0] < cutoff)[0]

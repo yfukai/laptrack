@@ -31,7 +31,6 @@ def test_overlap_tracking(
     track_overlap_coefs,
     splitting_overlap_coefs,
 ) -> None:
-
     if parallel_backend == "ray":
         pytest.importorskip("ray")
 
@@ -108,7 +107,7 @@ def test_overlap_tracking(
         gap_closing_metric=partial(metric, params=track_overlap_coefs),
         splitting_metric=partial(metric, params=splitting_overlap_coefs),
         merging_metric=partial(metric, params=splitting_overlap_coefs),
-        **params
+        **params,
     )
     track_df1, split_df1, merge_df1 = lt.predict_dataframe(
         coordinate_df, coordinate_cols=["frame", "label"], only_coordinate_cols=False
@@ -121,7 +120,7 @@ def test_overlap_tracking(
         gap_closing_metric_coefs=track_overlap_coefs,
         splitting_metric_coefs=splitting_overlap_coefs,
         merging_metric_coefs=splitting_overlap_coefs,
-        **params
+        **params,
     )
 
     track_df2, split_df2, merge_df2 = olt.predict_overlap_dataframe(labels)

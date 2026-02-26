@@ -1,4 +1,5 @@
 """Data conversion utilities for tracking."""
+
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -73,9 +74,9 @@ def dataframe_to_coords_frame_index(
     frame_index : List[Tuple[int, int]]
         The (frame, index) list for the original iloc of the dataframe.
     """
-    assert (
-        "iloc__" not in df.columns
-    ), 'The column name "iloc__" is reserved and cannot be used.'
+    assert "iloc__" not in df.columns, (
+        'The column name "iloc__" is reserved and cannot be used.'
+    )
     df = df.copy()
     df["iloc__"] = np.arange(len(df), dtype=int)
 
@@ -238,16 +239,16 @@ def tree_to_dataframe(
                 for vv in track_df[["__frame", "__index"]].to_numpy()
             ]
         )
-        assert (
-            set(list(frame_index)) == frame_index_test
-        ), "inverse map (frame,index) is incorrect"
+        assert set(list(frame_index)) == frame_index_test, (
+            "inverse map (frame,index) is incorrect"
+        )
 
-        assert (
-            "__frame" not in dataframe.columns
-        ), "__frame is reserved and cannot be used."
-        assert (
-            "__index" not in dataframe.columns
-        ), "__index is reserved and cannot be used."
+        assert "__frame" not in dataframe.columns, (
+            "__frame is reserved and cannot be used."
+        )
+        assert "__index" not in dataframe.columns, (
+            "__index is reserved and cannot be used."
+        )
         dataframe["__frame"] = [x[0] for x in frame_index]
         dataframe["__index"] = [x[1] for x in frame_index]
         track_df = pd.merge(
@@ -261,7 +262,7 @@ def tree_to_dataframe(
     track_df = track_df.set_index(["__frame", "__index"])
     connected_components = list(nx.connected_components(nx.Graph(tree)))
     for track_id, nodes in enumerate(connected_components):
-        for (frame, index) in nodes:
+        for frame, index in nodes:
             track_df.loc[(frame, index), "tree_id"] = track_id
     #            tree.nodes[(frame, index)]["tree_id"] = track_id
     tree2 = tree.copy()
@@ -286,7 +287,7 @@ def tree_to_dataframe(
 
     connected_components = list(nx.connected_components(nx.Graph(tree2)))
     for track_id, nodes in enumerate(connected_components):
-        for (frame, index) in nodes:
+        for frame, index in nodes:
             track_df.loc[(frame, index), "track_id"] = track_id
     #            tree.nodes[(frame, index)]["track_id"] = track_id
 
@@ -294,7 +295,7 @@ def tree_to_dataframe(
         track_df[k] = track_df[k].astype(int)
 
     split_df_data = []
-    for (node, children) in splits:
+    for node, children in splits:
         for child in children:
             split_df_data.append(
                 {
@@ -305,7 +306,7 @@ def tree_to_dataframe(
     split_df = pd.DataFrame.from_records(split_df_data).astype(int)
 
     merge_df_data = []
-    for (node, parents) in merges:
+    for node, parents in merges:
         for parent in parents:
             merge_df_data.append(
                 {
@@ -496,9 +497,9 @@ def geff_networkx_to_tree_coords_mapping(
         return nx.DiGraph(), [], {}
 
     sample_node, data = next(iter(geff_tree.nodes(data=True)))
-    assert (
-        frame_attr in data
-    ), f"frame_attr '{frame_attr}' must be in the node attributes of the graph"
+    assert frame_attr in data, (
+        f"frame_attr '{frame_attr}' must be in the node attributes of the graph"
+    )
     if coordinate_attrs is None:
         coordinate_attrs = []
 

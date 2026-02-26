@@ -1,5 +1,6 @@
 # %%
 """Test cases for the tracking."""
+
 import warnings
 from itertools import product
 from os import path
@@ -107,7 +108,6 @@ def testdata(request, shared_datadir: str):
 
 @pytest.mark.parametrize("parallel_backend", ["serial", "ray"])
 def test_reproducing_trackmate(testdata, parallel_backend) -> None:
-
     if parallel_backend == "ray":
         pytest.importorskip("ray")
 
