@@ -1,4 +1,5 @@
 """Tracking score calculation utilities."""
+
 from typing import Dict
 from typing import Optional
 from typing import Sequence
@@ -109,7 +110,6 @@ def calc_scores(
             "mitotic_branching_correctness": 0,
         }
     else:
-
         if track_scores:
             ################ calculate track scores #################
             gt_tree = nx.from_edgelist(order_edges(true_edges), create_using=nx.DiGraph)
@@ -126,9 +126,9 @@ def calc_scores(
             gt_edgess = _df_to_edges(gt_track_df)
             pred_edgess = _df_to_edges(pred_track_df)
 
-            filter_edges = (
-                lambda e: e[0][0] in include_frames and e not in exclude_true_edges
-            )
+            def filter_edges(e):
+                return e[0][0] in include_frames and e not in exclude_true_edges
+
             pred_edgess = [
                 [e for e in edges if filter_edges(e)] for edges in pred_edgess
             ]

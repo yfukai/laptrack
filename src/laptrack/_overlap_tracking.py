@@ -29,24 +29,24 @@ class OverLapTrack(LapTrack):
     """Tracking by label overlaps."""
 
     metric_coefs: CoefType = Field(
-        (1.0, 0.0, 0.0, 0.0, -1.0),
+        default=(1.0, 0.0, 0.0, 0.0, -1.0),
         description="The coefficients to calculate the distance for the overlapping labels."
         + "Must be tuple of 5 floats of `(offset, overlap_coef, iou_coef, ratio_1_coef, ratio_2_coef)`."
         + "The distance is calculated by"
         + "`offset + overlap_coef * overlap + iou_coef * iou + ratio_1_coef * ratio_1 + ratio_2_coef * ratio_2`.",
     )
     gap_closing_metric_coefs: CoefType = Field(
-        (1.0, 0.0, 0.0, 0.0, -1.0),
+        default=(1.0, 0.0, 0.0, 0.0, -1.0),
         description="The coefficients to calculate the distance for the overlapping labels."
         + "See `metric_coefs` for details.",
     )
     splitting_metric_coefs: CoefType = Field(
-        (1.0, 0.0, 0.0, 0.0, -1.0),
+        default=(1.0, 0.0, 0.0, 0.0, -1.0),
         description="The coefficients to calculate the distance for the overlapping labels."
         + "See `metric_coefs` for details.",
     )
     merging_metric_coefs: CoefType = Field(
-        (1.0, 0.0, 0.0, 0.0, -1.0),
+        default=(1.0, 0.0, 0.0, 0.0, -1.0),
         description="The coefficients to calculate the distance for the overlapping labels."
         + "See `metric_coefs` for details.",
     )
