@@ -1,6 +1,7 @@
 """Main module for tracking."""
 
 import logging
+import time
 import warnings
 from enum import Enum
 from functools import partial
@@ -243,15 +244,34 @@ class LapTrack(BaseModel, extra="forbid"):
 
         """
         # initialize tree
+        t0 = time.perf_counter()
         track_tree = nx.Graph()
+        n_total_points = 0
         for frame, coord in enumerate(coords):
             if not _coord_is_empty(coord):
                 for j in range(coord.shape[0]):
                     track_tree.add_node((frame, j))
+                n_total_points += coord.shape[0]
+        logger.debug(
+            "_predict_links: initialized track_tree with %d nodes across %d frames in %.3fs",
+            n_total_points,
+            len(coords),
+            time.perf_counter() - t0,
+        )
 
         # linking between frames
 
         edges_list = list(segment_connected_edges) + list(split_merge_edges)
+        logger.debug(
+            "_predict_links: %d pre-existing edges to enforce (segment_connected=%d, split_merge=%d)",
+            len(edges_list),
+            len(list(segment_connected_edges))
+            if not isinstance(segment_connected_edges, list)
+            else len(segment_connected_edges),
+            len(list(split_merge_edges))
+            if not isinstance(split_merge_edges, list)
+            else len(split_merge_edges),
+        )
 
         def _predict_link_single_frame(
             frame: int,
@@ -259,15 +279,24 @@ class LapTrack(BaseModel, extra="forbid"):
             coord2: np.ndarray,
         ) -> List[Tuple[Tuple[Int, Int], Tuple[Int, Int]]]:
             if _coord_is_empty(coord1) or _coord_is_empty(coord2):
+                logger.debug(
+                    "_predict_link_single_frame[%d]: empty coords, skipping", frame
+                )
                 return []
 
+            t_frame = time.perf_counter()
             force_end_indices = [e[0][1] for e in edges_list if e[0][0] == frame]
             force_start_indices = [e[1][1] for e in edges_list if e[1][0] == frame + 1]
+
+            t_cdist = time.perf_counter()
             dist_matrix = cdist(coord1, coord2, metric=self.metric)
             dist_matrix[force_end_indices, :] = np.inf
             dist_matrix[:, force_start_indices] = np.inf
+            cdist_elapsed = time.perf_counter() - t_cdist
 
+            t_sparse = time.perf_counter()
             ind = np.where(dist_matrix < self.cutoff)
+            n_below_cutoff = len(ind[0])
             dist_matrix = coo_matrix_builder(
                 dist_matrix.shape,
                 row=ind[0],
@@ -275,13 +304,19 @@ class LapTrack(BaseModel, extra="forbid"):
                 data=dist_matrix[(*ind,)],
                 dtype=dist_matrix.dtype,
             )
+            sparse_elapsed = time.perf_counter() - t_sparse
 
+            t_cost = time.perf_counter()
             cost_matrix = build_frame_cost_matrix(
                 dist_matrix,
                 track_start_cost=self.track_start_cost,
                 track_end_cost=self.track_end_cost,
             )
+            cost_elapsed = time.perf_counter() - t_cost
+
+            t_lap = time.perf_counter()
             xs, _ = lap_optimization(cost_matrix)
+            lap_elapsed = time.perf_counter() - t_lap
 
             count1 = dist_matrix.shape[0]
             count2 = dist_matrix.shape[1]
@@ -290,9 +325,28 @@ class LapTrack(BaseModel, extra="forbid"):
                 ((frame, int(connection[0])), (frame + 1, int(connection[1])))
                 for connection in connections
             ]
+            logger.debug(
+                "_predict_link_single_frame[%d]: shape=(%d,%d) below_cutoff=%d edges=%d "
+                "cdist=%.3fs sparse=%.3fs cost=%.3fs lap=%.3fs total=%.3fs",
+                frame,
+                count1,
+                count2,
+                n_below_cutoff,
+                len(edges),
+                cdist_elapsed,
+                sparse_elapsed,
+                cost_elapsed,
+                lap_elapsed,
+                time.perf_counter() - t_frame,
+            )
             return edges
 
+        t_link = time.perf_counter()
         if self.parallel_backend == ParallelBackend.serial:
+            logger.debug(
+                "_predict_links: starting serial frame-pair linking over %d pairs",
+                max(0, len(coords) - 1),
+            )
             all_edges = []
             for frame, (coord1, coord2) in enumerate(zip(coords[:-1], coords[1:])):
                 edges = _predict_link_single_frame(frame, coord1, coord2)
@@ -302,6 +356,10 @@ class LapTrack(BaseModel, extra="forbid"):
                 import ray
             except ImportError:
                 raise ImportError("Please install `ray` to use `ParallelBackend.ray`.")
+            logger.debug(
+                "_predict_links: starting ray-parallel frame-pair linking over %d pairs",
+                max(0, len(coords) - 1),
+            )
             remote_func = ray.remote(_predict_link_single_frame)
             res = [
                 remote_func.remote(frame, coord1, coord2)
@@ -314,8 +372,19 @@ class LapTrack(BaseModel, extra="forbid"):
                 + f"Must be one of {', '.join([ps.name for ps in ParallelBackend])}."
             )
 
+        logger.debug(
+            "_predict_links: frame-pair linking finished in %.3fs, %d edges",
+            time.perf_counter() - t_link,
+            len(all_edges),
+        )
         track_tree.add_edges_from(all_edges)
         track_tree.add_edges_from(segment_connected_edges)
+        logger.debug(
+            "_predict_links: track_tree finalized with %d nodes, %d edges in %.3fs total",
+            track_tree.number_of_nodes(),
+            track_tree.number_of_edges(),
+            time.perf_counter() - t0,
+        )
         return track_tree
 
     def _get_gap_closing_matrix(
@@ -342,6 +411,13 @@ class LapTrack(BaseModel, extra="forbid"):
             the cost matrix for gap closing candidates
 
         """
+        t_gap = time.perf_counter()
+        logger.debug(
+            "_get_gap_closing_matrix: starting with %d segments, gap_closing_cutoff=%s, max_frame_count=%d",
+            len(segments_df),
+            self.gap_closing_cutoff,
+            self.gap_closing_max_frame_count,
+        )
         if self.gap_closing_cutoff:
 
             def to_gap_closing_candidates(row, segments_df):
@@ -386,6 +462,7 @@ class LapTrack(BaseModel, extra="forbid"):
                 else:
                     return [], []
 
+            t_apply = time.perf_counter()
             if self.parallel_backend == ParallelBackend.serial:
                 segments_df["gap_closing_candidates"] = segments_df.apply(
                     partial(to_gap_closing_candidates, segments_df=segments_df), axis=1
@@ -406,9 +483,20 @@ class LapTrack(BaseModel, extra="forbid"):
                 segments_df["gap_closing_candidates"] = ray.get(res)
             else:
                 raise ValueError(f"Unknown parallel_backend {self.parallel_backend}. ")
+            n_candidates = int(
+                segments_df["gap_closing_candidates"].apply(lambda x: len(x[0])).sum()
+            )
+            logger.debug(
+                "_get_gap_closing_matrix: candidate scan via '%s' took %.3fs, %d candidate links found",
+                self.parallel_backend.value,
+                time.perf_counter() - t_apply,
+                n_candidates,
+            )
         else:
             segments_df["gap_closing_candidates"] = [([], [])] * len(segments_df)
+            logger.debug("_get_gap_closing_matrix: gap_closing disabled, no candidates")
 
+        t_build = time.perf_counter()
         N_segments = len(segments_df)
         gap_closing_dist_matrix = coo_matrix_builder(
             (N_segments, N_segments), dtype=np.float32
@@ -421,6 +509,13 @@ class LapTrack(BaseModel, extra="forbid"):
                 candidate_costs
             )
 
+        logger.debug(
+            "_get_gap_closing_matrix: built %dx%d sparse matrix in %.3fs (total %.3fs)",
+            N_segments,
+            N_segments,
+            time.perf_counter() - t_build,
+            time.perf_counter() - t_gap,
+        )
         return segments_df, gap_closing_dist_matrix
 
     def _get_splitting_merging_candidates(
@@ -434,6 +529,13 @@ class LapTrack(BaseModel, extra="forbid"):
         force_end_nodes=[],
         force_start_nodes=[],
     ):
+        t_sm = time.perf_counter()
+        logger.debug(
+            "_get_splitting_merging_candidates[%s]: starting with %d segments, cutoff=%s",
+            prefix,
+            len(segments_df),
+            cutoff,
+        )
         if cutoff:
 
             def to_candidates(row, coords):
@@ -479,6 +581,7 @@ class LapTrack(BaseModel, extra="forbid"):
                     0
                 ][indices]
 
+            t_apply = time.perf_counter()
             if self.parallel_backend == ParallelBackend.serial:
                 segments_df[f"{prefix}_candidates"] = segments_df.apply(
                     partial(to_candidates, coords=coords), axis=1
@@ -499,9 +602,20 @@ class LapTrack(BaseModel, extra="forbid"):
                 segments_df[f"{prefix}_candidates"] = ray.get(res)
             else:
                 raise ValueError(f"Unknown parallel_backend {self.parallel_backend}. ")
+            logger.debug(
+                "_get_splitting_merging_candidates[%s]: candidate scan via '%s' took %.3fs",
+                prefix,
+                self.parallel_backend.value,
+                time.perf_counter() - t_apply,
+            )
         else:
             segments_df[f"{prefix}_candidates"] = [([], [])] * len(segments_df)
+            logger.debug(
+                "_get_splitting_merging_candidates[%s]: cutoff disabled, no candidates",
+                prefix,
+            )
 
+        t_unique = time.perf_counter()
         middle_point_candidates = np.unique(
             sum(
                 segments_df[f"{prefix}_candidates"].apply(lambda x: list(x[0])),
@@ -526,6 +640,14 @@ class LapTrack(BaseModel, extra="forbid"):
             candidate_costs = row[f"{prefix}_candidates"][1]
             dist_matrix[(int(cast(Int, ind)), candidate_inds)] = candidate_costs
 
+        logger.debug(
+            "_get_splitting_merging_candidates[%s]: built %dx%d sparse matrix in %.3fs (total %.3fs)",
+            prefix,
+            N_segments,
+            N_middle,
+            time.perf_counter() - t_unique,
+            time.perf_counter() - t_sm,
+        )
         return segments_df, dist_matrix, middle_point_candidates
 
     def _link_gap_split_merge_from_matrix(
@@ -538,6 +660,15 @@ class LapTrack(BaseModel, extra="forbid"):
         splitting_all_candidates,
         merging_all_candidates,
     ):
+        t_link = time.perf_counter()
+        logger.debug(
+            "_link_gap_split_merge_from_matrix: gap_closing=%s splitting=%s merging=%s",
+            gap_closing_dist_matrix.shape,
+            splitting_dist_matrix.shape,
+            merging_dist_matrix.shape,
+        )
+
+        t_cost = time.perf_counter()
         cost_matrix = build_segment_cost_matrix(
             gap_closing_dist_matrix,
             splitting_dist_matrix,
@@ -550,16 +681,30 @@ class LapTrack(BaseModel, extra="forbid"):
             self.alternative_cost_percentile,
             self.alternative_cost_percentile_interpolation,
         )
+        logger.debug(
+            "_link_gap_split_merge_from_matrix: build_segment_cost_matrix took %.3fs (cost_matrix=%s)",
+            time.perf_counter() - t_cost,
+            "None" if cost_matrix is None else cost_matrix.shape,
+        )
 
         if not cost_matrix is None:
             # FIXME connected_edges_list
 
+            t_lap = time.perf_counter()
             xs, ys = lap_optimization(cost_matrix)
+            logger.debug(
+                "_link_gap_split_merge_from_matrix: lap_optimization took %.3fs",
+                time.perf_counter() - t_lap,
+            )
 
             M = gap_closing_dist_matrix.shape[0]
             N1 = splitting_dist_matrix.shape[1]
             N2 = merging_dist_matrix.shape[1]
 
+            t_apply = time.perf_counter()
+            n_gap_added = 0
+            n_split_added = 0
+            n_merge_added = 0
             for ind, row in segments_df.iterrows():
                 col_ind = xs[ind]
                 first_frame_index = (row["first_frame"], row["first_index"])
@@ -569,11 +714,13 @@ class LapTrack(BaseModel, extra="forbid"):
                         segments_df.loc[col_ind, ["first_frame", "first_index"]]
                     )
                     track_tree.add_edge(last_frame_index, target_frame_index)
+                    n_gap_added += 1
                 elif col_ind < M + N2:
                     track_tree.add_edge(
                         last_frame_index,
                         tuple(merging_all_candidates[col_ind - M]),
                     )
+                    n_merge_added += 1
 
                 row_ind = ys[ind]
                 if M <= row_ind and row_ind < M + N1:
@@ -581,7 +728,24 @@ class LapTrack(BaseModel, extra="forbid"):
                         first_frame_index,
                         tuple(splitting_all_candidates[row_ind - M]),
                     )
+                    n_split_added += 1
+            logger.debug(
+                "_link_gap_split_merge_from_matrix: assignment-to-edges took %.3fs "
+                "(gap=%d split=%d merge=%d)",
+                time.perf_counter() - t_apply,
+                n_gap_added,
+                n_split_added,
+                n_merge_added,
+            )
+        else:
+            logger.debug(
+                "_link_gap_split_merge_from_matrix: cost_matrix is None, no segment-level links added"
+            )
 
+        logger.debug(
+            "_link_gap_split_merge_from_matrix: total elapsed %.3fs",
+            time.perf_counter() - t_link,
+        )
         return track_tree
 
     def _predict_gap_split_merge(self, coords, track_tree, split_edges, merge_edges):
@@ -603,9 +767,23 @@ class LapTrack(BaseModel, extra="forbid"):
              track_tree : nx.Graph
                  the updated track tree
         """
+        t_total = time.perf_counter()
         edges = list(split_edges) + list(merge_edges)
+        logger.debug(
+            "_predict_gap_split_merge: starting (gap_closing_cutoff=%s, splitting_cutoff=%s, merging_cutoff=%s, %d forced split/merge edges)",
+            self.gap_closing_cutoff,
+            self.splitting_cutoff,
+            self.merging_cutoff,
+            len(edges),
+        )
         if self.gap_closing_cutoff or self.splitting_cutoff or self.merging_cutoff:
+            t_segdf = time.perf_counter()
             segments_df = _get_segment_df(coords, track_tree)
+            logger.debug(
+                "_predict_gap_split_merge: built segments_df with %d segments in %.3fs",
+                len(segments_df),
+                time.perf_counter() - t_segdf,
+            )
             force_end_nodes = [tuple(map(int, e[0])) for e in edges]
             force_start_nodes = [tuple(map(int, e[1])) for e in edges]
 
@@ -653,7 +831,17 @@ class LapTrack(BaseModel, extra="forbid"):
                 splitting_all_candidates,
                 merging_all_candidates,
             )
+        else:
+            logger.debug(
+                "_predict_gap_split_merge: all cutoffs disabled, skipping segment-level linking"
+            )
         track_tree.add_edges_from(edges)
+        logger.debug(
+            "_predict_gap_split_merge: finished in %.3fs, track_tree has %d nodes, %d edges",
+            time.perf_counter() - t_total,
+            track_tree.number_of_nodes(),
+            track_tree.number_of_edges(),
+        )
         return track_tree
 
     def predict(
@@ -686,8 +874,17 @@ class LapTrack(BaseModel, extra="forbid"):
                 The graph for the tracks, whose nodes are `(frame, index)`.
                 The edge direction represents the time order.
         """
+        t_predict = time.perf_counter()
         ###### Check the input format ######
         nonempty_coords = [coord for coord in coords if not _coord_is_empty(coord)]
+        n_total_points = sum(coord.shape[0] for coord in nonempty_coords)
+        logger.debug(
+            "predict: starting with %d frames (%d nonempty), %d total points, parallel_backend=%s",
+            len(coords),
+            len(nonempty_coords),
+            n_total_points,
+            self.parallel_backend.value,
+        )
 
         if any(list(map(lambda coord: coord.ndim != 2, nonempty_coords))):
             raise ValueError("the elements in coords must be 2-dim or an empty array.")
@@ -717,26 +914,52 @@ class LapTrack(BaseModel, extra="forbid"):
             segment_connected_edges = list(
                 set(connected_edges) - set(split_edges) - set(merge_edges)
             )
+            logger.debug(
+                "predict: %d connected_edges processed (segment=%d, split=%d, merge=%d)",
+                len(connected_edges),
+                len(segment_connected_edges),
+                len(split_edges),
+                len(merge_edges),
+            )
         else:
             segment_connected_edges = []
             split_edges = []
             merge_edges = []
 
         ###### Particle-particle tracking ######
+        t_links = time.perf_counter()
         track_tree = self._predict_links(
             coords, segment_connected_edges, list(split_edges) + list(merge_edges)
         )
+        logger.debug(
+            "predict: _predict_links phase took %.3fs",
+            time.perf_counter() - t_links,
+        )
+
+        t_gsm = time.perf_counter()
         track_tree = self._predict_gap_split_merge(
             coords, track_tree, split_edges, merge_edges
         )
+        logger.debug(
+            "predict: _predict_gap_split_merge phase took %.3fs",
+            time.perf_counter() - t_gsm,
+        )
 
         # convert the result to directed graph
+        t_dir = time.perf_counter()
         edges = [
             (n1, n2) if n1[0] < n2[0] else (n2, n1) for (n1, n2) in track_tree.edges()
         ]
         track_tree_directed = nx.DiGraph()
         track_tree_directed.add_nodes_from(track_tree.nodes())
         track_tree_directed.add_edges_from(edges)
+        logger.debug(
+            "predict: directed-graph conversion took %.3fs (%d nodes, %d edges); total predict %.3fs",
+            time.perf_counter() - t_dir,
+            track_tree_directed.number_of_nodes(),
+            track_tree_directed.number_of_edges(),
+            time.perf_counter() - t_predict,
+        )
 
         return track_tree_directed
 
@@ -787,19 +1010,52 @@ class LapTrack(BaseModel, extra="forbid"):
             - "parent_track_id" : The track id of the parent.
             - "child_track_id" : The track id of the child.
         """
+        t_pdf = time.perf_counter()
+        logger.debug(
+            "predict_dataframe: starting with input df of %d rows, %d coordinate_cols, frame_col=%r",
+            len(df),
+            len(coordinate_cols),
+            frame_col,
+        )
+
+        t_conv = time.perf_counter()
         coords, frame_index = dataframe_to_coords_frame_index(
             df, coordinate_cols, frame_col
         )
+        logger.debug(
+            "predict_dataframe: dataframe_to_coords_frame_index took %.3fs (%d frames)",
+            time.perf_counter() - t_conv,
+            len(coords),
+        )
+
         if connected_edges is not None:
             connected_edges2 = [
                 (frame_index[i1], frame_index[i2]) for i1, i2 in connected_edges
             ]
+            logger.debug(
+                "predict_dataframe: remapped %d connected_edges to (frame,index) form",
+                len(connected_edges2),
+            )
         else:
             connected_edges2 = None
-        tree = self.predict(coords, connected_edges=connected_edges2)
 
+        t_pred = time.perf_counter()
+        tree = self.predict(coords, connected_edges=connected_edges2)
+        logger.debug(
+            "predict_dataframe: predict() took %.3fs",
+            time.perf_counter() - t_pred,
+        )
+
+        t_t2d = time.perf_counter()
         track_df, split_df, merge_df = tree_to_dataframe(
             tree, dataframe=df, frame_index=frame_index
+        )
+        logger.debug(
+            "predict_dataframe: tree_to_dataframe took %.3fs (track_df=%d, split_df=%d, merge_df=%d)",
+            time.perf_counter() - t_t2d,
+            len(track_df),
+            len(split_df),
+            len(merge_df),
         )
 
         track_df["track_id"] = track_df["track_id"] + index_offset
@@ -811,6 +1067,10 @@ class LapTrack(BaseModel, extra="forbid"):
             merge_df["parent_track_id"] = merge_df["parent_track_id"] + index_offset
             merge_df["child_track_id"] = merge_df["child_track_id"] + index_offset
 
+        logger.debug(
+            "predict_dataframe: total elapsed %.3fs",
+            time.perf_counter() - t_pdf,
+        )
         return track_df, split_df, merge_df
 
 
