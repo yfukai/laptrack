@@ -1,0 +1,7 @@
+scenario,config,n_frames,n_points,total_points,wall_seconds,peak_rss_mb,n_nodes,n_edges
+small,link_only,50,200,9483,0.0762,168.45,9483,8839
+small,gap_closing,50,200,9483,0.4467,181.28,9483,9215
+small,full,50,200,9483,0.5726,185.67,9483,9268
+medium,link_only,200,2000,380067,4.9916,832.19,380067,361260
+medium,gap_closing,200,2000,380067,22.1827,1128.78,380067,374581
+medium,full,200,2000,380067,24.1186,1149.11,380067,385910
