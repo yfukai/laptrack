@@ -91,10 +91,11 @@ def _get_segment_df(coords, track_tree):
     ).reset_index()
 
     for prefix in ["first", "last"]:
-        segments_df[f"{prefix}_frame_coords"] = segments_df.apply(
-            lambda row: coords[row[f"{prefix}_frame"]][row[f"{prefix}_index"]],
-            axis=1,
-        )
+        frames = segments_df[f"{prefix}_frame"].to_numpy()
+        indices = segments_df[f"{prefix}_index"].to_numpy()
+        segments_df[f"{prefix}_frame_coords"] = [
+            coords[f][i] for f, i in zip(frames, indices)
+        ]
     return segments_df
 
 
@@ -246,12 +247,14 @@ class LapTrack(BaseModel, extra="forbid"):
         # initialize tree
         t0 = time.perf_counter()
         track_tree = nx.Graph()
-        n_total_points = 0
-        for frame, coord in enumerate(coords):
-            if not _coord_is_empty(coord):
-                for j in range(coord.shape[0]):
-                    track_tree.add_node((frame, j))
-                n_total_points += coord.shape[0]
+        nodes_to_add = [
+            (frame, j)
+            for frame, coord in enumerate(coords)
+            if not _coord_is_empty(coord)
+            for j in range(coord.shape[0])
+        ]
+        track_tree.add_nodes_from(nodes_to_add)
+        n_total_points = len(nodes_to_add)
         logger.debug(
             "_predict_links: initialized track_tree with %d nodes across %d frames in %.3fs",
             n_total_points,
@@ -616,13 +619,17 @@ class LapTrack(BaseModel, extra="forbid"):
             )
 
         t_unique = time.perf_counter()
-        middle_point_candidates = np.unique(
-            sum(
-                segments_df[f"{prefix}_candidates"].apply(lambda x: list(x[0])),
-                [],
-            ),
-            axis=0,
-        )
+        non_empty_candidates = [
+            np.asarray(x[0])
+            for x in segments_df[f"{prefix}_candidates"]
+            if len(x[0]) > 0
+        ]
+        if non_empty_candidates:
+            middle_point_candidates = np.unique(
+                np.concatenate(non_empty_candidates, axis=0), axis=0
+            )
+        else:
+            middle_point_candidates = np.empty((0, 2), dtype=int)
 
         N_segments = len(segments_df)
         N_middle = len(middle_point_candidates)

@@ -221,12 +221,11 @@ def tree_to_dataframe(
         )
     track_df = pd.concat(df_data)
     if coords is not None:
-        # XXX there may exist faster impl.
-        for i in range(coords[0].shape[1]):
-            track_df[f"coord-{i}"] = [
-                coords[int(row["__frame"])][int(row["__index"]), i]
-                for _, row in track_df.iterrows()
-            ]
+        frames = track_df["__frame"].to_numpy()
+        indices = track_df["__index"].to_numpy()
+        coord_rows = np.stack([coords[int(f)][int(i)] for f, i in zip(frames, indices)])
+        for i in range(coord_rows.shape[1]):
+            track_df[f"coord-{i}"] = coord_rows[:, i]
     elif dataframe is not None:
         dataframe = dataframe.copy()
         assert len(track_df) == len(dataframe)
@@ -261,10 +260,12 @@ def tree_to_dataframe(
 
     track_df = track_df.set_index(["__frame", "__index"])
     connected_components = list(nx.connected_components(nx.Graph(tree)))
-    for track_id, nodes in enumerate(connected_components):
-        for frame, index in nodes:
-            track_df.loc[(frame, index), "tree_id"] = track_id
-    #            tree.nodes[(frame, index)]["tree_id"] = track_id
+    tree_id_map = {
+        node: track_id
+        for track_id, nodes in enumerate(connected_components)
+        for node in nodes
+    }
+    track_df["tree_id"] = track_df.index.map(tree_id_map)
     tree2 = tree.copy()
 
     splits: List[Tuple[IntTuple, List[IntTuple]]] = []
@@ -286,10 +287,12 @@ def tree_to_dataframe(
                 merges.append((node, parents))
 
     connected_components = list(nx.connected_components(nx.Graph(tree2)))
-    for track_id, nodes in enumerate(connected_components):
-        for frame, index in nodes:
-            track_df.loc[(frame, index), "track_id"] = track_id
-    #            tree.nodes[(frame, index)]["track_id"] = track_id
+    track_id_map = {
+        node: track_id
+        for track_id, nodes in enumerate(connected_components)
+        for node in nodes
+    }
+    track_df["track_id"] = track_df.index.map(track_id_map)
 
     for k in ["tree_id", "track_id"]:
         track_df[k] = track_df[k].astype(int)

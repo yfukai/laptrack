@@ -41,24 +41,17 @@ def build_frame_cost_matrix(
     C = coo_matrix_builder((M + N, N + M), dtype=np.float32)
     C.append_matrix(dist_matrix)
 
-    if track_start_cost is None:
-        if len(C.data) > 0:
-            max_val = np.max(C.data)
-            if max_val > 0:
-                track_start_cost = max_val * 1.05
-            else:
-                track_start_cost = EPSILON
+    if track_start_cost is None or track_end_cost is None:
+        data = C.data
+        if len(data) > 0:
+            max_val = np.max(data)
+            default_cost = max_val * 1.05 if max_val > 0 else EPSILON
         else:
-            track_start_cost = 1.05
-    if track_end_cost is None:
-        if len(C.data) > 0:
-            max_val = np.max(C.data)
-            if max_val > 0:
-                track_end_cost = max_val * 1.05
-            else:
-                track_end_cost = EPSILON
-        else:
-            track_end_cost = 1.05
+            default_cost = 1.05
+        if track_start_cost is None:
+            track_start_cost = default_cost
+        if track_end_cost is None:
+            track_end_cost = default_cost
 
     track_end_costs = np.ones(N) * track_end_cost
     track_start_costs = np.ones(M) * track_start_cost
