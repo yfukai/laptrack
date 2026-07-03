@@ -9,7 +9,6 @@ copyright = f"{datetime.now().year}, {author}"
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.napoleon",
-    "sphinx_click",
     "sphinx_rtd_theme",
     "sphinxcontrib.autodoc_pydantic",
     "sphinx_gallery.load_style",

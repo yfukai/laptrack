@@ -10,6 +10,7 @@ from pydantic import Field
 from pydantic import model_validator
 
 from ._tracking import LapTrack
+from ._tracking_result import TrackingResult
 from ._typing_utils import IntArray
 from .metric_utils import LabelOverlap
 
@@ -64,8 +65,10 @@ class OverLapTrack(LapTrack):
                     data[new_name] = data.pop(old_name)
         return data
 
-    def predict_overlap_dataframe(self, labels: Union[IntArray, List[IntArray]]):
-        """Predicts tracks with label overlaps.
+    def predict_overlap_tracking_result(
+        self, labels: Union[IntArray, List[IntArray]]
+    ) -> TrackingResult:
+        """Predicts tracks with label overlaps and returns a `TrackingResult`.
 
         Parameters
         ----------
@@ -74,24 +77,10 @@ class OverLapTrack(LapTrack):
 
         Returns
         -------
-        track_df : pd.DataFrame
-            The track dataframe, with the following columns:
-
-            - "frame" : The frame index.
-            - "index" : The coordinate index.
-            - "track_id" : The track id.
-            - "tree_id" : The tree id.
-            - the other columns : The coordinate values.
-        split_df : pd.DataFrame
-            The splitting dataframe, with the following columns:
-
-            - "parent_track_id" : The track id of the parent.
-            - "child_track_id" : The track id of the child.
-        merge_df : pd.DataFrame
-            The merging dataframe, with the following columns:
-
-            - "parent_track_id" : The track id of the parent.
-            - "child_track_id" : The track id of the child.
+        result : TrackingResult
+            The tracking result object, which can be converted to dataframes,
+            networkx graphs, or written to CSV or GEFF files. The dataframe
+            has the columns "frame" and "label".
         """
         lo = LabelOverlap(labels)
 
@@ -125,9 +114,39 @@ class OverLapTrack(LapTrack):
         self.splitting_metric = partial(metric, params=self.splitting_metric_coefs)
         self.merging_metric = partial(metric, params=self.merging_metric_coefs)
 
-        track_df, split_df, merge_df = super().predict_dataframe(
-            lo.frame_label_df, ["frame", "label"], only_coordinate_cols=False
-        )
+        return super().predict_tracking_result(lo.frame_label_df, ["frame", "label"])
+
+    def predict_overlap_dataframe(self, labels: Union[IntArray, List[IntArray]]):
+        """Predicts tracks with label overlaps.
+
+        Parameters
+        ----------
+        labels : Union[IntArray, List[IntArray]]
+            Label images.
+
+        Returns
+        -------
+        track_df : pd.DataFrame
+            The track dataframe, with the following columns:
+
+            - "frame" : The frame index.
+            - "index" : The coordinate index.
+            - "track_id" : The track id.
+            - "tree_id" : The tree id.
+            - the other columns : The coordinate values.
+        split_df : pd.DataFrame
+            The splitting dataframe, with the following columns:
+
+            - "parent_track_id" : The track id of the parent.
+            - "child_track_id" : The track id of the child.
+        merge_df : pd.DataFrame
+            The merging dataframe, with the following columns:
+
+            - "parent_track_id" : The track id of the parent.
+            - "child_track_id" : The track id of the child.
+        """
+        result = self.predict_overlap_tracking_result(labels)
+        track_df, split_df, merge_df = result.to_dataframes()
         track_df = track_df.set_index(["frame", "label"])
         # _calc_overlap.cache_clear()
         return track_df, split_df, merge_df
