@@ -98,6 +98,57 @@ def _get_segment_df(coords, track_tree):
     return segments_df
 
 
+def _gpu_linking_candidates(
+    coord1: np.ndarray,
+    coord2: np.ndarray,
+    metric: Union[str, Callable],
+    cutoff: float,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Compute the linking candidate pairs within the cutoff on the GPU.
+
+    Parameters
+    ----------
+    coord1 : np.ndarray
+        The coordinates of the first frame.
+    coord2 : np.ndarray
+        The coordinates of the second frame.
+    metric : Union[str, Callable]
+        The metric. Must be "euclidean" or "sqeuclidean".
+    cutoff : float
+        The cutoff for the metric values.
+
+    Returns
+    -------
+    rows : np.ndarray
+        The indices in `coord1` of the candidate pairs.
+    cols : np.ndarray
+        The indices in `coord2` of the candidate pairs.
+    data : np.ndarray
+        The metric values of the candidate pairs.
+    """
+    if metric not in ("euclidean", "sqeuclidean"):
+        raise ValueError(
+            'The GPU computation only supports the "euclidean" and '
+            f'"sqeuclidean" metrics, but got {metric}.'
+        )
+    try:
+        import cupy as cp
+    except ImportError:
+        raise ImportError("Please install `cupy` to use `use_gpu=True`.")
+    c1 = cp.asarray(coord1, dtype=cp.float64)
+    c2 = cp.asarray(coord2, dtype=cp.float64)
+    sq_dist = cp.maximum(
+        cp.sum(c1**2, axis=1)[:, None]
+        + cp.sum(c2**2, axis=1)[None, :]
+        - 2.0 * (c1 @ c2.T),
+        0.0,
+    )
+    dist_matrix = sq_dist if metric == "sqeuclidean" else cp.sqrt(sq_dist)
+    rows, cols = cp.where(dist_matrix < cutoff)
+    data = dist_matrix[rows, cols]
+    return cp.asnumpy(rows), cp.asnumpy(cols), cp.asnumpy(data)
+
+
 _ALIAS_FIELDS = {
     "track_dist_metric": "metric",
     "track_cost_cutoff": "cutoff",
@@ -161,6 +212,16 @@ class LapTrack(BaseModel, extra="forbid"):
         + "If False, no merging is allowed.",
     )
 
+    use_gpu: bool = Field(
+        default=False,
+        description="If True, compute the frame-to-frame linking distance "
+        + "matrix on the GPU with CuPy. Requires `cupy` to be installed and "
+        + 'the metric to be "euclidean" or "sqeuclidean". '
+        + "Takes precedence over `metric_is_distance` in the linking step. "
+        + "The results can differ from the CPU computation within the "
+        + "floating-point rounding error.",
+        exclude=True,
+    )
     metric_is_distance: bool = Field(
         default=False,
         description="If True, the neighbor candidates in the frame-to-frame "
@@ -330,8 +391,13 @@ class LapTrack(BaseModel, extra="forbid"):
 
             force_end_indices = [e[0][1] for e in edges_list if e[0][0] == frame]
             force_start_indices = [e[1][1] for e in edges_list if e[1][0] == frame + 1]
-            if self.metric_is_distance:
-                rows, cols, data = self._get_neighbor_pairs(coord1, coord2)
+            if self.use_gpu or self.metric_is_distance:
+                if self.use_gpu:
+                    rows, cols, data = _gpu_linking_candidates(
+                        coord1, coord2, self.metric, self.cutoff
+                    )
+                else:
+                    rows, cols, data = self._get_neighbor_pairs(coord1, coord2)
                 mask = (
                     ~np.isin(rows, force_end_indices)
                     & ~np.isin(cols, force_start_indices)
