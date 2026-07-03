@@ -194,6 +194,49 @@ def test_laptrack_function_shortcut(testdata) -> None:
     assert set(track_tree1.edges) == set(track_tree2.edges)
 
 
+def test_metric_is_distance_reproduces_trackmate(testdata) -> None:
+    params, coords, edges_set = testdata
+    lt = LapTrack(**params, metric_is_distance=True)
+    track_tree = lt.predict(coords)
+    assert edges_set == set(track_tree.edges)
+
+
+@pytest.mark.parametrize("metric", ["euclidean", "sqeuclidean", "callable"])
+def test_metric_is_distance_equivalence(metric) -> None:
+    np.random.seed(1)
+    coords = [np.random.random((40, 2)) * 100 for _ in range(5)]
+    if metric == "callable":
+        metric_ = lambda c1, c2: np.linalg.norm(c1 - c2)  # noqa: E731
+        cutoff = 15.0
+    elif metric == "euclidean":
+        metric_ = metric
+        cutoff = 15.0
+    else:
+        metric_ = metric
+        cutoff = 15.0**2
+    params = dict(
+        metric=metric_,
+        cutoff=cutoff,
+        gap_closing_cutoff=False,
+        splitting_cutoff=False,
+        merging_cutoff=False,
+    )
+    tree1 = LapTrack(**params).predict(coords)
+    tree2 = LapTrack(**params, metric_is_distance=True).predict(coords)
+    assert set(tree1.edges) == set(tree2.edges)
+
+
+def test_metric_is_distance_with_empty_frames() -> None:
+    coords = [
+        np.array([[10, 10], [12, 11]]),
+        np.array([]),
+        np.array([[10, 10], [13, 11]]),
+    ]
+    lt = LapTrack(metric_is_distance=True, gap_closing_cutoff=15**2)
+    lt2 = LapTrack(gap_closing_cutoff=15**2)
+    assert set(lt.predict(coords).edges) == set(lt2.predict(coords).edges)
+
+
 def test_tracking_zero_distance() -> None:
     coords = [np.array([[10, 10], [12, 11]]), np.array([[10, 10], [13, 11]])]
     lt = LapTrack(
