@@ -40,7 +40,8 @@ Changelog = "https://github.com/yfukai/laptrack/releases"
 
 [project.optional-dependencies]
 geff = ["geff>=1.1.4.1.1"]
-all = ["geff>=1.1.4.1.1"]
+joblib = ["joblib>=1.3.0"]
+all = ["geff>=1.1.4.1.1", "joblib>=1.3.0"]
 
 [project.scripts]
 laptrack = "laptrack.__main__:main"

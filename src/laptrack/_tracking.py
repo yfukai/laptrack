@@ -3,7 +3,6 @@
 import logging
 import warnings
 from enum import Enum
-from functools import partial
 from typing import Any
 from typing import Callable
 from typing import cast
@@ -51,6 +50,7 @@ class ParallelBackend(str, Enum):
 
     serial = "serial"
     ray = "ray"
+    joblib = "joblib"
 
 
 def _get_segment_df(coords, track_tree):
@@ -208,6 +208,15 @@ class LapTrack(BaseModel, extra="forbid"):
         + f"Must be one of {', '.join([ps.name for ps in ParallelBackend])}.",
         exclude=True,
     )
+    n_jobs: Optional[int] = Field(
+        default=-1,
+        description="The number of parallel jobs for the joblib backend. "
+        + "-1 means using all processors. "
+        + "If None, the value is taken from the enclosing "
+        + "`joblib.parallel_config` context. "
+        + "Ignored for the other backends.",
+        exclude=True,
+    )
 
     @model_validator(mode="before")
     @classmethod
@@ -221,6 +230,54 @@ class LapTrack(BaseModel, extra="forbid"):
                     )
                     data[new_name] = data.pop(old_name)
         return data
+
+    def _parallelize(self, func, args_list, shared_args=()):
+        """Map the function over the argument tuples with the configured backend.
+
+        Parameters
+        ----------
+        func : Callable
+            The function to call.
+        args_list : Sequence[Tuple]
+            The list of the argument tuples, one per call.
+        shared_args : Tuple
+            The additional arguments appended to each call, shared between the
+            calls (put once to the object store for the ray backend).
+
+        Returns
+        -------
+        results : List
+            The results of `func` for each argument tuple in `args_list`.
+        """
+        if self.parallel_backend == ParallelBackend.serial:
+            return [func(*args, *shared_args) for args in args_list]
+        elif self.parallel_backend == ParallelBackend.ray:
+            try:
+                import ray
+            except ImportError:
+                raise ImportError("Please install `ray` to use `ParallelBackend.ray`.")
+            remote_func = ray.remote(func)
+            shared_refs = [ray.put(arg) for arg in shared_args]
+            return ray.get(
+                [remote_func.remote(*args, *shared_refs) for args in args_list]
+            )
+        elif self.parallel_backend == ParallelBackend.joblib:
+            try:
+                from joblib import delayed
+                from joblib import Parallel
+            except ImportError:
+                raise ImportError(
+                    "Please install `joblib` to use `ParallelBackend.joblib`."
+                )
+            results = Parallel(n_jobs=self.n_jobs)(
+                delayed(func)(*args, *shared_args) for args in args_list
+            )
+            return list(results)
+        else:
+            raise ValueError(
+                f"Unknown parallel backend {self.parallel_backend}. "
+                + f"Must be one of {', '.join([ps.name for ps in ParallelBackend])}."
+            )
 
     def _predict_links(
         self, coords, segment_connected_edges, split_merge_edges
@@ -292,27 +349,18 @@ class LapTrack(BaseModel, extra="forbid"):
             ]
             return edges
 
-        if self.parallel_backend == ParallelBackend.serial:
-            all_edges = []
-            for frame, (coord1, coord2) in enumerate(zip(coords[:-1], coords[1:])):
-                edges = _predict_link_single_frame(frame, coord1, coord2)
-                all_edges.extend(edges)
-        elif self.parallel_backend == ParallelBackend.ray:
-            try:
-                import ray
-            except ImportError:
-                raise ImportError("Please install `ray` to use `ParallelBackend.ray`.")
-            remote_func = ray.remote(_predict_link_single_frame)
-            res = [
-                remote_func.remote(frame, coord1, coord2)
-                for frame, (coord1, coord2) in enumerate(zip(coords[:-1], coords[1:]))
-            ]
-            all_edges = sum(ray.get(res), [])
-        else:
-            raise ValueError(
-                f"Unknown parallel backend {self.parallel_backend}. "
-                + f"Must be one of {', '.join([ps.name for ps in ParallelBackend])}."
-            )
+        all_edges: List[Tuple[Tuple[Int, Int], Tuple[Int, Int]]] = sum(
+            self._parallelize(
+                _predict_link_single_frame,
+                [
+                    (frame, coord1, coord2)
+                    for frame, (coord1, coord2) in enumerate(
+                        zip(coords[:-1], coords[1:])
+                    )
+                ],
+            ),
+            [],
+        )
 
         track_tree.add_edges_from(all_edges)
         track_tree.add_edges_from(segment_connected_edges)
@@ -386,26 +434,11 @@ class LapTrack(BaseModel, extra="forbid"):
                 else:
                     return [], []
 
-            if self.parallel_backend == ParallelBackend.serial:
-                segments_df["gap_closing_candidates"] = segments_df.apply(
-                    partial(to_gap_closing_candidates, segments_df=segments_df), axis=1
-                )
-            elif self.parallel_backend == ParallelBackend.ray:
-                try:
-                    import ray
-                except ImportError:
-                    raise ImportError(
-                        "Please install `ray` to use `ParallelBackend.ray`."
-                    )
-                remote_func = ray.remote(to_gap_closing_candidates)
-                segments_df_id = ray.put(segments_df)
-                res = [
-                    remote_func.remote(row, segments_df_id)
-                    for _, row in segments_df.iterrows()
-                ]
-                segments_df["gap_closing_candidates"] = ray.get(res)
-            else:
-                raise ValueError(f"Unknown parallel_backend {self.parallel_backend}. ")
+            segments_df["gap_closing_candidates"] = self._parallelize(
+                to_gap_closing_candidates,
+                [(row,) for _, row in segments_df.iterrows()],
+                shared_args=(segments_df,),
+            )
         else:
             segments_df["gap_closing_candidates"] = [([], [])] * len(segments_df)
 
@@ -479,26 +512,11 @@ class LapTrack(BaseModel, extra="forbid"):
                     0
                 ][indices]
 
-            if self.parallel_backend == ParallelBackend.serial:
-                segments_df[f"{prefix}_candidates"] = segments_df.apply(
-                    partial(to_candidates, coords=coords), axis=1
-                )
-            elif self.parallel_backend == ParallelBackend.ray:
-                try:
-                    import ray
-                except ImportError:
-                    raise ImportError(
-                        "Please install `ray` to use `ParallelBackend.ray`."
-                    )
-                remote_func = ray.remote(to_candidates)
-                coords_id = ray.put(coords)
-                res = [
-                    remote_func.remote(row, coords_id)
-                    for _, row in segments_df.iterrows()
-                ]
-                segments_df[f"{prefix}_candidates"] = ray.get(res)
-            else:
-                raise ValueError(f"Unknown parallel_backend {self.parallel_backend}. ")
+            segments_df[f"{prefix}_candidates"] = self._parallelize(
+                to_candidates,
+                [(row,) for _, row in segments_df.iterrows()],
+                shared_args=(coords,),
+            )
         else:
             segments_df[f"{prefix}_candidates"] = [([], [])] * len(segments_df)
 

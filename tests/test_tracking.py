@@ -106,10 +106,10 @@ def testdata(request, shared_datadir: str):
     return params, coords, edges_set
 
 
-@pytest.mark.parametrize("parallel_backend", ["serial", "ray"])
+@pytest.mark.parametrize("parallel_backend", ["serial", "ray", "joblib"])
 def test_reproducing_trackmate(testdata, parallel_backend) -> None:
-    if parallel_backend == "ray":
-        pytest.importorskip("ray")
+    if parallel_backend in ("ray", "joblib"):
+        pytest.importorskip(parallel_backend)
 
     params, coords, edges_set = testdata
     params["parallel_backend"] = parallel_backend
