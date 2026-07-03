@@ -25,6 +25,15 @@ _ALIAS_FIELDS = {
     "merging_dist_metric_coefs": "merging_metric_coefs",
 }
 
+#: The parent-class fields that are overwritten internally from `*_metric_coefs`
+#: and thus have no effect when set by the user.
+DEPRECATED_OVERLAP_FIELDS = [
+    "metric",
+    "gap_closing_metric",
+    "splitting_metric",
+    "merging_metric",
+]
+
 
 class OverLapTrack(LapTrack):
     """Tracking by label overlaps."""
@@ -63,6 +72,22 @@ class OverLapTrack(LapTrack):
                         DeprecationWarning,
                     )
                     data[new_name] = data.pop(old_name)
+        return data
+
+    @model_validator(mode="before")
+    @classmethod
+    def _check_overwritten_metric_fields(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            for name in DEPRECATED_OVERLAP_FIELDS:
+                if name in data:
+                    warnings.warn(
+                        f"Setting `{name}` has no effect in OverLapTrack, "
+                        f"since it is overwritten internally from the "
+                        f"corresponding `*_metric_coefs` parameter. "
+                        f"The given value is ignored.",
+                        DeprecationWarning,
+                    )
+                    data.pop(name)
         return data
 
     def predict_overlap_tracking_result(

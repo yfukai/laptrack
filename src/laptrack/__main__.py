@@ -18,19 +18,14 @@ from tap import Tap
 
 from . import __version__
 from ._tracking import LapTrack
+from ._overlap_tracking import DEPRECATED_OVERLAP_FIELDS
 from ._overlap_tracking import OverLapTrack
 from ._tracking_result import TrackingResult
 
 #: The fields not exposed as command-line arguments.
 _EXCLUDED_FIELDS = {
     LapTrack: [],
-    OverLapTrack: [
-        # these are overwritten from *_metric_coefs in predict_overlap_dataframe
-        "metric",
-        "gap_closing_metric",
-        "splitting_metric",
-        "merging_metric",
-    ],
+    OverLapTrack: DEPRECATED_OVERLAP_FIELDS,
 }
 
 
