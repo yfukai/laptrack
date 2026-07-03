@@ -4,6 +4,7 @@ __author__ = """Yohsuke T. Fukai"""
 __email__ = "ysk@yfukai.net"
 
 from ._tracking import laptrack, LapTrack, ParallelBackend
+from ._tracking_result import TrackingResult
 from ._overlap_tracking import OverLapTrack
 from . import data_conversion, scores, metric_utils, datasets
 
@@ -12,6 +13,7 @@ __all__ = [
     "LapTrack",
     "OverLapTrack",
     "ParallelBackend",
+    "TrackingResult",
     "data_conversion",
     "scores",
     "metric_utils",

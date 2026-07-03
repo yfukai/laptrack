@@ -39,7 +39,10 @@ from ._typing_utils import EdgeType
 from ._coo_matrix_builder import coo_matrix_builder
 from .data_conversion import (
     dataframe_to_coords_frame_index,
-    tree_to_dataframe,
+)
+from ._tracking_result import (
+    TrackingResult,
+    _connected_edges_to_frame_index_edges,
 )
 from .utils import _coord_is_empty
 
@@ -740,6 +743,50 @@ class LapTrack(BaseModel, extra="forbid"):
 
         return track_tree_directed
 
+    def predict_tracking_result(
+        self,
+        df: pd.DataFrame,
+        coordinate_cols: List[str],
+        frame_col: str = "frame",
+        connected_edges: Optional[List[Tuple[Int, Int]]] = None,
+    ) -> TrackingResult:
+        """Perform tracking with the dataframe input and return a `TrackingResult`.
+
+        Parameters
+        ----------
+        df : pd.DataFrame
+            The input dataframe.
+        coordinate_cols : List[str]
+            The list of the columns to use for coordinates.
+        frame_col : str, optional
+            The column name to use for the frame index. Defaults to "frame".
+        connected_edges : Optional[List[Tuple[Int,Int]]]
+            The edges that is known to be connected.
+            Must be a list of the tuples of the row numbers (not index, but `iloc`).
+            If None, no edges are assumed to be connected.
+
+        Returns
+        -------
+        result : TrackingResult
+            The tracking result object, which can be converted to dataframes,
+            networkx graphs, or written to CSV or GEFF files.
+        """
+        coords, frame_index = dataframe_to_coords_frame_index(
+            df, coordinate_cols, frame_col
+        )
+        connected_edges2 = _connected_edges_to_frame_index_edges(
+            connected_edges, frame_index
+        )
+        tree = self.predict(coords, connected_edges=connected_edges2)
+        return TrackingResult(
+            tree=tree,
+            coords=coords,
+            dataframe=df,
+            frame_index=list(frame_index),
+            coordinate_cols=list(coordinate_cols),
+            frame_col=frame_col,
+        )
+
     def predict_dataframe(
         self,
         df: pd.DataFrame,
@@ -787,31 +834,13 @@ class LapTrack(BaseModel, extra="forbid"):
             - "parent_track_id" : The track id of the parent.
             - "child_track_id" : The track id of the child.
         """
-        coords, frame_index = dataframe_to_coords_frame_index(
-            df, coordinate_cols, frame_col
+        result = self.predict_tracking_result(
+            df,
+            coordinate_cols,
+            frame_col=frame_col,
+            connected_edges=connected_edges,
         )
-        if connected_edges is not None:
-            connected_edges2 = [
-                (frame_index[i1], frame_index[i2]) for i1, i2 in connected_edges
-            ]
-        else:
-            connected_edges2 = None
-        tree = self.predict(coords, connected_edges=connected_edges2)
-
-        track_df, split_df, merge_df = tree_to_dataframe(
-            tree, dataframe=df, frame_index=frame_index
-        )
-
-        track_df["track_id"] = track_df["track_id"] + index_offset
-        track_df["tree_id"] = track_df["tree_id"] + index_offset
-        if not split_df.empty:
-            split_df["parent_track_id"] = split_df["parent_track_id"] + index_offset
-            split_df["child_track_id"] = split_df["child_track_id"] + index_offset
-        if not merge_df.empty:
-            merge_df["parent_track_id"] = merge_df["parent_track_id"] + index_offset
-            merge_df["child_track_id"] = merge_df["child_track_id"] + index_offset
-
-        return track_df, split_df, merge_df
+        return result.to_dataframes(index_offset=index_offset)
 
 
 def laptrack(coords: Sequence[NumArray], **kwargs) -> nx.Graph:

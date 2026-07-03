@@ -15,6 +15,12 @@ laptrack
 
 .. autofunction:: laptrack.laptrack
 
+tracking result
+-----------------
+
+.. autoclass:: laptrack.TrackingResult
+   :members:
+
 data conversion utilities
 ------------------------------
 
