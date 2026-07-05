@@ -105,3 +105,52 @@ def test_solver_empty_graph():
     solver = LapTrackSolver()
     with pytest.raises(ValueError):
         solver.solve(graph)
+
+
+def test_solver_preserved_edges():
+    graph = RustWorkXGraph()
+    for key in ["x", "y"]:
+        graph.add_node_attr_key(key, pl.Float64)
+    n00 = graph.add_node({"t": 0, "x": 0.0, "y": 0.0})
+    n01 = graph.add_node({"t": 0, "x": 100.0, "y": 100.0})
+    n10 = graph.add_node({"t": 1, "x": 0.5, "y": 0.0})
+    n11 = graph.add_node({"t": 1, "x": 200.0, "y": 200.0})
+    graph.add_edge_attr_key("preserved", pl.Boolean)
+    # n01 -> n11 is far beyond the cutoff, but marked as preserved
+    preserved_edge_id = graph.add_edge(n01, n11, {"preserved": True})
+    graph.add_edge(n00, n11, {"preserved": False})
+
+    lt = LapTrack(
+        cutoff=5.0**2,
+        gap_closing_cutoff=False,
+        splitting_cutoff=False,
+        merging_cutoff=False,
+    )
+    solver = LapTrackSolver(
+        tracker=lt,
+        coordinate_attr_keys=["x", "y"],
+        connected_edge_attr_key="preserved",
+    )
+    solver.solve(graph)
+
+    edges_df = graph.edge_attrs()
+    solution_edges = set(
+        (int(s), int(t))
+        for s, t, sol in zip(
+            edges_df[DEFAULT_ATTR_KEYS.EDGE_SOURCE].to_numpy(),
+            edges_df[DEFAULT_ATTR_KEYS.EDGE_TARGET].to_numpy(),
+            edges_df[DEFAULT_ATTR_KEYS.SOLUTION].to_numpy(),
+        )
+        if sol
+    )
+    # the preserved edge is kept even though it is far beyond the cutoff,
+    # and the nearby pair is still linked normally
+    assert solution_edges == {(n01, n11), (n00, n10)}
+    row = edges_df.filter(pl.col(DEFAULT_ATTR_KEYS.EDGE_ID) == preserved_edge_id)
+    assert row[DEFAULT_ATTR_KEYS.SOLUTION].to_list() == [True]
+
+
+def test_solver_preserved_edges_missing_key(coords, graph):
+    solver = LapTrackSolver(connected_edge_attr_key="preserved")
+    with pytest.raises(ValueError, match="does not exist in the graph"):
+        solver.solve(graph)

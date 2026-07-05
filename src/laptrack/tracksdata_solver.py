@@ -45,6 +45,14 @@ class LapTrackSolver(BaseSolver):
         keys among ("z", "y", "x") are used in this order.
     frame_attr_key : str
         The node attribute key for the frame index.
+    connected_edge_attr_key : Optional[str]
+        The edge attribute key marking the edges known to be connected
+        (preserved edges). The edges whose value of this attribute is True
+        are passed to `LapTrack.predict` as `connected_edges` and are
+        guaranteed to be kept in the solution. If None, no edge is preserved.
+    split_merge_validation : bool
+        Whether to validate that the preserved edges form at most two-fold
+        splits/merges. Passed to `LapTrack.predict`.
     output_key : str
         The node/edge attribute key to store the solution boolean values.
     reset : bool
@@ -58,6 +66,8 @@ class LapTrackSolver(BaseSolver):
         tracker: Optional[LapTrack] = None,
         coordinate_attr_keys: Optional[Sequence[str]] = None,
         frame_attr_key: str = DEFAULT_ATTR_KEYS.T,
+        connected_edge_attr_key: Optional[str] = None,
+        split_merge_validation: bool = True,
         output_key: str = DEFAULT_ATTR_KEYS.SOLUTION,
         reset: bool = True,
         return_solution: bool = True,
@@ -70,6 +80,8 @@ class LapTrackSolver(BaseSolver):
         self.tracker = tracker if tracker is not None else LapTrack()
         self.coordinate_attr_keys = coordinate_attr_keys
         self.frame_attr_key = frame_attr_key
+        self.connected_edge_attr_key = connected_edge_attr_key
+        self.split_merge_validation = split_merge_validation
 
     def _get_coordinate_attr_keys(self, graph: "BaseGraph") -> List[str]:
         if self.coordinate_attr_keys is not None:
@@ -113,6 +125,47 @@ class LapTrackSolver(BaseSolver):
                 )
         return coords, frame_index_to_node_id
 
+    def _get_connected_edges(
+        self,
+        graph: "BaseGraph",
+        frame_index_to_node_id: Dict[Tuple[int, int], int],
+    ) -> Optional[List[Tuple[Tuple[int, int], Tuple[int, int]]]]:
+        """Collect the preserved edges as (frame, index) pairs.
+
+        Parameters
+        ----------
+        graph : BaseGraph
+            The graph to read the preserved edges from.
+        frame_index_to_node_id : Dict[Tuple[int, int], int]
+            The mapping from the (frame, index) to the node id.
+
+        Returns
+        -------
+        connected_edges : Optional[List[Tuple[Tuple[int, int], Tuple[int, int]]]]
+            The preserved edges in the (frame, index) format, or None if
+            `connected_edge_attr_key` is None.
+        """
+        if self.connected_edge_attr_key is None:
+            return None
+        if self.connected_edge_attr_key not in graph.edge_attr_keys():
+            raise ValueError(
+                f"The edge attribute key '{self.connected_edge_attr_key}' "
+                "does not exist in the graph."
+            )
+        node_id_to_frame_index = {
+            node_id: frame_index
+            for frame_index, node_id in frame_index_to_node_id.items()
+        }
+        edges_df = graph.edge_attrs(attr_keys=[self.connected_edge_attr_key])
+        edges_df = edges_df.filter(pl.col(self.connected_edge_attr_key))
+        return [
+            (node_id_to_frame_index[int(source)], node_id_to_frame_index[int(target)])
+            for source, target in zip(
+                edges_df[DEFAULT_ATTR_KEYS.EDGE_SOURCE].to_numpy(),
+                edges_df[DEFAULT_ATTR_KEYS.EDGE_TARGET].to_numpy(),
+            )
+        ]
+
     def solve(self, graph: "BaseGraph") -> Optional["GraphView"]:
         """Solve the tracking problem with LapTrack.
 
@@ -138,7 +191,12 @@ class LapTrackSolver(BaseSolver):
             graph, coordinate_attr_keys
         )
 
-        tree = self.tracker.predict(coords)
+        connected_edges = self._get_connected_edges(graph, frame_index_to_node_id)
+        tree = self.tracker.predict(
+            coords,
+            connected_edges=connected_edges,
+            split_merge_validation=self.split_merge_validation,
+        )
         solution_node_pairs = [
             (frame_index_to_node_id[node1], frame_index_to_node_id[node2])
             for node1, node2 in tree.edges()
