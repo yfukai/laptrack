@@ -27,6 +27,7 @@ else:
 import networkx as nx
 import numpy as np
 import pandas as pd
+from scipy.spatial import cKDTree
 from scipy.spatial.distance import cdist
 from pydantic import BaseModel, Field, model_validator
 
@@ -160,6 +161,21 @@ class LapTrack(BaseModel, extra="forbid"):
         + "If False, no merging is allowed.",
     )
 
+    metric_is_distance: bool = Field(
+        default=False,
+        description="If True, the neighbor candidates in the frame-to-frame "
+        + "linking are pruned with a KD-tree in the coordinate space before "
+        + "evaluating the metric, which speeds up the computation for large "
+        + "point counts. "
+        + 'The pruning radius is `cutoff` for the "euclidean" metric, '
+        + '`sqrt(cutoff)` for the "sqeuclidean" metric, and `cutoff` for the '
+        + "other metrics. Set True only when the metric value is bounded from "
+        + "below by the Euclidean distance (up to the conversion above), "
+        + "since the point pairs outside the pruning radius are discarded "
+        + "without evaluating the metric. "
+        + "The results are identical up to floating-point rounding.",
+    )
+
     track_start_cost: Optional[float] = Field(
         default=None,  # b in Jaqaman et al 2008 NMeth.
         description="The cost for starting the track (b in Jaqaman et al 2008 NMeth) "
@@ -222,6 +238,57 @@ class LapTrack(BaseModel, extra="forbid"):
                     data[new_name] = data.pop(old_name)
         return data
 
+    def _get_neighbor_pairs(
+        self, coord1: np.ndarray, coord2: np.ndarray
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Find the point pairs within the pruning radius and their metric values.
+
+        Parameters
+        ----------
+        coord1 : np.ndarray
+            The coordinates of the first frame.
+        coord2 : np.ndarray
+            The coordinates of the second frame.
+
+        Returns
+        -------
+        rows : np.ndarray
+            The indices in `coord1` of the candidate pairs.
+        cols : np.ndarray
+            The indices in `coord2` of the candidate pairs.
+        data : np.ndarray
+            The metric values of the candidate pairs.
+        """
+        if self.metric == "sqeuclidean":
+            radius = float(np.sqrt(self.cutoff))
+        else:
+            radius = float(self.cutoff)
+        tree1 = cKDTree(coord1)
+        tree2 = cKDTree(coord2)
+        pair_lists = tree1.query_ball_tree(tree2, radius)
+        counts = [len(pair) for pair in pair_lists]
+        rows = np.repeat(np.arange(coord1.shape[0]), counts)
+        cols = np.array(
+            [ind for pair in pair_lists for ind in pair],
+            dtype=int,
+        )
+        if self.metric == "euclidean":
+            data = np.linalg.norm(coord1[rows] - coord2[cols], axis=1)
+        elif self.metric == "sqeuclidean":
+            data = np.sum((coord1[rows] - coord2[cols]) ** 2, axis=1)
+        elif isinstance(self.metric, str):
+            data = np.array(
+                [
+                    cdist([coord1[i]], [coord2[j]], metric=self.metric)[0, 0]
+                    for i, j in zip(rows, cols)
+                ]
+            )
+        else:
+            data = np.array(
+                [self.metric(coord1[i], coord2[j]) for i, j in zip(rows, cols)]
+            )
+        return rows, cols, data
+
     def _predict_links(
         self, coords, segment_connected_edges, split_merge_edges
     ) -> nx.Graph:
@@ -263,18 +330,33 @@ class LapTrack(BaseModel, extra="forbid"):
 
             force_end_indices = [e[0][1] for e in edges_list if e[0][0] == frame]
             force_start_indices = [e[1][1] for e in edges_list if e[1][0] == frame + 1]
-            dist_matrix = cdist(coord1, coord2, metric=self.metric)
-            dist_matrix[force_end_indices, :] = np.inf
-            dist_matrix[:, force_start_indices] = np.inf
+            if self.metric_is_distance:
+                rows, cols, data = self._get_neighbor_pairs(coord1, coord2)
+                mask = (
+                    ~np.isin(rows, force_end_indices)
+                    & ~np.isin(cols, force_start_indices)
+                    & (data < self.cutoff)
+                )
+                dist_matrix = coo_matrix_builder(
+                    (coord1.shape[0], coord2.shape[0]),
+                    row=rows[mask],
+                    col=cols[mask],
+                    data=data[mask],
+                    dtype=data.dtype,
+                )
+            else:
+                dist_matrix = cdist(coord1, coord2, metric=self.metric)
+                dist_matrix[force_end_indices, :] = np.inf
+                dist_matrix[:, force_start_indices] = np.inf
 
-            ind = np.where(dist_matrix < self.cutoff)
-            dist_matrix = coo_matrix_builder(
-                dist_matrix.shape,
-                row=ind[0],
-                col=ind[1],
-                data=dist_matrix[(*ind,)],
-                dtype=dist_matrix.dtype,
-            )
+                ind = np.where(dist_matrix < self.cutoff)
+                dist_matrix = coo_matrix_builder(
+                    dist_matrix.shape,
+                    row=ind[0],
+                    col=ind[1],
+                    data=dist_matrix[(*ind,)],
+                    dtype=dist_matrix.dtype,
+                )
 
             cost_matrix = build_frame_cost_matrix(
                 dist_matrix,
