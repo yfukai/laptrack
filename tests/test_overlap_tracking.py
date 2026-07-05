@@ -144,3 +144,15 @@ def test_overlap_tracking_error() -> None:
     with pytest.raises(AttributeError):
         olt.predict([np.array([1, 2, 3]), np.array([4, 5, 6])])
 """
+
+
+def test_overwritten_metric_fields_deprecated() -> None:
+    from laptrack import OverLapTrack
+
+    with pytest.warns(DeprecationWarning, match="has no effect in OverLapTrack"):
+        olt = OverLapTrack(metric="euclidean")
+    # the given value is ignored and the default is kept
+    assert olt.metric == "sqeuclidean"
+
+    with pytest.warns(DeprecationWarning, match="has no effect in OverLapTrack"):
+        OverLapTrack(splitting_metric="euclidean")
