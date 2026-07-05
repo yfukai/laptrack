@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "project": "laptrack",
+  "project_url": "https://github.com/yfukai/laptrack",
+  "repo": ".",
+  "branches": ["main"],
+  "show_commit_url": "https://github.com/yfukai/laptrack/commit/",
+  "environment_type": "virtualenv",
+  "benchmark_dir": "benchmarks",
+  "env_dir": ".asv/env",
+  "results_dir": ".asv/results",
+  "html_dir": ".asv/html"
+}

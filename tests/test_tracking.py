@@ -237,6 +237,52 @@ def test_metric_is_distance_with_empty_frames() -> None:
     assert set(lt.predict(coords).edges) == set(lt2.predict(coords).edges)
 
 
+def test_use_gpu_requires_supported_metric() -> None:
+    coords = [np.array([[10, 10], [12, 11]]), np.array([[10, 10], [13, 11]])]
+    lt = LapTrack(
+        use_gpu=True,
+        metric="cityblock",
+        gap_closing_cutoff=False,
+        splitting_cutoff=False,
+        merging_cutoff=False,
+    )
+    with pytest.raises(ValueError, match="GPU computation only supports"):
+        lt.predict(coords)
+
+
+def test_use_gpu_requires_cupy() -> None:
+    try:
+        import cupy  # noqa: F401
+
+        pytest.skip("cupy is installed")
+    except ImportError:
+        pass
+    coords = [np.array([[10, 10], [12, 11]]), np.array([[10, 10], [13, 11]])]
+    lt = LapTrack(
+        use_gpu=True,
+        gap_closing_cutoff=False,
+        splitting_cutoff=False,
+        merging_cutoff=False,
+    )
+    with pytest.raises(ImportError, match="cupy"):
+        lt.predict(coords)
+
+
+def test_use_gpu_equivalence() -> None:
+    pytest.importorskip("cupy")
+    np.random.seed(1)
+    coords = [np.random.random((40, 2)) * 100 for _ in range(5)]
+    params = dict(
+        cutoff=15.0**2,
+        gap_closing_cutoff=False,
+        splitting_cutoff=False,
+        merging_cutoff=False,
+    )
+    tree1 = LapTrack(**params).predict(coords)
+    tree2 = LapTrack(**params, use_gpu=True).predict(coords)
+    assert set(tree1.edges) == set(tree2.edges)
+
+
 def test_tracking_zero_distance() -> None:
     coords = [np.array([[10, 10], [12, 11]]), np.array([[10, 10], [13, 11]])]
     lt = LapTrack(
