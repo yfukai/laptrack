@@ -32,7 +32,6 @@ nox.options.sessions = (
 doc_build_packages = [
     "sphinx",
     "sphinx-autobuild",
-    "sphinx-click",
     "sphinx-rtd-theme",
     "autodoc_pydantic",
     "sphinx-gallery",
