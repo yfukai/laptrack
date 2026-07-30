@@ -97,6 +97,11 @@ def tests(session: nox.Session) -> None:
         session.warn("Ray not installed, skipping ray tests")
 
     try:
+        session.install("tracksdata")
+    except nox.command.CommandFailed:
+        session.warn("tracksdata not installed, skipping tracksdata tests")
+
+    try:
         session.run("coverage", "run", "--parallel", "-m", "pytest", *session.posargs)
     finally:
         if session.interactive:
