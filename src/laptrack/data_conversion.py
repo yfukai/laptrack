@@ -166,6 +166,18 @@ def dataframes_to_tree_coords(
     return tree, coords
 
 
+def _split_merge_records_to_df(records: List[Dict]) -> pd.DataFrame:
+    """Convert the split/merge records to a dataframe, keeping the columns if empty."""
+    if len(records) == 0:
+        return pd.DataFrame(
+            {
+                "parent_track_id": pd.Series(dtype=int),
+                "child_track_id": pd.Series(dtype=int),
+            }
+        )
+    return pd.DataFrame.from_records(records).astype(int)
+
+
 def tree_to_dataframe(
     tree: nx.DiGraph,
     coords: Optional[Sequence[NumArray]] = None,
@@ -303,7 +315,7 @@ def tree_to_dataframe(
                     "child_track_id": track_df.loc[child, "track_id"],
                 }
             )
-    split_df = pd.DataFrame.from_records(split_df_data).astype(int)
+    split_df = _split_merge_records_to_df(split_df_data)
 
     merge_df_data = []
     for node, parents in merges:
@@ -314,7 +326,7 @@ def tree_to_dataframe(
                     "child_track_id": track_df.loc[node, "track_id"],
                 }
             )
-    merge_df = pd.DataFrame.from_records(merge_df_data).astype(int)
+    merge_df = _split_merge_records_to_df(merge_df_data)
 
     if dataframe is not None:
         track_df = track_df.reset_index(drop=True)
@@ -397,10 +409,6 @@ def digraph_to_geff_networkx(
     >>> geff.write(geff_tree, "save_path.zarr")
     """
     geff_tree = tree.copy()
-    for node in geff_tree.nodes:
-        geff_tree.nodes[node]["frame"] = node[0]
-
-    # XXX could be more efficient
     if coords is not None:
         if attr_names is None:
             attr_names = ["frame"] + [f"coord-{i}" for i in range(coords[0].shape[1])]
@@ -409,6 +417,14 @@ def digraph_to_geff_networkx(
                 f"attr_names must have length {coords[0].shape[1] + 1}, "
                 f"but got {len(attr_names)}"
             )
+    elif attr_names is None:
+        attr_names = ["frame"]
+
+    for node in geff_tree.nodes:
+        geff_tree.nodes[node][attr_names[0]] = node[0]
+
+    # XXX could be more efficient
+    if coords is not None:
         for node in geff_tree.nodes:
             for i, attr_name in enumerate(attr_names[1:], start=0):
                 geff_tree.nodes[node][attr_name] = coords[node[0]][node[1], i]
