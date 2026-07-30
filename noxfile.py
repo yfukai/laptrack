@@ -15,8 +15,13 @@ safety_ignore = [
     44716,
     51457,
     70612,
-    71628,
-]  # ignore numpy 1.21 CVEs and py 1.11.0
+    71628,  # ignore numpy 1.21 CVEs and py 1.11.0
+    "SFTY-20260616-82126",  # bleach 6.3.0 DoS via linkify
+    "SFTY-20260616-24225",  # bleach 6.3.0 improper input validation
+    "SFTY-20260616-76367",  # bleach 6.3.0 XSS in formaction attributes
+    "SFTY-20260616-58930",  # nltk 3.9.4 path traversal
+    "SFTY-20260619-43815",  # pydantic-settings 2.12.0 path traversal
+]
 nox.needs_version = ">= 2021.6.6"
 nox.options.sessions = (
     "pre-commit",
